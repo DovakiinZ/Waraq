@@ -170,7 +170,7 @@ class LessonProgressService {
       'entity_id': lessonId,
       'entity_type': 'lesson',
       'stars': stars,
-      'feedback': comment,
+      'comment': comment,
     }, onConflict: 'user_id,entity_id,entity_type');
   }
 }

@@ -35,7 +35,7 @@ android {
 
     defaultConfig {
         applicationId = "com.aymanacademy.ayman_academy_app"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName

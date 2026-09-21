@@ -362,33 +362,43 @@ The Flutter app shares the same Supabase database as the web app. Key tables use
 
 ## Known Issues
 
-### BLOCKER — database is unreachable (2026-09-21)
-The Supabase project hostname (`lkdbinrwojvrchunzqfq.supabase.co`) returns
-**NXDOMAIN**. Free-tier projects are paused after 7 days of inactivity and
-deleted after ~90 days paused. Nothing in either app works until the project is
-restored or rebuilt. Decision taken: **stay on Supabase** and add a keep-alive
-ping so it cannot auto-pause again.
+### Schema reality check (verified live 2026-09-21)
+The Supabase project was paused and has since been **resumed**; it is
+reachable and holds real data. The live schema was probed column-by-column
+through PostgREST, so the notes below are measured, not inferred.
 
-### BLOCKER — schema drift between the app and the migrations
-`supabase/migrations/100_clean_rewrite.sql` drops the whole `public` schema and
-rebuilds 41 tables. It does **not** recreate what migration 066 added, and it
-omits columns both clients use. `supabase/migrations/102_post_rewrite_app_gaps.sql`
-was added to close the gap and must be run immediately after 100.
+**Do NOT trust these two files as the schema source of truth:**
+- `schema.json` (repo root) is a stale pre-066 PostgREST dump.
+- `migrations/100_clean_rewrite.sql` drops the entire `public` schema and
+  rebuilds it. It has **not** been applied to this database and must not be —
+  it would delete `orders`, `teacher_applications` and the Sham Cash columns.
+  It also renames `order_index` -> `sort_order`; the live DB already uses
+  `sort_order`, so the app is correct as written.
 
-Still open after 102:
-- **Quiz feature is structurally incompatible.** `shared/models/quiz.dart`,
-  `quiz_builder_screen.dart` and `quiz_provider.dart` assume denormalised
-  `quiz_questions.options` (JSON array) + `quiz_questions.correct_answer`.
-  The real schema normalises these into a separate `quiz_options` table
-  (`text_ar`, `text_en`, `is_correct`, `sort_order`). Both quiz building and
-  quiz taking must be rewritten against `quiz_options` — do NOT add the
-  denormalised columns, the web portal already uses `quiz_options`.
-- **Migration ordering is ambiguous.** The timestamped files
-  (`20260207*_*.sql`) sort *after* `100`/`101` lexically but were written for
-  the pre-100 schema and use `order_index` where 100 uses `sort_order`.
-  Applying them after 100 corrupts the schema. They should be retired.
-- `schema.json` at the repo root is a **stale** pre-100 PostgREST dump. Do not
-  treat it as the source of truth; `100_clean_rewrite.sql` + `102_...sql` are.
+**Confirmed present live:** `orders`, `teacher_applications`,
+`profiles.shamcash_account_name/number`, `profiles.expertise_tags_ar/en`,
+`subjects.is_paid`, `ratings.comment`, `quizzes.passing_score`,
+`quiz_options.text_ar`, `lessons.sort_order`, `lesson_blocks.sort_order`,
+and the RPCs `get_student_subjects`, `get_discover_subjects`,
+`check_subject_access`, `is_super_admin`, `get_user_role`.
+
+**Confirmed missing live — fixed by `migrations/102_live_schema_gaps.sql`:**
+- `quiz_attempts.passed` — written on every quiz submission, so the INSERT
+  fails and **no student can submit a quiz**. This is the highest-impact gap.
+- `student_levels` — queried by the student profile; the provider swallows
+  the error and silently shows a default level.
+
+**Still open — quiz feature is structurally incompatible:**
+`shared/models/quiz.dart`, `quiz_builder_screen.dart` and `quiz_provider.dart`
+assume denormalised `quiz_questions.options` (JSON array) +
+`quiz_questions.correct_answer`. Neither column exists live. The real schema
+normalises answers into `quiz_options` (`text_ar`, `text_en`, `is_correct`,
+`sort_order`), which is what the web portal uses. Both quiz building and quiz
+taking must be rewritten against `quiz_options`. Do **not** add the
+denormalised columns — that would fork web and mobile.
+
+**Keep-alive:** the free tier pauses after 7 days idle. Add a daily scheduled
+request against the REST API so this cannot recur.
 
 ### Other
 - **Admin features are web-only** — Admin users see a "use web app" screen. This is intentional.
