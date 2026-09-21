@@ -70,9 +70,9 @@ class QuizService {
       try {
         await supabase.from('student_xp').insert({
           'student_id': userId,
-          'event_type': 'quiz_pass',
-          'points': 100,
-          'source_id': quiz.id,
+          'reason': 'quiz_pass',
+          'amount': 100,
+          'entity_id': quiz.id,
         });
       } catch (_) {}
     }

@@ -362,6 +362,35 @@ The Flutter app shares the same Supabase database as the web app. Key tables use
 
 ## Known Issues
 
+### BLOCKER — database is unreachable (2026-09-21)
+The Supabase project hostname (`lkdbinrwojvrchunzqfq.supabase.co`) returns
+**NXDOMAIN**. Free-tier projects are paused after 7 days of inactivity and
+deleted after ~90 days paused. Nothing in either app works until the project is
+restored or rebuilt. Decision taken: **stay on Supabase** and add a keep-alive
+ping so it cannot auto-pause again.
+
+### BLOCKER — schema drift between the app and the migrations
+`supabase/migrations/100_clean_rewrite.sql` drops the whole `public` schema and
+rebuilds 41 tables. It does **not** recreate what migration 066 added, and it
+omits columns both clients use. `supabase/migrations/102_post_rewrite_app_gaps.sql`
+was added to close the gap and must be run immediately after 100.
+
+Still open after 102:
+- **Quiz feature is structurally incompatible.** `shared/models/quiz.dart`,
+  `quiz_builder_screen.dart` and `quiz_provider.dart` assume denormalised
+  `quiz_questions.options` (JSON array) + `quiz_questions.correct_answer`.
+  The real schema normalises these into a separate `quiz_options` table
+  (`text_ar`, `text_en`, `is_correct`, `sort_order`). Both quiz building and
+  quiz taking must be rewritten against `quiz_options` — do NOT add the
+  denormalised columns, the web portal already uses `quiz_options`.
+- **Migration ordering is ambiguous.** The timestamped files
+  (`20260207*_*.sql`) sort *after* `100`/`101` lexically but were written for
+  the pre-100 schema and use `order_index` where 100 uses `sort_order`.
+  Applying them after 100 corrupts the schema. They should be retired.
+- `schema.json` at the repo root is a **stale** pre-100 PostgREST dump. Do not
+  treat it as the source of truth; `100_clean_rewrite.sql` + `102_...sql` are.
+
+### Other
 - **Admin features are web-only** — Admin users see a "use web app" screen. This is intentional.
 - **Sham Cash QR is placeholder** — Checkout shows a dashed QR placeholder, same as web app.
 - **Environment variables** — Must be passed via `--dart-define` at build time. `main.dart` now guards on `Env.isConfigured` and shows a config-error screen if `SUPABASE_URL`/`SUPABASE_ANON_KEY` are missing (instead of failing cryptically).
@@ -380,7 +409,39 @@ The Flutter app shares the same Supabase database as the web app. Key tables use
 
 > Update this section as tasks are completed or new ones are discovered.
 
+### Phase 0: Unblock (do these first)
+- [ ] **Restore the Supabase project** — restore from the dashboard if it is only
+      paused; otherwise create a new project and run `100_clean_rewrite.sql`
+      then `102_post_rewrite_app_gaps.sql`.
+- [ ] **Add a keep-alive** — a daily scheduled request against the REST API so
+      the free tier never auto-pauses again.
+- [ ] **Repoint both clients** — new `SUPABASE_URL` / anon key in the web `.env`
+      and in the Flutter `--dart-define` build args.
+- [ ] **Rewrite the quiz layer onto `quiz_options`** (see Known Issues).
+- [ ] **Retire the `20260207*` migrations** so they cannot run after 100.
+
 ### Phase 1: Polish & Bug Fixes (Current Priority)
+- [x] **Android release blockers** — `targetSdk` raised 34 → 36 (Play rejects 34),
+      Gradle heap cut from 8G/4G metaspace to 4G/1G (failed to start on normal machines).
+- [x] **Router no longer rebuilt on every auth change** — `routerProvider` watched
+      `authProvider`, recreating the whole `GoRouter` (and leaking a stream
+      subscription) on every auth event. Now built once, refreshed via a listenable.
+- [x] **Cold-start splash** — added `/splash`; the app no longer flashes the login
+      screen on every launch while the stored session is restored.
+- [x] **Silent login failure fixed** — a missing/unreadable `profiles` row used to
+      bounce the user back to login with no message; now raises `ProfileMissingException`.
+      A transient network failure no longer signs an authenticated user out.
+- [x] **Offline detection on cold start** — `connectivityProvider` now seeds with
+      `checkConnectivity()`; `onConnectivityChanged` alone only fires on transitions.
+- [x] **Offline banner insets** — banner consumed no status-bar inset and drew under
+      the system icons once edge-to-edge kicked in at targetSdk 35+.
+- [x] **Notification permission timing** — no longer prompted on first launch before
+      sign-in (one-shot prompt on Android 13+, usually denied); now asked after login.
+- [x] **Lesson resume position** — `saveProgress` wrote `last_position_seconds: 0` on
+      every tick, so no lesson ever resumed where the student left off.
+- [x] **XP awards / lesson ratings** — were writing columns that do not exist
+      (`student_xp.points/event_type/source_id`, `ratings.comment`); corrected to
+      `amount`/`reason`/`entity_id` and `feedback`.
 - [ ] **Test all screens end-to-end** — Verify every feature works against live Supabase.
 - [ ] **Fix any broken Supabase queries** — Ensure models match current DB schema.
 - [ ] **Lesson notes polish** — Make notes screen fully functional.

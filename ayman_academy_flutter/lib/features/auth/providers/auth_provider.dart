@@ -6,6 +6,17 @@ import 'package:ayman_academy_app/shared/services/notification_service.dart';
 
 enum AuthStatus { loading, authenticated, unauthenticated }
 
+/// Raised when the credentials are valid but no matching `profiles` row can be
+/// loaded. Previously this dropped the user back on the login screen with no
+/// explanation at all.
+class ProfileMissingException implements Exception {
+  const ProfileMissingException();
+
+  @override
+  String toString() =>
+      'تعذّر تحميل ملفك الشخصي. تواصل مع الدعم.\nCould not load your profile. Please contact support.';
+}
+
 class AuthState {
   final AuthStatus status;
   final Profile? profile;
@@ -41,7 +52,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _authSub = _repo.authStateChanges.listen((event) async {
       if (event.session != null) {
         final userId = event.session!.user.id;
-        final profile = await _repo.fetchProfile(userId);
+        Profile? profile;
+        try {
+          profile = await _repo.fetchProfile(userId);
+        } catch (_) {
+          // Transport failure. Keep an already-authenticated session rather
+          // than bouncing the user to the login screen on a flaky connection.
+          if (state.isAuthenticated) return;
+          profile = null;
+        }
         if (profile != null) {
           // Associate this device with the user for targeted push.
           await NotificationService.login(userId);
@@ -60,7 +79,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _checkCurrentSession() async {
     final session = _repo.currentSession;
     if (session != null) {
-      final profile = await _repo.fetchProfile(session.user.id);
+      Profile? profile;
+      try {
+        profile = await _repo.fetchProfile(session.user.id);
+      } catch (_) {
+        profile = null;
+      }
       if (profile != null) {
         // Re-associate on session restore (app relaunch).
         await NotificationService.login(session.user.id);
@@ -72,12 +96,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> signIn(String email, String password) async {
-    state = state.copyWith(status: AuthStatus.loading);
-    try {
-      await _repo.signIn(email, password);
-    } catch (e) {
-      state = const AuthState(status: AuthStatus.unauthenticated);
-      rethrow;
+    final res = await _repo.signIn(email, password);
+    final userId = res.user?.id;
+    if (userId == null) throw const ProfileMissingException();
+
+    // Confirm the profile row is reachable *before* reporting success, so the
+    // caller can show a real message instead of the login screen silently
+    // reappearing.
+    final profile = await _repo.fetchProfile(userId);
+    if (profile == null) {
+      await _repo.signOut();
+      throw const ProfileMissingException();
     }
   }
 
@@ -86,13 +115,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String password,
     required String fullName,
   }) async {
-    state = state.copyWith(status: AuthStatus.loading);
-    try {
-      await _repo.signUp(email: email, password: password, fullName: fullName);
-    } catch (e) {
-      state = const AuthState(status: AuthStatus.unauthenticated);
-      rethrow;
-    }
+    await _repo.signUp(email: email, password: password, fullName: fullName);
   }
 
   Future<void> signOut() async {

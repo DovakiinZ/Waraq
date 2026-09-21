@@ -30,18 +30,17 @@ class AuthRepository {
     await supabase.auth.resetPasswordForEmail(email);
   }
 
+  /// Returns null only when the profile row genuinely does not exist (or is
+  /// hidden by RLS). Network/transport failures are rethrown so callers can
+  /// tell "no account" apart from "no signal" instead of silently signing out.
   Future<Profile?> fetchProfile(String userId) async {
-    try {
-      final data = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
-      if (data == null) return null;
-      return Profile.fromJson(data);
-    } catch (_) {
-      return null;
-    }
+    final data = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+    if (data == null) return null;
+    return Profile.fromJson(data);
   }
 
   User? get currentUser => supabase.auth.currentUser;
