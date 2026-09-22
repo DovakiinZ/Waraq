@@ -15,7 +15,9 @@ class QuizScreen extends ConsumerStatefulWidget {
 }
 
 class _QuizScreenState extends ConsumerState<QuizScreen> {
-  final Map<String, String> _answers = {};
+  /// question id -> the set of option ids the student picked.
+  /// A set (not a single id) so `multi_select` questions work too.
+  final Map<String, Set<String>> _answers = {};
   int _currentIndex = 0;
   bool _submitted = false;
   Map<String, dynamic>? _result;
@@ -128,9 +130,18 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (_, i) {
                         final option = q.options[i];
-                        final selected = _answers[q.id] == option;
+                        final picked = _answers[q.id] ?? const <String>{};
+                        final selected = picked.contains(option.id);
                         return GestureDetector(
-                          onTap: () => setState(() => _answers[q.id] = option),
+                          onTap: () => setState(() {
+                            if (q.isMultiSelect) {
+                              final next = {...picked};
+                              selected ? next.remove(option.id) : next.add(option.id);
+                              _answers[q.id] = next;
+                            } else {
+                              _answers[q.id] = {option.id};
+                            }
+                          }),
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -152,7 +163,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                   width: 22,
                                   height: 22,
                                   decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
+                                    shape: q.isMultiSelect ? BoxShape.rectangle : BoxShape.circle,
+                                    borderRadius: q.isMultiSelect ? BorderRadius.circular(5) : null,
                                     color: selected ? AppColors.accent : Colors.transparent,
                                     border: Border.all(
                                       color: selected ? AppColors.accent : AppColors.inkMuted,
@@ -166,7 +178,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    option,
+                                    option.text(lang),
                                     style: TextStyle(
                                       fontFamily: 'IBMPlexSansArabic',
                                       fontSize: 15,
@@ -366,8 +378,15 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           ...questions.asMap().entries.map((entry) {
             final i = entry.key;
             final q = entry.value;
-            final userAnswer = _answers[q.id] ?? '';
-            final isCorrect = userAnswer == q.correctAnswer;
+            final picked = _answers[q.id] ?? const <String>{};
+            final expected = q.correctOptionIds;
+            final isCorrect = expected.isNotEmpty &&
+                picked.length == expected.length &&
+                picked.containsAll(expected);
+            final userAnswer = q.options
+                .where((o) => picked.contains(o.id))
+                .map((o) => o.text(lang))
+                .join('، ');
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
@@ -420,7 +439,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                       ),
                     ),
                     Text(
-                      '${t("الصحيح", "Correct")}: ${q.correctAnswer}',
+                      '${t("الصحيح", "Correct")}: ${q.correctText(lang)}',
                       style: const TextStyle(
                         fontFamily: 'IBMPlexSansArabic',
                         color: AppColors.success,

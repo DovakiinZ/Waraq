@@ -30,7 +30,7 @@ class _QuizBuilderScreenState extends ConsumerState<QuizBuilderScreen> {
     try {
       final data = await supabase
           .from('quizzes')
-          .select('*, quiz_questions(*)')
+          .select('*, quiz_questions(*, quiz_options(*))')
           .eq('lesson_id', widget.lessonId)
           .maybeSingle();
       if (data != null) {
@@ -63,11 +63,31 @@ class _QuizBuilderScreenState extends ConsumerState<QuizBuilderScreen> {
 
   void _showAddQuestionDialog() {
     final t = ref.read(languageProvider.notifier).t;
-    final questionController = TextEditingController();
+    final questionArController = TextEditingController();
+    final questionEnController = TextEditingController();
     final explanationController = TextEditingController();
     String type = 'mcq';
-    List<String> options = ['', '', '', ''];
-    int correctIndex = 0;
+
+    // Editable choices. `true_false` uses a fixed pair; the others start blank.
+    List<TextEditingController> optionAr =
+        List.generate(4, (_) => TextEditingController());
+    List<TextEditingController> optionEn =
+        List.generate(4, (_) => TextEditingController());
+    Set<int> correctIndexes = {0};
+
+    void applyType(String next, void Function(void Function()) setDialogState) {
+      setDialogState(() {
+        type = next;
+        if (type == 'true_false') {
+          optionAr = [TextEditingController(text: 'صح'), TextEditingController(text: 'خطأ')];
+          optionEn = [TextEditingController(text: 'True'), TextEditingController(text: 'False')];
+        } else {
+          optionAr = List.generate(4, (_) => TextEditingController());
+          optionEn = List.generate(4, (_) => TextEditingController());
+        }
+        correctIndexes = {0};
+      });
+    }
 
     showDialog(
       context: context,
@@ -79,77 +99,93 @@ class _QuizBuilderScreenState extends ConsumerState<QuizBuilderScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Type selector
                 SegmentedButton<String>(
                   segments: [
                     ButtonSegment(value: 'mcq', label: Text(t('اختيار', 'MCQ'))),
                     ButtonSegment(value: 'true_false', label: Text(t('صح/خطأ', 'T/F'))),
+                    ButtonSegment(value: 'multi_select', label: Text(t('متعدد', 'Multi'))),
                   ],
                   selected: {type},
-                  onSelectionChanged: (v) {
-                    setDialogState(() {
-                      type = v.first;
-                      if (type == 'true_false') {
-                        options = [t('صح', 'True'), t('خطأ', 'False')];
-                        correctIndex = 0;
-                      } else {
-                        options = ['', '', '', ''];
-                        correctIndex = 0;
-                      }
-                    });
-                  },
+                  onSelectionChanged: (v) => applyType(v.first, setDialogState),
                 ),
                 const SizedBox(height: 16),
 
-                // Question text
                 TextField(
-                  controller: questionController,
+                  controller: questionArController,
                   maxLines: 2,
-                  decoration: InputDecoration(labelText: t('نص السؤال', 'Question Text')),
+                  decoration: InputDecoration(labelText: t('نص السؤال (عربي)', 'Question (Arabic)')),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: questionEnController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: t('نص السؤال (إنجليزي - اختياري)', 'Question (English - optional)'),
+                  ),
                 ),
                 const SizedBox(height: 16),
 
-                // Options
-                if (type == 'mcq')
-                  ...List.generate(options.length, (i) => Padding(
+                if (type == 'multi_select')
+                  Padding(
                     padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      t('اختر كل الإجابات الصحيحة', 'Mark every correct answer'),
+                      style: const TextStyle(fontSize: 12, color: AppColors.inkMuted),
+                    ),
+                  ),
+
+                ...List.generate(optionAr.length, (i) {
+                  final isCorrect = correctIndexes.contains(i);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Radio<int>(
-                          value: i,
-                          groupValue: correctIndex,
-                          onChanged: (v) => setDialogState(() => correctIndex = v!),
-                          activeColor: AppColors.success,
-                        ),
+                        // Single-answer types keep one correct choice; multi_select toggles.
+                        type == 'multi_select'
+                            ? Checkbox(
+                                value: isCorrect,
+                                activeColor: AppColors.success,
+                                onChanged: (v) => setDialogState(() {
+                                  if (v == true) {
+                                    correctIndexes.add(i);
+                                  } else {
+                                    correctIndexes.remove(i);
+                                  }
+                                }),
+                              )
+                            : Radio<int>(
+                                value: i,
+                                groupValue: correctIndexes.isEmpty ? -1 : correctIndexes.first,
+                                activeColor: AppColors.success,
+                                onChanged: (v) => setDialogState(() => correctIndexes = {v!}),
+                              ),
                         Expanded(
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: '${t("خيار", "Option")} ${i + 1}',
-                              isDense: true,
-                            ),
-                            onChanged: (v) => options[i] = v,
+                          child: Column(
+                            children: [
+                              TextField(
+                                controller: optionAr[i],
+                                readOnly: type == 'true_false',
+                                decoration: InputDecoration(
+                                  hintText: '${t("خيار", "Option")} ${i + 1}',
+                                  isDense: true,
+                                ),
+                              ),
+                              if (type != 'true_false')
+                                TextField(
+                                  controller: optionEn[i],
+                                  decoration: InputDecoration(
+                                    hintText: t('بالإنجليزية (اختياري)', 'English (optional)'),
+                                    isDense: true,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ))
-                else
-                  Column(
-                    children: [
-                      RadioListTile<int>(
-                        title: Text(t('صح', 'True')),
-                        value: 0,
-                        groupValue: correctIndex,
-                        onChanged: (v) => setDialogState(() => correctIndex = v!),
-                      ),
-                      RadioListTile<int>(
-                        title: Text(t('خطأ', 'False')),
-                        value: 1,
-                        groupValue: correctIndex,
-                        onChanged: (v) => setDialogState(() => correctIndex = v!),
-                      ),
-                    ],
-                  ),
+                  );
+                }),
 
                 const SizedBox(height: 12),
                 TextField(
@@ -163,30 +199,18 @@ class _QuizBuilderScreenState extends ConsumerState<QuizBuilderScreen> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('إلغاء', 'Cancel'))),
             ElevatedButton(
-              onPressed: () async {
-                if (questionController.text.trim().isEmpty) return;
-                final filteredOptions = type == 'mcq'
-                    ? options.where((o) => o.isNotEmpty).toList()
-                    : options;
-                if (filteredOptions.length < 2) return;
-
-                try {
-                  final nextOrder = (_quiz?.questions?.length ?? 0) + 1;
-                  await supabase.from('quiz_questions').insert({
-                    'quiz_id': _quiz!.id,
-                    'type': type,
-                    'question_ar': questionController.text.trim(),
-                    'options': filteredOptions,
-                    'correct_answer': filteredOptions[correctIndex],
-                    'explanation_ar': explanationController.text.trim().isNotEmpty ? explanationController.text.trim() : null,
-                    'sort_order': nextOrder,
-                  });
-                  Navigator.pop(ctx);
-                  _loadQuiz();
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.error));
-                }
-              },
+              onPressed: _saving
+                  ? null
+                  : () => _saveQuestion(
+                        ctx: ctx,
+                        type: type,
+                        questionAr: questionArController.text.trim(),
+                        questionEn: questionEnController.text.trim(),
+                        explanation: explanationController.text.trim(),
+                        optionAr: optionAr.map((c) => c.text.trim()).toList(),
+                        optionEn: optionEn.map((c) => c.text.trim()).toList(),
+                        correctIndexes: correctIndexes,
+                      ),
               child: Text(t('إضافة', 'Add')),
             ),
           ],
@@ -195,7 +219,90 @@ class _QuizBuilderScreenState extends ConsumerState<QuizBuilderScreen> {
     );
   }
 
+  /// Writes the question, then its choices into `quiz_options`.
+  /// The two inserts are not a transaction, so a failed options insert rolls
+  /// the question back by hand -- otherwise the quiz keeps a question that can
+  /// never be answered.
+  Future<void> _saveQuestion({
+    required BuildContext ctx,
+    required String type,
+    required String questionAr,
+    required String questionEn,
+    required String explanation,
+    required List<String> optionAr,
+    required List<String> optionEn,
+    required Set<int> correctIndexes,
+  }) async {
+    final t = ref.read(languageProvider.notifier).t;
+    final messenger = ScaffoldMessenger.of(context);
+
+    void fail(String message) =>
+        messenger.showSnackBar(SnackBar(content: Text(message), backgroundColor: AppColors.error));
+
+    if (questionAr.isEmpty) {
+      fail(t('الرجاء إدخال نص السؤال', 'Please enter the question text'));
+      return;
+    }
+
+    // Keep only filled choices, preserving which of them are correct.
+    final choices = <Map<String, dynamic>>[];
+    for (var i = 0; i < optionAr.length; i++) {
+      if (optionAr[i].isEmpty) continue;
+      choices.add({
+        'text_ar': optionAr[i],
+        'text_en': optionEn[i].isNotEmpty ? optionEn[i] : null,
+        'is_correct': correctIndexes.contains(i),
+        'sort_order': choices.length,
+      });
+    }
+
+    if (choices.length < 2) {
+      fail(t('أضف خيارين على الأقل', 'Add at least two options'));
+      return;
+    }
+    if (!choices.any((c) => c['is_correct'] == true)) {
+      fail(t('حدد الإجابة الصحيحة', 'Mark the correct answer'));
+      return;
+    }
+
+    setState(() => _saving = true);
+    String? questionId;
+    try {
+      final inserted = await supabase.from('quiz_questions').insert({
+        'quiz_id': _quiz!.id,
+        'type': type,
+        'question_ar': questionAr,
+        'question_en': questionEn.isNotEmpty ? questionEn : null,
+        'explanation_ar': explanation.isNotEmpty ? explanation : null,
+        'sort_order': (_quiz?.questions?.length ?? 0) + 1,
+      }).select().single();
+
+      questionId = inserted['id'] as String;
+
+      await supabase.from('quiz_options').insert([
+        for (final c in choices) {...c, 'question_id': questionId},
+      ]);
+
+      if (ctx.mounted) Navigator.pop(ctx);
+      await _loadQuiz();
+    } catch (e) {
+      if (questionId != null) {
+        // The options failed -- don't leave an unanswerable question behind.
+        try {
+          await supabase.from('quiz_questions').delete().eq('id', questionId);
+        } catch (_) {}
+      }
+      fail('$e');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   Future<void> _deleteQuestion(String questionId) async {
+    // Remove the choices first in case the FK is not ON DELETE CASCADE.
+    try {
+      await supabase.from('quiz_options').delete().eq('question_id', questionId);
+    } catch (_) {}
     await supabase.from('quiz_questions').delete().eq('id', questionId);
     _loadQuiz();
   }
@@ -294,7 +401,11 @@ class _QuizBuilderScreenState extends ConsumerState<QuizBuilderScreen> {
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: Text(
-                                          q.type == 'true_false' ? t('صح/خطأ', 'T/F') : t('اختيار', 'MCQ'),
+                                          q.type == 'true_false'
+                                              ? t('صح/خطأ', 'T/F')
+                                              : q.type == 'multi_select'
+                                                  ? t('متعدد', 'Multi')
+                                                  : t('اختيار', 'MCQ'),
                                           style: const TextStyle(fontSize: 10, color: AppColors.info),
                                         ),
                                       ),
@@ -313,16 +424,18 @@ class _QuizBuilderScreenState extends ConsumerState<QuizBuilderScreen> {
                                     child: Row(
                                       children: [
                                         Icon(
-                                          opt == q.correctAnswer ? Icons.check_circle : Icons.radio_button_unchecked,
+                                          opt.isCorrect ? Icons.check_circle : Icons.radio_button_unchecked,
                                           size: 16,
-                                          color: opt == q.correctAnswer ? AppColors.success : AppColors.inkMuted,
+                                          color: opt.isCorrect ? AppColors.success : AppColors.inkMuted,
                                         ),
                                         const SizedBox(width: 6),
-                                        Text(opt, style: TextStyle(
-                                          fontSize: 13,
-                                          color: opt == q.correctAnswer ? AppColors.success : null,
-                                          fontWeight: opt == q.correctAnswer ? FontWeight.w600 : null,
-                                        )),
+                                        Expanded(
+                                          child: Text(opt.text(lang), style: TextStyle(
+                                            fontSize: 13,
+                                            color: opt.isCorrect ? AppColors.success : null,
+                                            fontWeight: opt.isCorrect ? FontWeight.w600 : null,
+                                          )),
+                                        ),
                                       ],
                                     ),
                                   )),

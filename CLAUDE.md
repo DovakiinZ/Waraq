@@ -309,6 +309,9 @@ const form = useForm<FormData>({
 - **Sham Cash QR code is placeholder** — The checkout page shows a dashed QR placeholder. Need to add real QR code image upload via admin settings or teacher profile.
 - **Payment model is per-teacher** — Money goes directly to teachers via Sham Cash. Currently using a single platform-level QR. Per-teacher QR codes should be added to teacher profiles.
 - **lesson_content vs lesson_blocks**: Old `lesson_content` table referenced in earlier docs, but code uses `lesson_sections` + `lesson_blocks`. Need to verify which is active in Supabase.
+- **Quiz schema — fixed 2026-09-22.** `QuizEditor.tsx` was writing `question_text_ar`, `question_text_en`, `question_type`, `options` and `correct_option_index`; none of those columns exist in the live database, so no question ever saved. `QuizPlayer.tsx` read `q.options` / `q.correct_answer` (also nonexistent) and never inserted a `quiz_attempts` row, so results were discarded. Both now use the real schema: `quiz_questions` (`type`, `question_ar/en`, `explanation_ar/en`, `sort_order`) with choices in `quiz_options` (`text_ar/en`, `is_correct`, `sort_order`), and attempts are recorded. `multi_select` is supported alongside `mcq` / `true_false`.
+- **`QuizManagement.tsx` is a second, legacy quiz editor** (mounted from `LessonSettings.tsx`) still on the denormalised `options: string[]` shape. It writes columns that do not exist and has NOT been migrated — either port it onto `quiz_options` or remove it in favour of `QuizEditor.tsx`.
+- **Quiz grading is client-side** — `quiz_options.is_correct` is sent to the browser/device, so answers are readable from the API. A `submit_quiz_attempt` RPC that grades server-side and returns only the score is the real fix.
 
 ---
 
