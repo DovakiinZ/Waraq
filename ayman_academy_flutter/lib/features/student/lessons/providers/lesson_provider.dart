@@ -79,8 +79,7 @@ class LessonProgressService {
         // Only write the resume position when we actually have one. The old
         // code hard-coded 0 here, which wiped the saved position on every
         // single progress tick so nothing ever resumed.
-        if (lastPositionSeconds != null)
-          'last_position_seconds': lastPositionSeconds,
+        'last_position_seconds': ?lastPositionSeconds,
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id,lesson_id');
     } catch (_) {

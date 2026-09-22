@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/shared/models/quiz.dart';
 import 'package:ayman_academy_app/shared/models/quiz_attempt.dart';
@@ -47,11 +48,50 @@ final lessonQuizProvider = FutureProvider.family<Quiz?, String>((ref, lessonId) 
 
 class QuizService {
   /// [answers] maps a question id to the set of option ids the student picked.
-  /// A question is correct only when the picked set matches the set of options
-  /// flagged `is_correct` exactly — which also handles `multi_select`.
+  ///
+  /// Grading is done by the `submit_quiz_attempt` RPC so the score is computed
+  /// in the database and cannot be forged by the client. If that function is
+  /// not deployed yet, we fall back to grading locally — the same thing the app
+  /// did before — so quizzes keep working either way.
   static Future<Map<String, dynamic>> submitQuiz({
     required Quiz quiz,
     required Map<String, Set<String>> answers,
+  }) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    // jsonb payload: {question_id: [option_id, ...]}
+    final answersJson = answers.map((k, v) => MapEntry(k, v.toList()));
+
+    try {
+      final result = await supabase.rpc('submit_quiz_attempt', params: {
+        'p_quiz_id': quiz.id,
+        'p_answers': answersJson,
+      });
+
+      if (result is Map) {
+        return {
+          'score': (result['score_percent'] as num?)?.toDouble() ?? 0.0,
+          'passed': result['passed'] as bool? ?? false,
+          'correct': (result['correct'] as num?)?.toInt() ?? 0,
+          'total': (result['total'] as num?)?.toInt() ?? (quiz.questions?.length ?? 0),
+        };
+      }
+    } on PostgrestException catch (e) {
+      // PGRST202 = the function does not exist on this database yet.
+      // Anything else is a real failure (no attempts left, not authenticated).
+      if (e.code != 'PGRST202') rethrow;
+    }
+
+    return _submitLocally(quiz: quiz, answers: answers, answersJson: answersJson, userId: userId);
+  }
+
+  /// Legacy path, used only until `103_submit_quiz_attempt.sql` is applied.
+  static Future<Map<String, dynamic>> _submitLocally({
+    required Quiz quiz,
+    required Map<String, Set<String>> answers,
+    required Map<String, List<String>> answersJson,
+    required String userId,
   }) async {
     final questions = quiz.questions ?? [];
     int correct = 0;
@@ -66,12 +106,6 @@ class QuizService {
     final scorePercent =
         questions.isEmpty ? 0.0 : (correct / questions.length * 100).roundToDouble();
     final passed = scorePercent >= quiz.passingScore;
-
-    final userId = supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
-
-    // jsonb column — store the picked option ids per question.
-    final answersJson = answers.map((k, v) => MapEntry(k, v.toList()));
 
     await supabase.from('quiz_attempts').insert({
       'quiz_id': quiz.id,

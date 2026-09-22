@@ -403,10 +403,19 @@ The **web portal was broken too**, on a *different* set of nonexistent columns
 player never wrote a `quiz_attempts` row at all. Both were rewritten in the same
 pass — see the web CLAUDE.md.
 
-**Open — grading is client-side.** `quiz_options.is_correct` is sent to the
-student's device, so a determined student can read the answers straight off the
-API. Moving grading behind an RPC (`submit_quiz_attempt`) that returns only the
-score is the real fix.
+**Grading — `submit_quiz_attempt` RPC (needs applying).**
+`QuizService.submitQuiz` now calls the `submit_quiz_attempt` RPC so the score is
+computed in the database and cannot be forged from the device. While the
+function is absent PostgREST answers `PGRST202`, and the service falls back to
+the previous local grading path — so the app works before and after the
+migration, with no rebuild needed. Apply
+`supabase/migrations/103_submit_quiz_attempt.sql` through the Supabase SQL
+editor (**not** `supabase db push`).
+
+**Open — answers are still readable from the API.** `quiz_options.is_correct`
+is sent to the device so the review screen can show the correct answer. Hiding
+it needs a student-facing fetch RPC that omits the flag, plus RLS on
+`quiz_options`.
 
 **Keep-alive:** the free tier pauses after 7 days idle. Add a daily scheduled
 request against the REST API so this cannot recur.
@@ -440,8 +449,11 @@ request against the REST API so this cannot recur.
       and in the Flutter `--dart-define` build args.
 - [x] **Rewrite the quiz layer onto `quiz_options`** — done 2026-09-22, mobile
       and web. `flutter analyze`: 0 errors.
-- [ ] **Move quiz grading server-side** — an RPC so `is_correct` never reaches
-      the student's device.
+- [x] **Move quiz grading server-side** — `submit_quiz_attempt` RPC written and
+      wired into both clients (migration 103 still needs applying).
+- [ ] **Hide `is_correct` from students** — needs a fetch RPC + RLS on
+      `quiz_options`.
+- [x] **Lint clean** — `flutter analyze` reports no issues (was 19).
 - [ ] **Retire the `20260207*` migrations** so they cannot run after 100.
 
 ### Phase 1: Polish & Bug Fixes (Current Priority)
