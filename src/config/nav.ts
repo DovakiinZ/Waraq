@@ -75,6 +75,7 @@ const adminNav: NavItem[] = [
   { path: '/admin/applications', icon: UserPlus, label: { ar: 'طلبات المعلمين', en: 'Applications' } },
   { path: '/admin/orders', icon: Receipt, label: { ar: 'الطلبات', en: 'Orders' } },
   { path: '/admin/teachers', icon: Users, label: { ar: 'المعلمون', en: 'Teachers' } },
+  { path: '/admin/students', icon: GraduationCap, label: { ar: 'الطلاب', en: 'Students' } },
   { path: '/admin/stages', icon: GraduationCap, label: { ar: 'المراحل', en: 'Stages' } },
   { path: '/admin/subjects', icon: BookMarked, label: { ar: 'المواد', en: 'Subjects' } },
   { path: '/admin/lessons', icon: FileText, label: { ar: 'الدروس', en: 'Lessons' } },

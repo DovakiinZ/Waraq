@@ -64,6 +64,7 @@ import CoursePreview from "./pages/student/CoursePreview";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import TeachersManagement from "./pages/admin/TeachersManagement";
+import StudentsManagement from "./pages/admin/StudentsManagement";
 import StagesManagement from "./pages/admin/TaxonomyManagement"; // Reusing as StagesManagement
 import SubjectsManagement from "./pages/admin/SubjectsManagement";
 import LessonsManagement from "./pages/admin/LessonsManagement";
@@ -155,6 +156,7 @@ const App = () => (
                   }>
                     <Route index element={<AdminDashboard />} />
                     <Route path="teachers" element={<TeachersManagement />} />
+                    <Route path="students" element={<StudentsManagement />} />
                     <Route path="stages" element={<StagesManagement />} />
                     <Route path="stages/:stageId/subjects" element={<SubjectsManagement />} />
                     <Route path="subjects" element={<SubjectsManagement />} />

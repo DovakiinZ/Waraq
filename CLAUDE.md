@@ -358,6 +358,7 @@ Published so far: `v1.0.0-android`, `v1.0.1-android`, `v1.0.2-android`.
 - [x] **Dashboard CTA** — New students directed to marketplace instead of old browse page.
 - [ ] **Sham Cash QR code configuration** — Admin needs UI to upload/configure the Sham Cash QR code (currently placeholder).
 - [ ] **Teacher profile payment info** — Teachers should set their Sham Cash account in profile (for per-teacher payments later).
+- [x] **Admin students page** (`/admin/students`) — all students with stage, grade, gender, contact, enrolled subjects, orders, certificates, XP/level and last activity, with search and stage filter.
 - [x] **Teacher application flow** — Public form at `/apply/teacher`, admin review at `/admin/applications`, approve → creates invite link.
 - [x] **Landing page "Teach with Us" section** — CTA section on homepage linking to teacher application.
 - [ ] **Create `teacher_applications` table in Supabase** — Run the SQL migration (see Known Issues).
