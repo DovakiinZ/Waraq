@@ -11,7 +11,10 @@ import type { Profile, Stage, Lesson } from '@/types/database';
 export default function TeacherPublicProfile() {
     const { id } = useParams<{ id: string }>();
     const { t, direction, language } = useLanguage();
-    const [teacher, setTeacher] = useState<Profile | null>(null);
+    // Only the publicly-granted columns are selected here (see migration 104),
+    // so this is a subset of Profile, not a whole one.
+    type PublicTeacher = Partial<Profile> & Pick<Profile, 'id' | 'full_name'>;
+    const [teacher, setTeacher] = useState<PublicTeacher | null>(null);
     const [stages, setStages] = useState<Stage[]>([]);
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [loading, setLoading] = useState(true);
@@ -26,16 +29,22 @@ export default function TeacherPublicProfile() {
         setLoading(true);
         try {
             // 1. Fetch Teacher Profile
+            // Explicit column list, not '*': anonymous visitors are not granted
+            // SELECT on email / shamcash_account_* (see migration 104), and a
+            // '*' expansion would be refused for them outright.
             const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
-                .select('*')
+                .select('id, full_name, avatar_url, bio_ar, bio_en, role, is_active, social_links, expertise_tags_ar, expertise_tags_en, home_order, show_on_home, created_at')
                 .eq('id', id)
                 .single();
 
             if (profileError || !profileData) throw profileError;
-            setTeacher(profileData as Profile);
+            setTeacher(profileData as PublicTeacher);
 
             // 2. Fetch Assigned Stages
+            // NOTE: `featured_stages` is not a column on profiles in the live
+            // database, so this branch never runs. Left in place rather than
+            // silently dropping the feature — add the column if it is wanted.
             if ((profileData as any).featured_stages && (profileData as any).featured_stages.length > 0) {
                 const { data: stagesData } = await supabase
                     .from('stages')
