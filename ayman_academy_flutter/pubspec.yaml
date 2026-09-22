@@ -1,7 +1,7 @@
 name: ayman_academy_app
 description: "Ayman Academy - Arabic-first K-12 educational platform"
 publish_to: 'none'
-version: 1.0.1+101
+version: 1.0.2+102
 
 environment:
   sdk: ^3.11.4
@@ -53,6 +53,7 @@ dependencies:
   # Utils
   connectivity_plus: ^6.0.3
   package_info_plus: ^8.0.0
+  webview_flutter: ^4.14.1
 
 dev_dependencies:
   flutter_test:

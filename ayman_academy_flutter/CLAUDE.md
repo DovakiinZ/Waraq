@@ -43,7 +43,7 @@ You are a **senior project manager and full-stack developer** working on Ayman A
 
 - **Teachers**: Manage courses, verify orders, communicate with students, view analytics.
 - **Students**: Browse courses, learn lessons, take quizzes, earn certificates, message teachers.
-- **Admins**: Redirected to web app (admin features are web-only).
+- **Admins**: Full control panel inside the app — the web CMS embedded in a WebView with the session handed over, so no second login.
 
 ### Target Audience
 - **Students**: School-age, Arabic-speaking. On Android phones. Need supplementary learning for school subjects.
@@ -76,6 +76,7 @@ You are a **senior project manager and full-stack developer** working on Ayman A
 | Certificates | qr_flutter + pdf + share_plus |
 | Notifications | onesignal_flutter |
 | Connectivity | connectivity_plus |
+| Admin panel | webview_flutter (embeds the web CMS) |
 | Images | cached_network_image + shimmer loading |
 
 ### Dev Commands
@@ -129,6 +130,8 @@ lib/
 │   │   ├── data/auth_repository.dart  # Supabase auth calls
 │   │   ├── providers/auth_provider.dart # AuthNotifier + AuthState
 │   │   └── screens/                   # Login, Register, ResetPassword, AdminWebOnly
+│   ├── admin/
+│   │   └── screens/admin_panel_screen.dart   # Web CMS in a WebView + session handoff
 │   ├── onboarding/
 │   │   └── screens/student_onboarding_screen.dart
 │   ├── student/                       # All student features
@@ -198,7 +201,7 @@ lib/
 
 | Role | Routes | Access |
 |------|--------|--------|
-| `super_admin` | Redirected to `/admin-web-only` | Admin features are web-only |
+| `super_admin` | `/admin` | Full admin CMS, embedded in a WebView (`AdminPanelScreen`) |
 | `teacher` | `/teacher/*` | Own courses, lessons, orders, certificates, messaging |
 | `student` | `/student/*` | Enrolled courses, marketplace, quiz, certificates, messaging |
 
@@ -421,7 +424,7 @@ it needs a student-facing fetch RPC that omits the flag, plus RLS on
 request against the REST API so this cannot recur.
 
 ### Other
-- **Admin features are web-only** — Admin users see a "use web app" screen. This is intentional.
+- **Admin panel is the web CMS in a WebView** — `features/admin/screens/admin_panel_screen.dart`. The app opens `<WEB_APP_URL>/auth/bridge#at=…&rt=…&redirect=/admin`; the web `AuthBridge` page calls `supabase.auth.setSession()` with those tokens and forwards to `/admin`, so the admin is not asked to sign in twice. Tokens ride in the URL **fragment**, which is never sent to a server. The params are named `at`/`rt` rather than `access_token`/`refresh_token` on purpose — the web client runs with `detectSessionInUrl`, and supabase-js would try to consume the standard names itself and throw on the missing `expires_in`. WebView navigation is pinned to the portal's own origin, so a stray link cannot carry the session elsewhere. This requires `WEB_APP_URL` to be a reachable deployment; `/admin-web-only` is kept as the fallback screen. A native Flutter port of the 15 admin pages is the long-term alternative.
 - **Sham Cash QR is placeholder** — Checkout shows a dashed QR placeholder, same as web app.
 - **Environment variables** — Must be passed via `--dart-define` at build time. `main.dart` now guards on `Env.isConfigured` and shows a config-error screen if `SUPABASE_URL`/`SUPABASE_ANON_KEY` are missing (instead of failing cryptically).
 - **Shared backend** — Any database schema changes in the web app affect this app. Keep models in `shared/models/` in sync.
@@ -498,6 +501,7 @@ request against the REST API so this cannot recur.
 - [ ] **Play Store assets** — Screenshots, description, icon, feature graphic.
 - [ ] **Release build** — Signing, ProGuard, version bumps.
 - [ ] **Deep linking** — Handle web URLs opening in app.
+- [x] **Admin panel in the app** — web CMS embedded with session handoff.
 - [ ] **Analytics** — Firebase Analytics or equivalent.
 
 ### Backlog (Ideas / Later)

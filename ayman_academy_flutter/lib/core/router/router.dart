@@ -6,6 +6,7 @@ import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/features/auth/screens/login_screen.dart';
 import 'package:ayman_academy_app/features/auth/screens/register_screen.dart';
 import 'package:ayman_academy_app/features/auth/screens/reset_password_screen.dart';
+import 'package:ayman_academy_app/features/admin/screens/admin_panel_screen.dart';
 import 'package:ayman_academy_app/features/auth/screens/admin_web_only_screen.dart';
 import 'package:ayman_academy_app/features/onboarding/screens/student_onboarding_screen.dart';
 import 'package:ayman_academy_app/features/student/dashboard/screens/student_dashboard_screen.dart';
@@ -69,9 +70,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isAuthRoute ? null : Routes.login;
       }
 
-      // Admin features are web-only.
+      // Admins get the web CMS embedded in the app (see AdminPanelScreen).
+      // adminWebOnly is kept as a fallback for builds without a web app URL.
       if (auth.isAdmin) {
-        return path == Routes.adminWebOnly ? null : Routes.adminWebOnly;
+        const adminPaths = {Routes.adminPanel, Routes.adminWebOnly};
+        return adminPaths.contains(path) ? null : Routes.adminPanel;
       }
 
       if (auth.needsOnboarding) {
@@ -96,6 +99,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: Routes.register, builder: (_, _) => const RegisterScreen()),
       GoRoute(path: Routes.resetPassword, builder: (_, _) => const ResetPasswordScreen()),
       GoRoute(path: Routes.onboarding, builder: (_, _) => const StudentOnboardingScreen()),
+      GoRoute(path: Routes.adminPanel, builder: (_, _) => const AdminPanelScreen()),
       GoRoute(path: Routes.adminWebOnly, builder: (_, _) => const AdminWebOnlyScreen()),
 
       // Student shell

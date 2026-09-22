@@ -38,6 +38,7 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AcceptInvite from "./pages/auth/AcceptInvite";
+import AuthBridge from "./pages/auth/AuthBridge";
 import AccessDenied from "./pages/AccessDenied";
 import TeacherProfilePublic from "./pages/TeacherProfilePublic";
 
@@ -136,6 +137,8 @@ const App = () => (
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/invite/:token" element={<AcceptInvite />} />
                   <Route path="/access-denied" element={<AccessDenied />} />
+                  {/* Session handoff from the mobile app's admin WebView */}
+                  <Route path="/auth/bridge" element={<AuthBridge />} />
 
                   {/* Student Onboarding (outside protected layout so it can redirect) */}
                   <Route path="/student/onboarding" element={
