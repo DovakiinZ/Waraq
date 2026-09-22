@@ -32,13 +32,58 @@
 BEGIN;
 
 -- ═══════════════════════════════════════════════════════════════════════
--- 0. Housekeeping
+-- 0. Preflight — make sure this is the right database
+-- ═══════════════════════════════════════════════════════════════════════
+--
+-- This account has several Supabase projects. Running this against the wrong
+-- one would create policies and functions in a database they do not belong to,
+-- which is far worse than failing. Stop immediately unless the core tables of
+-- the Ayman Academy schema are present.
+--
+-- Expected project ref: lkdbinrwojvrchunzqfq  ("Ayman Academy")
+-- Dashboard: https://supabase.com/dashboard/project/lkdbinrwojvrchunzqfq/sql/new
+
+DO $preflight$
+DECLARE
+    v_missing text[] := ARRAY[]::text[];
+    v_table   text;
+BEGIN
+    FOREACH v_table IN ARRAY ARRAY[
+        'public.profiles', 'public.subjects', 'public.lessons',
+        'public.stages', 'public.certificates', 'public.student_subjects'
+    ] LOOP
+        IF to_regclass(v_table) IS NULL THEN
+            v_missing := array_append(v_missing, v_table);
+        END IF;
+    END LOOP;
+
+    IF array_length(v_missing, 1) > 0 THEN
+        RAISE EXCEPTION
+            'Wrong database: % missing. This migration belongs to the Ayman Academy project (ref lkdbinrwojvrchunzqfq). Open that project''s SQL editor and run it there.',
+            array_to_string(v_missing, ', ');
+    END IF;
+END
+$preflight$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0b. Housekeeping
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- The RLS audit inserted one canary row while proving that anonymous INSERT is
 -- accepted here. Anonymous callers cannot read this table, so it could not be
 -- verified or removed from the client side.
-DELETE FROM teacher_applications WHERE email = 'rls-probe@example.invalid';
+--
+-- Guarded by to_regclass: teacher_applications is a later addition and is not
+-- present in every copy of this schema, and a cosmetic cleanup must never be
+-- what stops the security fix from applying.
+DO $cleanup$
+BEGIN
+    IF to_regclass('public.teacher_applications') IS NOT NULL THEN
+        DELETE FROM public.teacher_applications
+         WHERE email = 'rls-probe@example.invalid';
+    END IF;
+END
+$cleanup$;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- 1. profiles — lock down reads
@@ -127,6 +172,7 @@ GRANT SELECT (
 -- 2. teacher_evaluations — table referenced by the app but never created
 -- ═══════════════════════════════════════════════════════════════════════
 
+-- Depends on subjects, which the preflight has already confirmed.
 CREATE TABLE IF NOT EXISTS teacher_evaluations (
     id                       uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     subject_id               uuid NOT NULL UNIQUE REFERENCES subjects(id) ON DELETE CASCADE,
