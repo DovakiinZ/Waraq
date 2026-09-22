@@ -7,7 +7,6 @@ import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/shared/models/subject.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/avatar_widget.dart';
-import 'package:ayman_academy_app/shared/widgets/star_rating.dart';
 import 'package:ayman_academy_app/shared/widgets/subject_card.dart';
 import 'package:ayman_academy_app/features/student/subjects/providers/subjects_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -223,7 +222,7 @@ class _SectionWidget extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              if (trailing != null) trailing!,
+              ?trailing,
             ],
           ),
         ),

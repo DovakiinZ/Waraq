@@ -37,6 +37,9 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
   }
 
   Future<void> _save() async {
+    // Both callers fire from a dialog that pops first, so there is no button to
+    // disable — guard here instead so a quick double tap can't save twice.
+    if (_saving) return;
     setState(() => _saving = true);
     try {
       await ProfileService.updateStudentProfile(

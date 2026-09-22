@@ -76,16 +76,32 @@ export default function QuizPlayer({ quizId: propQuizId }: QuizPlayerProps) {
             return;
         }
 
-        const correctCount = questions.filter((q: any) => isQuestionCorrect(q)).length;
-        const scorePercent = Math.round((correctCount / questions.length) * 100);
-        const didPass = scorePercent >= passingScore;
+        let scorePercent = Math.round(
+            (questions.filter((q: any) => isQuestionCorrect(q)).length / questions.length) * 100
+        );
+        let didPass = scorePercent >= passingScore;
 
         setSubmitting(true);
         try {
-            // Record the attempt — the old player graded locally and saved nothing,
-            // so progress and certificate eligibility never saw the result.
-            if (user?.id && quizId) {
-                const { error } = await supabase.from('quiz_attempts').insert({
+            if (!quizId) throw new Error('Missing quiz id');
+
+            // Grade through the RPC so the score is computed in the database and
+            // cannot be forged from the browser. PGRST202 means the function is
+            // not deployed yet (see supabase/migrations/103_submit_quiz_attempt.sql),
+            // in which case fall back to grading here and inserting the attempt.
+            const { data, error } = await supabase.rpc('submit_quiz_attempt' as any, {
+                p_quiz_id: quizId,
+                p_answers: answers,
+            } as any);
+
+            if (error && error.code !== 'PGRST202') throw error;
+
+            if (!error && data) {
+                const result = data as any;
+                scorePercent = Number(result.score_percent) || 0;
+                didPass = !!result.passed;
+            } else if (user?.id) {
+                const { error: insertError } = await supabase.from('quiz_attempts').insert({
                     quiz_id: quizId,
                     student_id: user.id,
                     score_percent: scorePercent,
@@ -93,7 +109,7 @@ export default function QuizPlayer({ quizId: propQuizId }: QuizPlayerProps) {
                     passed: didPass,
                     completed_at: new Date().toISOString(),
                 });
-                if (error) throw error;
+                if (insertError) throw insertError;
             }
         } catch (err) {
             console.error('Failed to save quiz attempt:', err);

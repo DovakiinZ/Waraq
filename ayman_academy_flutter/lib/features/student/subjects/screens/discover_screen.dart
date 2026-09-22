@@ -5,7 +5,6 @@ import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/subject_card.dart';
 import 'package:ayman_academy_app/shared/widgets/loading_shimmer.dart';
-import 'package:ayman_academy_app/shared/widgets/empty_state.dart';
 import 'package:ayman_academy_app/features/student/subjects/providers/subjects_provider.dart';
 
 class DiscoverScreen extends ConsumerWidget {
