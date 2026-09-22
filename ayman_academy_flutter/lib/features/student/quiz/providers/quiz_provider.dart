@@ -3,10 +3,15 @@ import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/shared/models/quiz.dart';
 import 'package:ayman_academy_app/shared/models/quiz_attempt.dart';
 
+/// Answers are normalised: `quiz_questions` holds the question, `quiz_options`
+/// holds the choices with an `is_correct` flag. Never select a denormalised
+/// `options` / `correct_answer` column — they do not exist.
+const _quizSelect = '*, quiz_questions(*, quiz_options(*))';
+
 final quizDetailProvider = FutureProvider.family<Quiz?, String>((ref, quizId) async {
   final data = await supabase
       .from('quizzes')
-      .select('*, quiz_questions(*)')
+      .select(_quizSelect)
       .eq('id', quizId)
       .maybeSingle();
   if (data == null) return null;
@@ -29,7 +34,7 @@ final lessonQuizProvider = FutureProvider.family<Quiz?, String>((ref, lessonId) 
   try {
     final data = await supabase
         .from('quizzes')
-        .select('*, quiz_questions(*)')
+        .select(_quizSelect)
         .eq('lesson_id', lessonId)
         .eq('is_enabled', true)
         .maybeSingle();
@@ -41,27 +46,38 @@ final lessonQuizProvider = FutureProvider.family<Quiz?, String>((ref, lessonId) 
 });
 
 class QuizService {
+  /// [answers] maps a question id to the set of option ids the student picked.
+  /// A question is correct only when the picked set matches the set of options
+  /// flagged `is_correct` exactly — which also handles `multi_select`.
   static Future<Map<String, dynamic>> submitQuiz({
     required Quiz quiz,
-    required Map<String, String> answers,
+    required Map<String, Set<String>> answers,
   }) async {
     final questions = quiz.questions ?? [];
     int correct = 0;
     for (final q in questions) {
-      if (answers[q.id] == q.correctAnswer) correct++;
+      final picked = answers[q.id] ?? const <String>{};
+      final expected = q.correctOptionIds;
+      if (expected.isNotEmpty && picked.length == expected.length && picked.containsAll(expected)) {
+        correct++;
+      }
     }
 
-    final scorePercent = questions.isEmpty ? 0.0 : (correct / questions.length * 100).roundToDouble();
+    final scorePercent =
+        questions.isEmpty ? 0.0 : (correct / questions.length * 100).roundToDouble();
     final passed = scorePercent >= quiz.passingScore;
 
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
 
+    // jsonb column — store the picked option ids per question.
+    final answersJson = answers.map((k, v) => MapEntry(k, v.toList()));
+
     await supabase.from('quiz_attempts').insert({
       'quiz_id': quiz.id,
       'student_id': userId,
       'score_percent': scorePercent,
-      'answers': answers,
+      'answers': answersJson,
       'passed': passed,
       'completed_at': DateTime.now().toIso8601String(),
     });

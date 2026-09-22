@@ -235,14 +235,35 @@ export function useQuizQuestions(quizId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.quiz.questions(quizId!),
     queryFn: async () => {
+      // Answer choices live in `quiz_options`; the question row has no
+      // `options` / `correct_answer` column.
       const { data, error } = await supabase
         .from('quiz_questions')
-        .select('*')
+        .select('*, quiz_options(*)')
         .eq('quiz_id', quizId!)
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
       return data || [];
+    },
+    enabled: !!quizId,
+    staleTime: STALE.medium,
+  });
+}
+
+// Quiz row itself — needed for passing_score when grading an attempt.
+export function useQuizDetail(quizId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.quiz.detail(quizId!),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('quizzes')
+        .select('*')
+        .eq('id', quizId!)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!quizId,
     staleTime: STALE.medium,

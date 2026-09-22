@@ -23,6 +23,7 @@ export const queryKeys = {
     thread: (userId: string, contactId: string) => ['messages', userId, contactId] as const,
   },
   quiz: {
+    detail: (quizId: string) => ['quiz', quizId, 'detail'] as const,
     questions: (quizId: string) => ['quiz', quizId, 'questions'] as const,
   },
   admin: {

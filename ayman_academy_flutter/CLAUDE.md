@@ -388,14 +388,25 @@ and the RPCs `get_student_subjects`, `get_discover_subjects`,
 - `student_levels` — queried by the student profile; the provider swallows
   the error and silently shows a default level.
 
-**Still open — quiz feature is structurally incompatible:**
-`shared/models/quiz.dart`, `quiz_builder_screen.dart` and `quiz_provider.dart`
-assume denormalised `quiz_questions.options` (JSON array) +
-`quiz_questions.correct_answer`. Neither column exists live. The real schema
-normalises answers into `quiz_options` (`text_ar`, `text_en`, `is_correct`,
-`sort_order`), which is what the web portal uses. Both quiz building and quiz
-taking must be rewritten against `quiz_options`. Do **not** add the
-denormalised columns — that would fork web and mobile.
+**Fixed — quiz layer rewritten onto `quiz_options` (2026-09-22):**
+`shared/models/quiz.dart`, `quiz_provider.dart`, `quiz_screen.dart`,
+`quiz_builder_screen.dart` and `teacher_quizzes_screen.dart` previously assumed
+denormalised `quiz_questions.options` (JSON array) + `quiz_questions.correct_answer`.
+Neither column exists live. They now read and write the normalised
+`quiz_options` table (`text_ar`, `text_en`, `is_correct`, `sort_order`), and
+`multi_select` questions are supported alongside `mcq` and `true_false`.
+Attempt answers are stored as `{question_id: [option_id, ...]}`.
+Do **not** add the denormalised columns — that would fork web and mobile.
+
+The **web portal was broken too**, on a *different* set of nonexistent columns
+(`question_text_ar`, `question_type`, `correct_option_index`) and its student
+player never wrote a `quiz_attempts` row at all. Both were rewritten in the same
+pass — see the web CLAUDE.md.
+
+**Open — grading is client-side.** `quiz_options.is_correct` is sent to the
+student's device, so a determined student can read the answers straight off the
+API. Moving grading behind an RPC (`submit_quiz_attempt`) that returns only the
+score is the real fix.
 
 **Keep-alive:** the free tier pauses after 7 days idle. Add a daily scheduled
 request against the REST API so this cannot recur.
@@ -427,7 +438,10 @@ request against the REST API so this cannot recur.
       the free tier never auto-pauses again.
 - [ ] **Repoint both clients** — new `SUPABASE_URL` / anon key in the web `.env`
       and in the Flutter `--dart-define` build args.
-- [ ] **Rewrite the quiz layer onto `quiz_options`** (see Known Issues).
+- [x] **Rewrite the quiz layer onto `quiz_options`** — done 2026-09-22, mobile
+      and web. `flutter analyze`: 0 errors.
+- [ ] **Move quiz grading server-side** — an RPC so `is_correct` never reaches
+      the student's device.
 - [ ] **Retire the `20260207*` migrations** so they cannot run after 100.
 
 ### Phase 1: Polish & Bug Fixes (Current Priority)
