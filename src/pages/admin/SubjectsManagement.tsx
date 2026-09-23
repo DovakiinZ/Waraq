@@ -84,6 +84,7 @@ export default function SubjectsManagement() {
         slug: '',
         sort_order: 0,
         is_active: true,
+        show_on_home: false,
         access_type: 'stage' as string,
     });
 
@@ -205,6 +206,7 @@ export default function SubjectsManagement() {
             slug: '',
             sort_order: subjects.length + 1,
             is_active: true,
+            show_on_home: false,
             access_type: 'stage',
         });
         setDialogOpen(true);
@@ -221,6 +223,7 @@ export default function SubjectsManagement() {
             slug: subject.slug || '',
             sort_order: subject.sort_order || 0,
             is_active: !!subject.is_active,
+            show_on_home: !!subject.show_on_home,
             access_type: subject.access_type || 'stage',
         });
         setDialogOpen(true);
@@ -256,6 +259,7 @@ export default function SubjectsManagement() {
                         access_type: form.access_type,
                         sort_order: form.sort_order,
                         is_active: form.is_active,
+                        show_on_home: form.show_on_home,
                     },
                     {
                         successMessage: { ar: 'تم تحديث المادة بنجاح', en: 'Subject updated successfully' },
@@ -280,6 +284,7 @@ export default function SubjectsManagement() {
                         access_type: form.access_type,
                         sort_order: form.sort_order,
                         is_active: form.is_active,
+                        show_on_home: form.show_on_home,
                     },
                     {
                         successMessage: { ar: 'تمت إضافة المادة بنجاح', en: 'Subject added successfully' },
@@ -722,6 +727,24 @@ export default function SubjectsManagement() {
                                 id="is_active"
                                 checked={form.is_active}
                                 onCheckedChange={(checked) => setForm({ ...form, is_active: checked })}
+                            />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <Label htmlFor="subject_show_on_home">
+                                    {t('عرض في الصفحة الرئيسية', 'Feature on homepage')}
+                                </Label>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {t(
+                                        'إذا لم تُحدَّد أي مادة، تعرض الصفحة الرئيسية المواد المفعّلة تلقائياً.',
+                                        'If no subject is featured, the homepage falls back to active subjects.',
+                                    )}
+                                </p>
+                            </div>
+                            <Switch
+                                id="subject_show_on_home"
+                                checked={form.show_on_home}
+                                onCheckedChange={(checked) => setForm({ ...form, show_on_home: checked })}
                             />
                         </div>
 
