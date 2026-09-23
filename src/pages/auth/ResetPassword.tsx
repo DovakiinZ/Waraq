@@ -76,7 +76,7 @@ export default function ResetPassword() {
                 <div className="w-full max-w-sm">
                     <div className="text-center mb-8">
                         <Link to="/">
-                            <img src={logo} alt="Ayman Academy" className="h-24 mx-auto mb-4" />
+                            <img src={logo} alt="Waraq Academy" className="h-24 mx-auto mb-4" />
                         </Link>
                     </div>
 
@@ -109,7 +109,7 @@ export default function ResetPassword() {
                 {/* Logo */}
                 <div className="text-center mb-8">
                     <Link to="/">
-                        <img src={logo} alt="Ayman Academy" className="h-24 mx-auto mb-4" />
+                        <img src={logo} alt="Waraq Academy" className="h-24 mx-auto mb-4" />
                     </Link>
                     <h1 className="text-xl font-semibold text-foreground">
                         {t('إعادة تعيين كلمة المرور', 'Reset Password')}

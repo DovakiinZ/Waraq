@@ -177,9 +177,9 @@ export default function LandingPreview() {
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Logo */}
           <Link to="/preview" className="flex items-center gap-2 shrink-0">
-            <img src={logo} alt="Ayman Academy" className="h-9 w-auto" />
+            <img src={logo} alt="Waraq Academy" className="h-9 w-auto" />
             <span className="text-lg font-bold tracking-tight hidden sm:inline">
-              {t('أكاديمية أيمن', 'Ayman Academy')}
+              {t('ورق أكاديمي', 'Waraq Academy')}
             </span>
           </Link>
 
@@ -266,7 +266,7 @@ export default function LandingPreview() {
           {/* Badge */}
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-sm text-[#d4a853]">
             <Sparkles className="w-4 h-4" />
-            {t('أكاديمية أيمن التعليمية', 'Ayman Educational Academy')}
+            {t('ورق أكاديمي التعليمية', 'Ayman Educational Academy')}
           </span>
 
           {/* Heading */}
@@ -467,7 +467,7 @@ export default function LandingPreview() {
 
                       <h3 className="text-xl font-bold mb-2 group-hover:text-[#d4a853] transition-colors">{teacher.full_name}</h3>
                       <p className="text-sm text-white/50 line-clamp-4 mb-6 overflow-hidden italic leading-relaxed">
-                        "{t(teacher.bio_ar, teacher.bio_en || teacher.bio_ar) || t('معلم خبير في أكاديمية أيمن', 'Expert teacher at Ayman Academy')}"
+                        "{t(teacher.bio_ar, teacher.bio_en || teacher.bio_ar) || t('معلم خبير في ورق أكاديمي', 'Expert teacher at Waraq Academy')}"
                       </p>
 
                       <Link 
@@ -722,7 +722,7 @@ export default function LandingPreview() {
           <div className="text-center mb-16">
             <div className="gold-line mx-auto mb-4" />
             <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              {t('لماذا أكاديمية أيمن؟', 'Why Ayman Academy?')}
+              {t('لماذا ورق أكاديمي؟', 'Why Waraq Academy?')}
             </h2>
             <p className="text-white/50 max-w-xl mx-auto">
               {t(
@@ -819,8 +819,8 @@ export default function LandingPreview() {
               </h2>
               <p className="text-white/50 max-w-lg mx-auto mb-8 text-lg leading-relaxed">
                 {t(
-                  'انضم إلى فريق معلمي أكاديمية أيمن وساهم في بناء مستقبل تعليمي أفضل.',
-                  'Join Ayman Academy\'s teaching team and help build a better educational future.'
+                  'انضم إلى فريق معلمي ورق أكاديمي وساهم في بناء مستقبل تعليمي أفضل.',
+                  'Join Waraq Academy\'s teaching team and help build a better educational future.'
                 )}
               </p>
 
@@ -866,9 +866,9 @@ export default function LandingPreview() {
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
               <Link to="/preview" className="flex items-center gap-2 mb-4">
-                <img src={logo} alt="Ayman Academy" className="h-8 w-auto" />
+                <img src={logo} alt="Waraq Academy" className="h-8 w-auto" />
                 <span className="font-bold">
-                  {t('أكاديمية أيمن', 'Ayman Academy')}
+                  {t('ورق أكاديمي', 'Waraq Academy')}
                 </span>
               </Link>
               <p className="text-sm text-white/40 leading-relaxed">
@@ -959,7 +959,7 @@ export default function LandingPreview() {
           <div className="border-t border-white/[0.06] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-white/30">
               &copy; {new Date().getFullYear()}{' '}
-              {t('أكاديمية أيمن. جميع الحقوق محفوظة.', 'Ayman Academy. All rights reserved.')}
+              {t('ورق أكاديمي. جميع الحقوق محفوظة.', 'Waraq Academy. All rights reserved.')}
             </p>
             <div className="flex items-center gap-2 text-xs text-white/30">
               <span>{t('صنع بإتقان في سوريا', 'Crafted with care in Syria')}</span>

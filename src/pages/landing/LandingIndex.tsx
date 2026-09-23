@@ -14,7 +14,7 @@ const DESCRIPTIONS: Record<string, { ar: string; en: string }> = {
   thmanyah: { ar: 'تحريري داكن سينمائي بخط عربي جريء، مستوحى من ثمانية.', en: 'Dark cinematic Arabic editorial, bold type, Thmanyah-inspired.' },
   wijha: { ar: 'راقٍ فاتح بهوية خضراء ومساحات واسعة، مستوحى من وجهة.', en: 'Refined light design, green identity, airy, Wijha-inspired.' },
   colorful: { ar: 'تصميم تعليمي ملوّن مع أربع لوحات ألوان تبدّلها مباشرة.', en: 'Illustration-led edtech with four live-switchable palettes.' },
-  arcade: { ar: 'أركيد بكسل بحواف حادة، أخضر وأبيض فقط، مستوحى من Young&&Yandex.', en: 'Pixel-arcade, hard edges, green and white only, Young&&Yandex-inspired.' },
+  arcade: { ar: 'التصميم المعتمد، وهو الصفحة الرئيسية الآن. أخضر وأبيض بحواف حادة.', en: 'The chosen design, now live at the homepage. Green and white, hard edges.' },
 };
 
 export default function LandingIndex() {
@@ -25,9 +25,9 @@ export default function LandingIndex() {
       <div className="mx-auto max-w-5xl px-6 py-16">
         <div className="mb-12 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Ayman Academy" className="h-11 w-11 rounded-xl object-contain" />
+            <img src={logo} alt="Waraq Academy" className="h-11 w-11 rounded-xl object-contain" />
             <span className="text-lg font-bold" style={{ color: BRAND.navy }}>
-              {t('أكاديمية أيمن', 'Ayman Academy')}
+              {t('ورق أكاديمي', 'Waraq Academy')}
             </span>
           </div>
           <button

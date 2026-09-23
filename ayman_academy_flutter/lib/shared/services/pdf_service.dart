@@ -40,7 +40,7 @@ class PdfService {
                 children: [
                   // Academy name
                   pw.Text(
-                    'أكاديمية أيمن التعليمية',
+                    'ورق أكاديمي التعليمية',
                     style: pw.TextStyle(
                       fontSize: 16,
                       color: goldColor,

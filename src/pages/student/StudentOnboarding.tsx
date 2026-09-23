@@ -99,9 +99,9 @@ export default function StudentOnboarding() {
             <div className="w-full max-w-lg">
                 {/* Logo */}
                 <div className="text-center mb-6">
-                    <img src={logo} alt="Ayman Academy" className="h-16 mx-auto mb-3" />
+                    <img src={logo} alt="Waraq Academy" className="h-16 mx-auto mb-3" />
                     <h1 className="text-2xl font-bold text-foreground">
-                        {t('أهلاً بك في أكاديمية أيمن! 🎉', 'Welcome to Ayman Academy! 🎉')}
+                        {t('أهلاً بك في ورق أكاديمي! 🎉', 'Welcome to Waraq Academy! 🎉')}
                     </h1>
                     <p className="text-sm text-muted-foreground mt-2">
                         {t('أخبرنا عن نفسك لتخصيص تجربتك التعليمية', 'Tell us about yourself to personalize your learning')}

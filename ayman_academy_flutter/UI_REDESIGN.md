@@ -108,7 +108,7 @@
 
 #### Login Screen
 - **Before**: Navy-to-ivory gradient background, circle logo with shadow, card with shadow, gradient button
-- **After**: Clean white background, large bold title "Ayman Academy" left-aligned, labels above inputs, solid button, "or" divider with outlined register button, language toggle at bottom
+- **After**: Clean white background, large bold title "Waraq Academy" left-aligned, labels above inputs, solid button, "or" divider with outlined register button, language toggle at bottom
 
 #### Register Screen
 - **Before**: Basic AppBar, generic form layout, icon-prefixed inputs

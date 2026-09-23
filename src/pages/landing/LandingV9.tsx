@@ -143,7 +143,7 @@ export default function LandingV9() {
           <Link to="/landing/9" className="flex shrink-0 items-center gap-2.5">
             <img src={logo} alt="" className="h-9 w-9 rounded-xl object-contain" />
             <span className="text-[17px] font-extrabold tracking-tight">
-              {t('أكاديمية أيمن', 'Ayman Academy')}
+              {t('ورق أكاديمي', 'Waraq Academy')}
             </span>
           </Link>
 
@@ -808,7 +808,7 @@ export default function LandingV9() {
               <div className="flex items-center gap-2.5">
                 <img src={logo} alt="" className="h-9 w-9 rounded-xl object-contain" />
                 <span className="text-[16px] font-extrabold">
-                  {t('أكاديمية أيمن', 'Ayman Academy')}
+                  {t('ورق أكاديمي', 'Waraq Academy')}
                 </span>
               </div>
               <p className="mt-4 max-w-[34ch] text-[14px] leading-relaxed" style={{ color: p.inkSoft }}>
@@ -874,8 +874,8 @@ export default function LandingV9() {
             style={{ borderColor: p.line, color: p.inkSoft }}
           >
             {t(
-              'جميع الحقوق محفوظة لأكاديمية أيمن.',
-              'All rights reserved, Ayman Academy.',
+              'جميع الحقوق محفوظة لورق أكاديمي.',
+              'All rights reserved, Waraq Academy.',
             )}
           </div>
         </div>

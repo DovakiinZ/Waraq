@@ -26,7 +26,7 @@ export default function TermsPage() {
                             <div>
                                 <h3 className="text-base font-bold text-primary mb-2">قبول الشروط:</h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    مرحباً بكم في أكاديمية أيمن. باستخدامك لمنصتنا أو الوصول إليها بأي شكل من الأشكال، فإنك توافق التام على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق على أي جزء من هذه الشروط، يُرجى عدم استخدام المنصة.
+                                    مرحباً بكم في ورق أكاديمي. باستخدامك لمنصتنا أو الوصول إليها بأي شكل من الأشكال، فإنك توافق التام على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق على أي جزء من هذه الشروط، يُرجى عدم استخدام المنصة.
                                 </p>
                             </div>
 
@@ -58,14 +58,14 @@ export default function TermsPage() {
                             <div>
                                 <h3 className="text-base font-bold text-primary mb-2">الملكية الفكرية:</h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    جميع المواد التعليمية، الفيديوهات، والملفات المرفوعة على الأكاديمية هي حقوق ملكية فكرية حصرية لأكاديمية أيمن والمعلمين التابعين لها. يُمنع التنزيل غير المصرح به، أو النسخ، أو التوزيع خارج المنصة دون إذن كتابي مسبق.
+                                    جميع المواد التعليمية، الفيديوهات، والملفات المرفوعة على الأكاديمية هي حقوق ملكية فكرية حصرية لورق أكاديمي والمعلمين التابعين لها. يُمنع التنزيل غير المصرح به، أو النسخ، أو التوزيع خارج المنصة دون إذن كتابي مسبق.
                                 </p>
                             </div>
 
                             <div>
                                 <h3 className="text-base font-bold text-primary mb-2">قواعد الوصول للدورات:</h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    يتم منح حق الوصول للدورات بناءً على نوع الاشتراك (شهري/سنوي) أو من خلال الشراء الفردي للمادة. تحتفظ أكاديمية أيمن بالحق في تعليق الوصول في حال ثبوت مخالفة شروط الاستخدام.
+                                    يتم منح حق الوصول للدورات بناءً على نوع الاشتراك (شهري/سنوي) أو من خلال الشراء الفردي للمادة. تحتفظ ورق أكاديمي بالحق في تعليق الوصول في حال ثبوت مخالفة شروط الاستخدام.
                                 </p>
                             </div>
 
@@ -93,7 +93,7 @@ export default function TermsPage() {
                             <div>
                                 <h3 className="text-base font-bold text-primary mb-2">إيقاف الحساب:</h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    تحتفظ أكاديمية أيمن بالحق المطلق في إيقاف أو حظر أي حساب ينتهك هذه الشروط دون إشعار مسبق أو تعويض مالي.
+                                    تحتفظ ورق أكاديمي بالحق المطلق في إيقاف أو حظر أي حساب ينتهك هذه الشروط دون إشعار مسبق أو تعويض مالي.
                                 </p>
                             </div>
 
@@ -107,7 +107,7 @@ export default function TermsPage() {
                             <div>
                                 <h3 className="text-base font-bold text-primary mb-2">تحديد المسؤولية:</h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    أكاديمية أيمن غير مسؤولة بأي حال من الأحوال عن أي أضرار مباشرة أو غير مباشرة ناتجة عن الأعطال التقنية الخارجة عن الإرادة أو عدم القدرة على استخدام المنصة.
+                                    ورق أكاديمي غير مسؤولة بأي حال من الأحوال عن أي أضرار مباشرة أو غير مباشرة ناتجة عن الأعطال التقنية الخارجة عن الإرادة أو عدم القدرة على استخدام المنصة.
                                 </p>
                             </div>
 
@@ -131,7 +131,7 @@ export default function TermsPage() {
                             <div>
                                 <h3 className="text-base font-bold text-primary mb-2">Acceptance of Terms:</h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Welcome to Ayman Academy. By accessing or using our platform, you fully agree to be bound by these Terms and Conditions. If you do not agree, please refrain from using the platform.
+                                    Welcome to Waraq Academy. By accessing or using our platform, you fully agree to be bound by these Terms and Conditions. If you do not agree, please refrain from using the platform.
                                 </p>
                             </div>
 
@@ -163,14 +163,14 @@ export default function TermsPage() {
                             <div>
                                 <h3 className="text-base font-bold text-primary mb-2">Intellectual Property:</h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    All educational materials, videos, and uploaded files are the exclusive intellectual property of Ayman Academy and its affiliated teachers. Unauthorized downloading, copying, or distributing outside the platform without prior written consent is strictly prohibited.
+                                    All educational materials, videos, and uploaded files are the exclusive intellectual property of Waraq Academy and its affiliated teachers. Unauthorized downloading, copying, or distributing outside the platform without prior written consent is strictly prohibited.
                                 </p>
                             </div>
 
                             <div>
                                 <h3 className="text-base font-bold text-primary mb-2">Course Access Rules:</h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Access to courses is granted solely based on your active subscription (monthly/yearly) or targeted individual purchase. Ayman Academy reserves the right to suspend access if these terms are violated.
+                                    Access to courses is granted solely based on your active subscription (monthly/yearly) or targeted individual purchase. Waraq Academy reserves the right to suspend access if these terms are violated.
                                 </p>
                             </div>
 
@@ -198,7 +198,7 @@ export default function TermsPage() {
                             <div>
                                 <h3 className="text-base font-bold text-primary mb-2">Account Suspension:</h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Ayman Academy reserves the absolute right to suspend or permanently ban any account found violating these terms without prior notice or financial compensation.
+                                    Waraq Academy reserves the absolute right to suspend or permanently ban any account found violating these terms without prior notice or financial compensation.
                                 </p>
                             </div>
 
@@ -212,7 +212,7 @@ export default function TermsPage() {
                             <div>
                                 <h3 className="text-base font-bold text-primary mb-2">Limitation of Liability:</h3>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Ayman Academy shall not be held liable for any direct or indirect damages resulting from unforeseen technical outages or the temporary inability to use the platform.
+                                    Waraq Academy shall not be held liable for any direct or indirect damages resulting from unforeseen technical outages or the temporary inability to use the platform.
                                 </p>
                             </div>
 

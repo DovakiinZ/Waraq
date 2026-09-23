@@ -208,7 +208,7 @@ export default function StudentCheckout() {
 
           <div className="bg-muted/50 rounded-xl p-4 mb-6 space-y-2 text-center">
             <p className="text-sm text-muted-foreground">{t('اسم الحساب', 'Account Name')}</p>
-            <p className="font-bold text-lg">أكاديمية أيمن</p>
+            <p className="font-bold text-lg">ورق أكاديمي</p>
             <p className="text-sm text-muted-foreground mt-3">{t('المبلغ المطلوب تحويله', 'Amount to Transfer')}</p>
             <p className="font-bold text-2xl text-primary">{total} {t('ل.س', currency)}</p>
           </div>

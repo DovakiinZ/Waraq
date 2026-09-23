@@ -51,7 +51,7 @@ export default function LandingV7() {
         <div className="mx-auto flex h-[70px] max-w-[1240px] items-center justify-between px-5 lg:px-8">
           <div className="flex items-center gap-2.5">
             <img src={logo} alt="" className="h-9 w-9 object-contain" />
-            <span className="text-[17px] font-black tracking-tight">{t('أكاديمية أيمن', 'Ayman Academy')}</span>
+            <span className="text-[17px] font-black tracking-tight">{t('ورق أكاديمي', 'Waraq Academy')}</span>
           </div>
           <nav className="hidden items-center gap-8 text-[15px] font-bold md:flex" style={{ color: D.mut }}>
             <Link to="/stages" className="hover:text-[color:var(--i)]" style={{ ['--i' as any]: D.ink }}>{t('المراحل', 'Stages')}</Link>
@@ -243,12 +243,12 @@ export default function LandingV7() {
         <div className="mx-auto flex max-w-[1240px] flex-col items-center justify-between gap-4 px-5 py-9 text-sm sm:flex-row lg:px-8" style={{ color: D.mut }}>
           <div className="flex items-center gap-2.5">
             <img src={logo} alt="" className="h-7 w-7 object-contain" />
-            <span className="font-black" style={{ color: D.ink }}>{t('أكاديمية أيمن', 'Ayman Academy')}</span>
+            <span className="font-black" style={{ color: D.ink }}>{t('ورق أكاديمي', 'Waraq Academy')}</span>
           </div>
           <div className="flex items-center gap-6">
             <Link to="/legal/terms" className="hover:text-[color:var(--i)]" style={{ ['--i' as any]: D.ink }}>{t('الشروط', 'Terms')}</Link>
             <Link to="/legal/privacy" className="hover:text-[color:var(--i)]" style={{ ['--i' as any]: D.ink }}>{t('الخصوصية', 'Privacy')}</Link>
-            <span>© {t('أكاديمية أيمن', 'Ayman Academy')}</span>
+            <span>© {t('ورق أكاديمي', 'Waraq Academy')}</span>
           </div>
         </div>
       </footer>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 270" role="img" aria-label="ورق أكاديمي">
+  <g transform="translate(96 8) scale(0.9)">
+    <path d="M10 80 A70 70 0 0 1 80 10 L88 10 L110 32 L110 40 A70 70 0 0 1 40 110 L10 110 Z" fill="#0B3B2C"/>
+    <path d="M88 10 L88 32 L110 32 Z" fill="#9FD3BE"/>
+    <g stroke="#FFFFFF" stroke-linecap="round" fill="none">
+      <path d="M24 96 L80 40" stroke-width="7"/>
+      <path d="M42 78 L42 62 M42 78 L58 78 M60 60 L60 47 M60 60 L73 60" stroke-width="5.5"/>
+    </g>
+  </g>
+  <text x="150" y="190" text-anchor="middle" font-family="IBM Plex Sans Arabic, Tajawal, Noto Kufi Arabic, Tahoma, sans-serif" font-size="64" font-weight="800" fill="#0B3B2C">ورق</text>
+  <text x="150" y="240" text-anchor="middle" font-family="IBM Plex Sans Arabic, Tajawal, Noto Kufi Arabic, Tahoma, sans-serif" font-size="28" font-weight="500" fill="#1E6B52">أكاديمي</text>
+</svg>

@@ -12,8 +12,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowRight, ArrowLeft, Eye, EyeOff, AlertCircle, CheckCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { A, PIXEL_STRIP } from '@/components/arcade/theme';
-import { ArcadeButton, ArcadeCard, ArcadeField, ArcadeLink } from '@/components/arcade/primitives';
-import logo from '@/assets/logo.png';
+import { ArcadeBrand, ArcadeButton, ArcadeCard, ArcadeField, ArcadeLink } from '@/components/arcade/primitives';
 
 export default function Register() {
     const { signUp, role, isAuthenticated, redirectByRole, isLoading: authLoading } = useAuth();
@@ -98,17 +97,9 @@ export default function Register() {
                 style={{ background: A.bg }}
             >
                 <div className="w-full max-w-md">
-                    <Link to="/" className="arc-focus mb-8 flex items-center justify-center gap-2.5">
-                        <img
-                            src={logo}
-                            alt=""
-                            className="h-10 w-10 object-contain"
-                            style={{ border: `2px solid ${A.line}`, background: A.surface }}
-                        />
-                        <span className="text-[18px] font-black" style={{ color: A.ink }}>
-                            {t('أكاديمية أيمن', 'Ayman Academy')}
-                        </span>
-                    </Link>
+                    <div className="mb-8 flex justify-center">
+                        <ArcadeBrand size={40} />
+                    </div>
 
                     <ArcadeCard className="p-8 text-center">
                         <span
@@ -152,17 +143,7 @@ export default function Register() {
                 className="relative hidden flex-col justify-between overflow-hidden p-12 lg:flex"
                 style={{ background: A.grad }}
             >
-                <Link to="/" className="arc-focus flex items-center gap-3">
-                    <img
-                        src={logo}
-                        alt=""
-                        className="h-10 w-10 object-contain"
-                        style={{ border: `2px solid ${A.onInk}` }}
-                    />
-                    <span className="text-[18px] font-black" style={{ color: A.onInk }}>
-                        {t('أكاديمية أيمن', 'Ayman Academy')}
-                    </span>
-                </Link>
+                <ArcadeBrand size={40} onDark />
 
                 <div>
                     <h2
@@ -207,17 +188,7 @@ export default function Register() {
             <main className="flex items-center justify-center p-5 py-12 lg:p-12">
                 <div className="w-full max-w-[420px]">
                     {/* Compact brand lockup, mobile only. */}
-                    <Link to="/" className="arc-focus mb-8 flex items-center gap-2.5 lg:hidden">
-                        <img
-                            src={logo}
-                            alt=""
-                            className="h-9 w-9 object-contain"
-                            style={{ border: `2px solid ${A.line}`, background: A.surface }}
-                        />
-                        <span className="text-[17px] font-black" style={{ color: A.ink }}>
-                            {t('أكاديمية أيمن', 'Ayman Academy')}
-                        </span>
-                    </Link>
+                    <ArcadeBrand size={36} className="mb-8 lg:hidden" />
 
                     <h1
                         className="text-[30px] font-black leading-tight tracking-tight sm:text-[36px]"
@@ -226,7 +197,7 @@ export default function Register() {
                         {t('إنشاء حساب طالب', 'Create a student account')}
                     </h1>
                     <p className="mt-3 text-[15px] font-medium" style={{ color: A.inkSoft }}>
-                        {t('انضم إلى أكاديمية أيمن اليوم.', 'Join Ayman Academy today.')}
+                        {t('انضم إلى ورق أكاديمي اليوم.', 'Join Waraq Academy today.')}
                     </p>
 
                     {/* Teacher route. Uses Link, not <a>, so it does not reload

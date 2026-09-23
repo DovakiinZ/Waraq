@@ -116,7 +116,7 @@ const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplateProps>
                     fontWeight: 600,
                     letterSpacing: '2px',
                 }}>
-                    أكاديمية أيمن التعليمية
+                    ورق أكاديمي التعليمية
                 </div>
 
                 {/* Title */}
@@ -135,7 +135,7 @@ const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplateProps>
                     color: '#6b7280',
                     maxWidth: '180mm',
                 }}>
-                    تشهد أكاديمية أيمن التعليمية بأن الطالب/ة
+                    تشهد ورق أكاديمي التعليمية بأن الطالب/ة
                 </div>
 
                 {/* Student Name */}

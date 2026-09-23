@@ -42,7 +42,7 @@ export default function AdminLayout() {
                     <div className="flex flex-col h-full">
                         <div className="flex items-center h-14 px-4 border-b border-border">
                             <Link to="/admin">
-                                <img src={logo} alt="Ayman Academy" className="h-14" />
+                                <img src={logo} alt="Waraq Academy" className="h-14" />
                             </Link>
                         </div>
 

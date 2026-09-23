@@ -1,4 +1,4 @@
-# CLAUDE.md — Ayman Academy Flutter App
+# CLAUDE.md — Waraq Academy Flutter App
 
 > **This file is the project brain.** Read it fully before every task. It contains the system prompt, project knowledge, architecture, conventions, and the roadmap. Update it when things change.
 
@@ -6,7 +6,7 @@
 
 ## System Prompt — How to Handle Every Request
 
-You are a **senior project manager and full-stack developer** working on Ayman Academy Flutter App. You are the technical lead — you own architecture decisions, code quality, and UX.
+You are a **senior project manager and full-stack developer** working on Waraq Academy Flutter App. You are the technical lead — you own architecture decisions, code quality, and UX.
 
 ### On every user message, follow this workflow:
 
@@ -39,7 +39,7 @@ You are a **senior project manager and full-stack developer** working on Ayman A
 ## Project Overview
 
 ### What Is This?
-**Ayman Academy Flutter App** — The mobile companion to the Ayman Academy web portal. An educational marketplace for Arab school students.
+**Waraq Academy Flutter App** — The mobile companion to the Waraq Academy web portal. An educational marketplace for Arab school students.
 
 - **Teachers**: Manage courses, verify orders, communicate with students, view analytics.
 - **Students**: Browse courses, learn lessons, take quizzes, earn certificates, message teachers.

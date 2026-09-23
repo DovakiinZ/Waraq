@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="ورق أكاديمي">
+  <path d="M10 80 A70 70 0 0 1 80 10 L88 10 L110 32 L110 40 A70 70 0 0 1 40 110 L10 110 Z" fill="#F7F2E8"/>
+  <path d="M88 10 L88 32 L110 32 Z" fill="#F4A340"/>
+  <g stroke="#0B3B2C" stroke-linecap="round" fill="none">
+    <path d="M24 96 L80 40" stroke-width="7"/>
+    <path d="M42 78 L42 62 M42 78 L58 78 M60 60 L60 47 M60 60 L73 60" stroke-width="5.5"/>
+  </g>
+</svg>

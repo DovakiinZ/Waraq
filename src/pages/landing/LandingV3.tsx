@@ -19,7 +19,7 @@ export default function LandingV3() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <div className="flex items-center gap-2.5">
           <img src={logo} alt="" className="h-11 w-11 rounded-2xl object-contain" />
-          <span className="text-lg font-extrabold">{t('أكاديمية أيمن', 'Ayman Academy')}</span>
+          <span className="text-lg font-extrabold">{t('ورق أكاديمي', 'Waraq Academy')}</span>
         </div>
         <div className="flex items-center gap-3 text-sm font-bold">
           <button onClick={toggleLanguage} className="rounded-full bg-white px-4 py-2 shadow-sm">{language === 'ar' ? 'EN' : 'ع'}</button>
@@ -109,7 +109,7 @@ export default function LandingV3() {
             {t('سجّل مجاناً', 'Sign up free')}
           </Link>
         </div>
-        <p className="mt-8 text-center text-sm font-semibold" style={{ color: '#9aa5b1' }}>© {t('أكاديمية أيمن', 'Ayman Academy')}</p>
+        <p className="mt-8 text-center text-sm font-semibold" style={{ color: '#9aa5b1' }}>© {t('ورق أكاديمي', 'Waraq Academy')}</p>
       </section>
 
       <VariantSwitcher />

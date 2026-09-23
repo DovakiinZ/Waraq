@@ -18,7 +18,7 @@ export default function LandingV1() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-3">
           <img src={logo} alt="" className="h-10 w-10 object-contain" />
-          <span className="text-lg font-black tracking-tight">{t('أكاديمية أيمن', 'Ayman Academy')}</span>
+          <span className="text-lg font-black tracking-tight">{t('ورق أكاديمي', 'Waraq Academy')}</span>
         </div>
         <nav className="flex items-center gap-6 text-sm font-semibold">
           <Link to="/stages" className="hidden hover:opacity-60 sm:inline">{t('المراحل', 'Stages')}</Link>
@@ -127,7 +127,7 @@ export default function LandingV1() {
           <Link to="/register" className="mt-8 inline-block rounded-full px-10 py-4 text-base font-bold" style={{ background: BRAND.gold }}>
             {t('أنشئ حسابك مجاناً', 'Create your free account')}
           </Link>
-          <p className="mt-10 text-sm text-white/50">© {t('أكاديمية أيمن', 'Ayman Academy')}</p>
+          <p className="mt-10 text-sm text-white/50">© {t('ورق أكاديمي', 'Waraq Academy')}</p>
         </div>
       </footer>
 

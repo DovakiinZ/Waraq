@@ -127,7 +127,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            t('ابدأ رحلة التعلم مع أكاديمية أيمن', 'Start your learning journey'),
+            t('ابدأ رحلة التعلم مع ورق أكاديمي', 'Start your learning journey'),
             style: const TextStyle(fontSize: 16, color: AppColors.inkMuted),
           ),
           const SizedBox(height: 32),

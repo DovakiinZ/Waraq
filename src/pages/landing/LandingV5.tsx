@@ -24,7 +24,7 @@ export default function LandingV5() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <div className="flex items-center gap-2.5">
             <img src={logo} alt="" className="h-9 w-9 object-contain" />
-            <span className="font-extrabold">{t('أكاديمية أيمن', 'Ayman Academy')}</span>
+            <span className="font-extrabold">{t('ورق أكاديمي', 'Waraq Academy')}</span>
           </div>
           <div className="flex items-center gap-4 text-sm font-semibold">
             <button onClick={toggleLanguage} className="opacity-70 hover:opacity-100">{language === 'ar' ? 'EN' : 'ع'}</button>
@@ -143,7 +143,7 @@ export default function LandingV5() {
       </section>
 
       <footer className="border-t py-8 text-center text-sm" style={{ borderColor: 'rgba(30,58,95,0.08)', color: '#9aa5b1' }}>
-        © {t('أكاديمية أيمن', 'Ayman Academy')}
+        © {t('ورق أكاديمي', 'Waraq Academy')}
       </footer>
 
       <VariantSwitcher />

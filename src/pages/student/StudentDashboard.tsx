@@ -193,8 +193,8 @@ export default function StudentDashboard() {
                 <section className="bg-gradient-to-br from-primary/8 to-primary/2 rounded-2xl p-8 lg:p-12 text-center border border-primary/10">
                     <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-3">
                         {t(
-                            `مرحباً ${profile?.full_name?.split(' ')[0] || ''} في أكاديمية أيمن!`,
-                            `Welcome ${profile?.full_name?.split(' ')[0] || ''} to Ayman Academy!`
+                            `مرحباً ${profile?.full_name?.split(' ')[0] || ''} في ورق أكاديمي!`,
+                            `Welcome ${profile?.full_name?.split(' ')[0] || ''} to Waraq Academy!`
                         )}
                     </h1>
                     <p className="text-muted-foreground mb-6 max-w-md mx-auto">

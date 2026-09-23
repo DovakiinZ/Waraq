@@ -1,5 +1,5 @@
 /**
- * Centralized React Query hooks for Ayman Academy data.
+ * Centralized React Query hooks for Waraq Academy data.
  *
  * Each hook wraps a Supabase query with per-resource stale policies.
  * Data is served from cache instantly on refresh, with background

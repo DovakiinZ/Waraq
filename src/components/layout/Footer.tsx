@@ -3,7 +3,7 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { A, PIXEL_STRIP } from '@/components/arcade/theme';
-import logo from '@/assets/logo.png';
+import { ArcadeBrand } from '@/components/arcade/primitives';
 
 const Footer = () => {
   const { t } = useLanguage();
@@ -46,17 +46,7 @@ const Footer = () => {
       <div className="mx-auto max-w-[1280px] px-5 py-14 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <Link to="/" className="arc-focus flex items-center gap-2.5">
-              <img
-                src={logo}
-                alt=""
-                className="h-9 w-9 object-contain"
-                style={{ border: `2px solid ${A.onInk}` }}
-              />
-              <span className="text-[16px] font-black">
-                {t('أكاديمية أيمن', 'Ayman Academy')}
-              </span>
-            </Link>
+            <ArcadeBrand size={36} onDark />
             <p
               className="mt-4 max-w-[34ch] text-[14px] font-medium leading-relaxed"
               style={{ color: A.onInkMuted }}
@@ -95,8 +85,8 @@ const Footer = () => {
           style={{ borderTop: `2px solid ${A.bandLine}`, color: A.onInkMuted }}
         >
           {t(
-            'جميع الحقوق محفوظة لأكاديمية أيمن.',
-            'All rights reserved, Ayman Academy.',
+            'جميع الحقوق محفوظة لورق أكاديمي.',
+            'All rights reserved, Waraq Academy.',
           )}
         </div>
       </div>

@@ -92,7 +92,7 @@ export const SAMPLE_TOKEN_VALUES: Record<string, string> = {
     teacher_name: 'أ. خالد',
     lesson_name: 'الكسور والأعداد العشرية',
     score: '95%',
-    academy_name: 'أكاديمية أيمن',
+    academy_name: 'ورق أكاديمي',
 };
 
 export const SAMPLE_TOKEN_VALUES_EN: Record<string, string> = {
@@ -103,5 +103,5 @@ export const SAMPLE_TOKEN_VALUES_EN: Record<string, string> = {
     teacher_name: 'Mr. Khaled',
     lesson_name: 'Fractions and Decimals',
     score: '95%',
-    academy_name: 'Ayman Academy',
+    academy_name: 'Waraq Academy',
 };

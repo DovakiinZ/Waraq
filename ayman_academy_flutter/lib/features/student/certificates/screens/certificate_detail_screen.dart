@@ -84,7 +84,7 @@ class CertificateDetailScreen extends ConsumerWidget {
                         children: [
                           // Academy name
                           Text(
-                            t('أكاديمية أيمن التعليمية', 'Ayman Educational Academy'),
+                            t('ورق أكاديمي التعليمية', 'Ayman Educational Academy'),
                             style: TextStyle(
                               fontSize: 14,
                               color: AppColors.gold,

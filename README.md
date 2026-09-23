@@ -1,4 +1,4 @@
-# Ayman Academy Portal
+# Waraq Academy Portal
 
 مؤسسة تعليمية أكاديمية متخصصة في تقديم تعليم متميز للمراحل التأسيسية.
 

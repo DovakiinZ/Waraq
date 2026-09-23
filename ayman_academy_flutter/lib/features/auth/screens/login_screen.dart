@@ -148,7 +148,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
 
                     // Brand name
                     Text(
-                      t('أكاديمية أيمن', 'Ayman Academy'),
+                      t('ورق أكاديمي', 'Waraq Academy'),
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,

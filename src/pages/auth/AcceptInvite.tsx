@@ -121,7 +121,7 @@ export default function AcceptInvite() {
             <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
                 <div className="text-center max-w-md">
                     <Link to="/">
-                        <img src={logo} alt="Ayman Academy" className="h-24 mx-auto mb-6" />
+                        <img src={logo} alt="Waraq Academy" className="h-24 mx-auto mb-6" />
                     </Link>
 
                     <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
@@ -175,7 +175,7 @@ export default function AcceptInvite() {
             <div className="w-full max-w-sm">
                 <div className="text-center mb-8">
                     <Link to="/">
-                        <img src={logo} alt="Ayman Academy" className="h-24 mx-auto mb-4" />
+                        <img src={logo} alt="Waraq Academy" className="h-24 mx-auto mb-4" />
                     </Link>
                     <h1 className="text-xl font-semibold text-foreground">
                         {t('إكمال التسجيل', 'Complete Registration')}

@@ -4,7 +4,7 @@
     <!-- Required for push notifications on Android 13 (API 33) and above. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="Ayman Academy"
+        android:label="Waraq Academy"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

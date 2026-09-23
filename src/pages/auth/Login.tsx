@@ -11,8 +11,7 @@ import { roleBasePath } from '@/config/nav';
 import { ArrowRight, ArrowLeft, Eye, EyeOff, AlertCircle, CheckCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { A, PIXEL_STRIP } from '@/components/arcade/theme';
-import { ArcadeButton, ArcadeCard, ArcadeField } from '@/components/arcade/primitives';
-import logo from '@/assets/logo.png';
+import { ArcadeBrand, ArcadeButton, ArcadeCard, ArcadeField } from '@/components/arcade/primitives';
 
 export default function Login() {
     const { signIn, resetPassword, role, isAuthenticated, isBootstrapped, isLoading: authLoading } = useAuth();
@@ -97,23 +96,7 @@ export default function Login() {
     const ArrowIcon = direction === 'rtl' ? ArrowLeft : ArrowRight;
 
     const BrandLockup = ({ onDark }: { onDark?: boolean }) => (
-        <Link to="/" className="arc-focus flex items-center gap-2.5">
-            <img
-                src={logo}
-                alt=""
-                className="h-9 w-9 object-contain"
-                style={{
-                    border: `2px solid ${onDark ? A.onInk : A.line}`,
-                    background: onDark ? 'transparent' : A.surface,
-                }}
-            />
-            <span
-                className="text-[17px] font-black"
-                style={{ color: onDark ? A.onInk : A.ink }}
-            >
-                {t('أكاديمية أيمن', 'Ayman Academy')}
-            </span>
-        </Link>
+        <ArcadeBrand size={38} onDark={onDark} />
     );
 
     // Forgot password flow, presented on its own so the primary form stays

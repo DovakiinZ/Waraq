@@ -59,7 +59,7 @@ export default function MobileHeader() {
 
                 {/* Logo */}
                 <Link to="/student" className="flex items-center">
-                    <img src={logo} alt="Ayman Academy" className="h-10" />
+                    <img src={logo} alt="Waraq Academy" className="h-10" />
                 </Link>
             </header>
 
@@ -79,7 +79,7 @@ export default function MobileHeader() {
             >
                 {/* Drawer Header */}
                 <div className="flex items-center justify-between h-14 px-4 border-b border-border/60">
-                    <img src={logo} alt="Ayman Academy" className="h-10" />
+                    <img src={logo} alt="Waraq Academy" className="h-10" />
                     <button
                         onClick={() => setDrawerOpen(false)}
                         className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-secondary transition-colors"

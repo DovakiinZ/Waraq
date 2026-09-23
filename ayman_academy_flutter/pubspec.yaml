@@ -1,5 +1,5 @@
 name: ayman_academy_app
-description: "Ayman Academy - Arabic-first K-12 educational platform"
+description: "Waraq Academy - Arabic-first K-12 educational platform"
 publish_to: 'none'
 version: 1.0.0+100
 
@@ -54,10 +54,14 @@ dependencies:
   connectivity_plus: ^6.0.3
   package_info_plus: ^8.0.0
 
+  # Brand marks are SVG (assets/brand/)
+  flutter_svg: ^2.0.10
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
 
 flutter:
   uses-material-design: true
@@ -65,6 +69,7 @@ flutter:
   assets:
     - assets/images/
     - assets/lottie/
+    - assets/brand/
 
   fonts:
     - family: IBMPlexSansArabic
@@ -77,3 +82,11 @@ flutter:
           weight: 600
         - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
           weight: 700
+
+# App launcher icon, generated from the Waraq brand mark.
+# Regenerate with: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/brand/app-icon.png"
+  remove_alpha_ios: true

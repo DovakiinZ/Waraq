@@ -57,7 +57,7 @@ export default function LandingV6() {
         <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-5 lg:px-8">
           <div className="flex items-center gap-2.5">
             <img src={logo} alt="" className="h-9 w-9 object-contain" />
-            <span className="text-[17px] font-extrabold tracking-tight">{t('أكاديمية أيمن', 'Ayman Academy')}</span>
+            <span className="text-[17px] font-extrabold tracking-tight">{t('ورق أكاديمي', 'Waraq Academy')}</span>
           </div>
           <nav className="hidden items-center gap-7 text-[15px] font-semibold text-slate-600 md:flex">
             <Link to="/stages" className="hover:text-[color:var(--nv)] transition-colors" style={{ ['--nv' as any]: BRAND.navy }}>{t('المراحل', 'Stages')}</Link>
@@ -349,12 +349,12 @@ export default function LandingV6() {
         <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-4 px-5 py-8 text-sm text-slate-500 sm:flex-row lg:px-8">
           <div className="flex items-center gap-2.5">
             <img src={logo} alt="" className="h-7 w-7 object-contain" />
-            <span className="font-bold" style={{ color: BRAND.navy }}>{t('أكاديمية أيمن', 'Ayman Academy')}</span>
+            <span className="font-bold" style={{ color: BRAND.navy }}>{t('ورق أكاديمي', 'Waraq Academy')}</span>
           </div>
           <div className="flex items-center gap-6">
             <Link to="/legal/terms" className="hover:text-slate-800">{t('الشروط', 'Terms')}</Link>
             <Link to="/legal/privacy" className="hover:text-slate-800">{t('الخصوصية', 'Privacy')}</Link>
-            <span>© {t('أكاديمية أيمن', 'Ayman Academy')}</span>
+            <span>© {t('ورق أكاديمي', 'Waraq Academy')}</span>
           </div>
         </div>
       </footer>

@@ -4,6 +4,8 @@
 import { forwardRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LogoMark } from '@/components/brand/Logo';
 import { A, PIXEL_STRIP } from './theme';
 
 type Variant = 'solid' | 'outline' | 'onDark';
@@ -217,6 +219,56 @@ export function ArcadeEmpty({ children }: { children: ReactNode }) {
     >
       {children}
     </div>
+  );
+}
+
+/**
+ * Brand lockup for the arcade surfaces: the Waraq leaf mark plus the wordmark.
+ *
+ * Two deliberate choices here:
+ *  - It uses `LogoMark`, not the brand kit's `Logo`. `Logo` hard-codes its text
+ *    as brand-deep (#0B3B2C), which is invisible against the arcade dark
+ *    theme; the name is rendered here with themed tokens instead.
+ *  - On light grounds the mark sits on a fixed brand-paper plate rather than a
+ *    themed surface. The mark's own palette does not follow dark mode, so
+ *    giving it a mode-independent backing keeps it legible in both, and the
+ *    bordered square matches the arcade's sharp treatment.
+ *
+ * Pass `onDark` when the lockup sits on a deep green band or the gradient,
+ * where the mark's dark variant (paper leaf, sun fold) reads correctly.
+ */
+export function ArcadeBrand({
+  size = 36,
+  onDark,
+  to = '/',
+  className = '',
+}: {
+  size?: number;
+  onDark?: boolean;
+  to?: string;
+  className?: string;
+}) {
+  const { t } = useLanguage();
+  return (
+    <Link to={to} className={`arc-focus flex shrink-0 items-center gap-2.5 ${className}`}>
+      <span
+        className="flex shrink-0 items-center justify-center border-2"
+        style={{
+          width: size,
+          height: size,
+          background: onDark ? 'transparent' : '#F7F2E8',
+          borderColor: onDark ? A.onInk : A.line,
+        }}
+      >
+        <LogoMark size={size - 8} variant={onDark ? 'dark' : 'light'} />
+      </span>
+      <span
+        className="text-[17px] font-extrabold tracking-tight"
+        style={{ color: onDark ? A.onInk : A.ink }}
+      >
+        {t('ورق أكاديمي', 'Waraq Academy')}
+      </span>
+    </Link>
   );
 }
 

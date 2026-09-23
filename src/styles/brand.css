@@ -1,0 +1,17 @@
+/* Waraq Academy brand tokens.
+   Imported by src/index.css. Values are HSL triplets in shadcn format so they
+   can be consumed as hsl(var(--brand-*)) and composed with opacity modifiers.
+
+   These are the BRAND palette. They are separate from the --arc-* tokens that
+   drive the public arcade surfaces; see src/components/arcade/theme.ts. */
+:root {
+  --brand-deep: 161 69% 14%;
+  --brand-green: 161 56% 27%;
+  --brand-mint: 156 37% 73%;
+  --brand-paper: 40 48% 94%;
+  --brand-sun: 33 89% 60%;
+  --brand-coral: 12 82% 62%;
+  --brand-sky: 199 52% 47%;
+  --brand-ink: 157 16% 16%;
+  --brand-muted: 154 8% 40%;
+}

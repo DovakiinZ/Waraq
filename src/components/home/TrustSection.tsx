@@ -44,7 +44,7 @@ const TrustSection = () => {
       <div className="container-academic">
         <div className="text-center mb-10">
           <h2 className="mb-3">
-            {t('لماذا أكاديمية أيمن؟', 'Why Ayman Academy?')}
+            {t('لماذا ورق أكاديمي؟', 'Why Waraq Academy?')}
           </h2>
           <p className="opacity-75 text-sm max-w-lg mx-auto">
             {t(

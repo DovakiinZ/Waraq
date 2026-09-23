@@ -8,8 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Menu, X, LogIn, LayoutDashboard, LogOut, Sun, Moon } from 'lucide-react';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { A } from '@/components/arcade/theme';
-import { ArcadeLink, ArcadeSkeleton } from '@/components/arcade/primitives';
-import logo from '@/assets/logo.png';
+import { ArcadeBrand, ArcadeLink, ArcadeSkeleton } from '@/components/arcade/primitives';
 
 const Header = () => {
   const { t, toggleLanguage, language } = useLanguage();
@@ -60,17 +59,7 @@ const Header = () => {
     >
       <div className="mx-auto max-w-[1280px] px-5 lg:px-8">
         <div className="flex h-[68px] items-center gap-6">
-          <Link to="/" className="flex shrink-0 items-center gap-2.5">
-            <img
-              src={logo}
-              alt=""
-              className="h-9 w-9 object-contain"
-              style={{ border: `2px solid ${A.line}`, background: A.surface }}
-            />
-            <span className="text-[17px] font-black tracking-tight" style={{ color: A.ink }}>
-              {t('أكاديمية أيمن', 'Ayman Academy')}
-            </span>
-          </Link>
+          <ArcadeBrand size={36} />
 
           {/* Desktop navigation. Active item carries an underline bar rather
               than a colour change, so it stays legible in both modes. */}

@@ -64,7 +64,7 @@ export default function VerifyCertificate() {
             <header className="bg-white border-b border-border shadow-sm">
                 <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
                     <Link to="/" className="flex items-center gap-2">
-                        <img src={logo} alt="Ayman Academy" className="h-10" />
+                        <img src={logo} alt="Waraq Academy" className="h-10" />
                     </Link>
                     <div className="flex items-center gap-2 text-primary">
                         <ShieldCheck className="w-5 h-5" />
@@ -207,8 +207,8 @@ export default function VerifyCertificate() {
                             <div className="bg-slate-50 px-6 py-4 border-t border-border text-center">
                                 <p className="text-xs text-muted-foreground">
                                     {t(
-                                        'تم إصدار هذه الشهادة من أكاديمية أيمن التعليمية',
-                                        'Issued by Ayman Academy'
+                                        'تم إصدار هذه الشهادة من ورق أكاديمي التعليمية',
+                                        'Issued by Waraq Academy'
                                     )}
                                 </p>
                             </div>
@@ -220,7 +220,7 @@ export default function VerifyCertificate() {
             {/* Footer */}
             <footer className="bg-white border-t border-border py-4 text-center">
                 <p className="text-xs text-muted-foreground">
-                    © {new Date().getFullYear()} {t('أكاديمية أيمن التعليمية', 'Ayman Academy')}
+                    © {new Date().getFullYear()} {t('ورق أكاديمي التعليمية', 'Waraq Academy')}
                 </p>
             </footer>
         </div>

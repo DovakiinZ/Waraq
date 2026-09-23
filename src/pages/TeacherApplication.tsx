@@ -259,7 +259,7 @@ export default function TeacherApplication() {
                             className="mt-6 text-[30px] font-black leading-tight tracking-tight sm:text-[40px]"
                             style={{ color: A.onInk }}
                         >
-                            {t('انضم كمعلّم في أكاديمية أيمن', 'Teach with Ayman Academy')}
+                            {t('انضم كمعلّم في ورق أكاديمي', 'Teach with Waraq Academy')}
                         </h1>
                         <p
                             className="mx-auto mt-4 max-w-[54ch] text-[16px] font-medium leading-relaxed"

@@ -101,7 +101,7 @@ class _AymanAcademyAppState extends ConsumerState<AymanAcademyApp> {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'أكاديمية أيمن',
+      title: 'ورق أكاديمي',
       debugShowCheckedModeBanner: false,
       locale: locale,
       supportedLocales: const [

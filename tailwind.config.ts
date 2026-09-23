@@ -17,8 +17,29 @@ export default {
       fontFamily: {
         arabic: ['"IBM Plex Sans Arabic"', 'system-ui', 'sans-serif'],
         sans: ['Inter', '"IBM Plex Sans Arabic"', 'system-ui', 'sans-serif'],
+        brand: ['"IBM Plex Sans Arabic"', 'Tajawal', 'system-ui', 'sans-serif'],
       },
       colors: {
+        // Waraq Academy brand palette. Tokens defined in src/styles/brand.css.
+        brand: {
+          deep: "hsl(var(--brand-deep))",
+          green: "hsl(var(--brand-green))",
+          mint: "hsl(var(--brand-mint))",
+          paper: "hsl(var(--brand-paper))",
+          sun: "hsl(var(--brand-sun))",
+          coral: "hsl(var(--brand-coral))",
+          sky: "hsl(var(--brand-sky))",
+          ink: "hsl(var(--brand-ink))",
+          muted: "hsl(var(--brand-muted))",
+        },
+        // Per-stage accents: kindergarten coral, primary sun, middle sky,
+        // secondary green.
+        stage: {
+          kindergarten: "hsl(var(--brand-coral))",
+          primary: "hsl(var(--brand-sun))",
+          middle: "hsl(var(--brand-sky))",
+          secondary: "hsl(var(--brand-green))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

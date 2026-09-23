@@ -1,4 +1,4 @@
-# CLAUDE.md — Ayman Academy Portal
+# CLAUDE.md — Waraq Academy Portal
 
 > **This file is the project brain.** Read it fully before every task. It contains the system prompt, project knowledge, architecture, conventions, and the roadmap. Update it when things change.
 
@@ -6,7 +6,7 @@
 
 ## System Prompt — How to Handle Every Request
 
-You are a **senior project manager and full-stack developer** working on Ayman Academy Portal. You are the technical lead — you own architecture decisions, code quality, and UX.
+You are a **senior project manager and full-stack developer** working on Waraq Academy Portal. You are the technical lead — you own architecture decisions, code quality, and UX.
 
 ### On every user message, follow this workflow:
 
@@ -39,7 +39,7 @@ You are a **senior project manager and full-stack developer** working on Ayman A
 ## Project Overview
 
 ### What Is This?
-**Ayman Academy Portal** — An educational marketplace platform (like Udemy but for Arab school students).
+**Waraq Academy Portal** — An educational marketplace platform (like Udemy but for Arab school students).
 
 - **Teachers** sign up → create courses for school subjects → sell them to students.
 - **Students** sign up → browse courses by their grade/stage → subscribe and learn.
@@ -148,6 +148,33 @@ Ten competing homepage directions live side by side for selection. They are **pr
 Directions: 1 Bold Editorial · 2 Quiet Minimal · 3 Playful · 4 Premium Dark · 5 Conversion · 6 Premium Marketplace · 7 Thmanyah Editorial · 8 Wijha Refined · **9 Colorful** (Pikbest-style illustration-led, the 4 live palettes) · **10 Pixel Arcade** (Young&&Yandex-inspired: radius 0, 2px borders, hard offset shadows, grades framed as levels). **Two colours only, white plus one green scale** — deep green `#07301F` carries text/borders/shadows, electric green `#22DE7C` is the only fill, and a dark-half green gradient appears on exactly two full-bleed bands. Text on electric green is always deep green, never white (electric green is light).
 
 **Conventions to keep when adding a variant:** every user-facing string through `t()`; real routes only (`/register`, `/marketplace`, `/course/:id`, `/stages/:slug`, `/t/:id`, `/apply/teacher`, `/plans`); logical RTL properties (`ms-`/`me-`/`ps-`/`pe-`/`start-`/`end-`) and a direction-flipped arrow icon; loading skeletons and empty states for every data-backed section. **Never invent stats** — `useFeaturedTeachers`/`useFeaturedSubjects` are capped by `.limit()`, so their lengths are not totals; only `stages.length` is a real count.
+
+### Brand — Waraq Academy (ورق أكاديمي)
+
+Renamed from Ayman Academy. Source of truth: `C:\Users\yaman\Downloads\waraq_brand_kit.md`.
+
+- **Names:** AR `ورق أكاديمي` · EN `Waraq Academy` · short `ورق` / `Waraq`
+- **Tagline:** `ورقة بعد ورقة.. نكبر` / `Page by page, we grow.`
+- **Concept:** «ورق» means both book pages and tree leaves. The mark is a leaf with a folded page corner; its veins point upward for progress through the stages.
+- **Font:** IBM Plex Sans Arabic (fallback Tajawal), self-hosted via `@fontsource`. **It tops out at weight 700** — `font-black`/`font-extrabold` resolve to 700. The 700 face is now imported; without it browsers synthesised the weight. **Never add letter-spacing to Arabic text.**
+
+**Files:** marks in `public/brand/` (`mark.svg`, `mark-on-dark.svg`, `mark-mono.svg` via `currentColor`, `logo-stacked.svg`, `app-icon.svg`) · `public/favicon.svg` · generated PNGs `public/brand/apple-touch-icon.png` (180), `public/favicon-32.png` (32), `ayman_academy_flutter/assets/brand/app-icon.png` (1024). Regenerate PNGs with `npx sharp-cli --input <svg> --output <dir> --format png resize <w> <h>` (**always pass `--format png` and a different output dir, or it overwrites the source SVG with PNG bytes**).
+
+**Components:** `src/components/brand/Logo.tsx` exports `LogoMark` and `Logo` (brand-kit spec, colours hard-coded). Public arcade surfaces use **`ArcadeBrand`** from `arcade/primitives` instead — `Logo` hard-codes its text as `#0B3B2C`, invisible on the arcade dark theme, so `ArcadeBrand` pairs `LogoMark` with a themed wordmark and puts the mark on a fixed brand-paper plate (the mark's palette does not follow dark mode).
+
+**Tokens:** `src/styles/brand.css` (`--brand-*`, HSL triplets) imported by `index.css`; Tailwind exposes `brand.*` and `stage.*` colours plus `font-brand`. Stage accents: kindergarten coral, primary sun, middle sky, secondary green.
+
+**Deliberately NOT renamed** (renaming these breaks builds, sessions, or store identity):
+| Kept as `ayman*` | Why |
+|---|---|
+| `package.json` name `ayman-academy-portal` | repo/package identity |
+| Dart package `ayman_academy_app` + all `package:` imports | breaks every import, Android applicationId, iOS bundle id |
+| folder `ayman_academy_flutter/` | same |
+| `ayman-academy-auth` (`lib/supabase.ts`) | localStorage auth key — renaming signs every user out |
+| `ayman-academy-theme` (`useDarkMode.ts`), `ayman-academy-cache` (`queryConfig.ts`) | persisted client keys |
+| Supabase tables/buckets/env vars, Vercel project, GitHub repo | out of scope per the kit |
+
+**Flutter:** `lib/brand/brand_colors.dart` holds `BrandColors` + `BrandStrings` (keep in sync with `brand.css`). Display name updated in `AndroidManifest.xml` (`android:label`) and `main.dart` (`MaterialApp title`). **There is no `ios/` directory**, so no `Info.plist` to update. `pubspec.yaml` gained `flutter_svg`, `flutter_launcher_icons`, the `assets/brand/` entry and a launcher-icons block — run `dart run flutter_launcher_icons` to generate the launcher icons.
 
 ### Arcade Theme — the green + white public design language
 

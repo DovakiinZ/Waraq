@@ -37,5 +37,5 @@ export const VARIANTS = [
   { n: 7, key: 'thmanyah', ar: 'تحريري داكن (ثمانية)', en: 'Thmanyah Editorial' },
   { n: 8, key: 'wijha', ar: 'راقٍ أخضر (وجهة)', en: 'Wijha Refined' },
   { n: 9, key: 'colorful', ar: 'ملوّن (٤ لوحات)', en: 'Colorful (4 palettes)' },
-  { n: 10, key: 'arcade', ar: 'أركيد بكسل', en: 'Pixel Arcade' },
+  { n: 10, key: 'arcade', ar: 'أركيد بكسل (المعتمد)', en: 'Pixel Arcade (live)' },
 ];

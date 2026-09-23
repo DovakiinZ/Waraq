@@ -20,6 +20,7 @@ import LessonPage from "./pages/LessonPage";
 import Plans from "./pages/Plans";
 import Account from "./pages/Account";
 import LandingPreview from "./pages/LandingPreview";
+import Landing from "./pages/Landing";
 import LandingIndex from "./pages/landing/LandingIndex";
 import LandingV1 from "./pages/landing/LandingV1";
 import LandingV2 from "./pages/landing/LandingV2";
@@ -121,7 +122,11 @@ const App = () => (
                 <Sonner />
                 <Routes>
                   {/* Public routes */}
-                  <Route path="/" element={<LandingPreview />} />
+                  {/* Production landing: the arcade green+white design,
+                      promoted from the /landing/10 preview variant. */}
+                  <Route path="/" element={<Landing />} />
+                  {/* Previous landing, kept reachable rather than orphaned. */}
+                  <Route path="/landing-previous" element={<LandingPreview />} />
                   {/* Landing design variants for preview/selection */}
                   <Route path="/landing" element={<LandingIndex />} />
                   <Route path="/landing/1" element={<LandingV1 />} />

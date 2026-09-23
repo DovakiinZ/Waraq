@@ -18,7 +18,7 @@ const TeachForUsSection = () => {
     <section className="bg-gradient-to-br from-primary/10 via-primary/5 to-background py-16 lg:py-24">
       <div className="max-w-6xl mx-auto px-4 text-center">
         <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-          {t('هل أنت معلم؟ انضم لأكاديمية أيمن', 'Are You a Teacher? Join Ayman Academy')}
+          {t('هل أنت معلم؟ انضم لورق أكاديمي', 'Are You a Teacher? Join Waraq Academy')}
         </h2>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-12">
           {t(
