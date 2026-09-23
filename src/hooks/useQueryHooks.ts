@@ -498,20 +498,44 @@ export function useTeacherMessageContacts(userId: string | undefined) {
 
 // ─── Homepage: Featured Content ──────────────────────────
 
+/**
+ * Subjects for the homepage.
+ *
+ * Curated first: anything an admin has switched on with `show_on_home` wins,
+ * ordered by `home_order`. When nothing has been curated the homepage falls
+ * back to active subjects instead of rendering an empty section, which is what
+ * it did before (every subject currently has `show_on_home = false`, and the
+ * admin subjects screen has no toggle to change that yet).
+ *
+ * The fallback is deliberately a fallback, not a merge: as soon as one subject
+ * is featured, curation takes over completely.
+ */
 export function useFeaturedSubjects() {
   return useQuery({
     queryKey: queryKeys.homepage.featuredSubjects,
     queryFn: async () => {
+      const columns = 'id, title_ar, title_en, stage_id, stage:stages(id, title_ar, title_en)';
+
       const { data, error } = await supabase
         .from('subjects')
-        .select('id, title_ar, title_en, stage_id, stage:stages(id, title_ar, title_en)')
+        .select(columns)
         .eq('is_active', true)
         .eq('show_on_home', true)
         .order('home_order', { ascending: true })
         .limit(4);
 
       if (error) throw error;
-      return data || [];
+      if (data && data.length > 0) return data;
+
+      const { data: fallback, error: fallbackError } = await supabase
+        .from('subjects')
+        .select(columns)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .limit(4);
+
+      if (fallbackError) throw fallbackError;
+      return fallback || [];
     },
     staleTime: STALE.user,
   });
@@ -574,15 +598,19 @@ export function useAllTeachers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
+        // qualifications and phone were in this list but are NOT in the anon
+        // column grant from migration 104, so the whole query failed with 42501
+        // for logged-out visitors and /teachers looked empty unless you signed
+        // in. phone is personal data and has no business on a public page
+        // anyway. Instructors.tsx already renders qualifications conditionally,
+        // so dropping it just hides that line.
         .select(`
           id,
           full_name,
           avatar_url,
           bio_ar,
           bio_en,
-          qualifications,
           social_links,
-          phone,
           is_active
         `)
         .eq('role', 'teacher')
@@ -727,9 +755,21 @@ export function useTeacherShowcaseData(teacherId: string | undefined) {
     queryKey: ['teacher-showcase', teacherId],
     queryFn: async () => {
       // 1. Fetch Teacher Profile
+      //
+      // Columns are listed explicitly and must stay that way. Migration 104
+      // replaced anon's blanket SELECT on profiles with a column-level grant,
+      // and under a column grant `select('*')` fails outright with 42501 rather
+      // than returning the permitted subset. That turned every logged-out visit
+      // to /t/:id into "Teacher not found".
+      //
+      // Only add columns here that are in the anon grant list in migration 104.
+      // qualifications, phone, email, grade and the shamcash_* columns are NOT,
+      // and adding any of them breaks this page for logged-out visitors again.
       const { data: profile, error: profileErr } = await supabase
         .from('profiles')
-        .select('*')
+        .select(
+          'id, full_name, avatar_url, bio_ar, bio_en, role, is_active, social_links, expertise_tags_ar, expertise_tags_en, home_order, show_on_home, created_at',
+        )
         .eq('id', teacherId!)
         .eq('role', 'teacher')
         .single();
