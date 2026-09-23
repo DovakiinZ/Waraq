@@ -62,20 +62,31 @@ export function useSubjects(stageId?: string) {
 
 // ─── Single Stage ────────────────────────────────────────
 
-export function useStage(stageId: string | undefined) {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Resolve a stage by EITHER its uuid or its slug.
+ *
+ * `/stages` links by uuid while the landing page links by slug (`/stages/primary`),
+ * so matching on `id` alone made every slug URL render "stage not found".
+ * Callers that need the real uuid (to filter subjects by `stage_id`) must use
+ * the returned `stage.id`, not the route param.
+ */
+export function useStage(stageIdOrSlug: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.stages.detail(stageId!),
+    queryKey: queryKeys.stages.detail(stageIdOrSlug!),
     queryFn: async () => {
+      const column = UUID_RE.test(stageIdOrSlug!) ? 'id' : 'slug';
       const { data, error } = await supabase
         .from('stages')
         .select('*')
-        .eq('id', stageId!)
+        .eq(column, stageIdOrSlug!)
         .single();
 
       if (error) throw error;
       return data;
     },
-    enabled: !!stageId,
+    enabled: !!stageIdOrSlug,
     staleTime: STALE.user,
   });
 }
@@ -548,6 +559,15 @@ export function useFeaturedTeachers() {
   });
 }
 
+/**
+ * Teachers for the public `/teachers` directory.
+ *
+ * `show_on_home` is the only visibility flag a teacher profile has, so it
+ * governs the public directory too: switching it off in admin previously hid
+ * the teacher from the homepage but left them listed here, which is not what
+ * "hide this teacher" means to an admin. See the note in CLAUDE.md about
+ * splitting this into a dedicated `is_listed` column later.
+ */
 export function useAllTeachers() {
   return useQuery({
     queryKey: ['all-teachers'],
@@ -567,6 +587,7 @@ export function useAllTeachers() {
         `)
         .eq('role', 'teacher')
         .eq('is_active', true)
+        .eq('show_on_home', true)
         .order('full_name', { ascending: true });
 
       if (error) throw error;

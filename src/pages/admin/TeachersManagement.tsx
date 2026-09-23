@@ -1011,19 +1011,26 @@ export default function TeachersManagement() {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="show_on_home">{t('عرض في الصفحة الرئيسية', 'Show on Home Page')}</Label>
-                            <Switch
-                                id="show_on_home"
-                                checked={editForm.show_on_home}
-                                onCheckedChange={(checked) => setEditForm({ ...editForm, show_on_home: checked })}
-                            />
-                        </div>
+                        {/* The visibility switch lives in the Homepage Settings
+                            block below. A second copy used to sit here, bound to
+                            the same state and carrying the same DOM id, so the
+                            dialog showed two identical toggles and the duplicate
+                            id broke label-to-switch association. */}
                         <div className="border-t pt-4 mt-4">
-                            <h3 className="font-medium mb-3">{t('إعدادات الصفحة الرئيسية', 'Homepage Settings')}</h3>
+                            <h3 className="font-medium mb-3">{t('إعدادات الظهور', 'Visibility Settings')}</h3>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="show_on_home">{t('عرض في الصفحة الرئيسية', 'Show on Home Page')}</Label>
+                                    <div>
+                                        <Label htmlFor="show_on_home">
+                                            {t('عرض المعلّم للعموم', 'Show teacher publicly')}
+                                        </Label>
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                            {t(
+                                                'يتحكم بظهوره في الصفحة الرئيسية وصفحة المعلّمين معاً.',
+                                                'Controls both the homepage and the public teachers page.',
+                                            )}
+                                        </p>
+                                    </div>
                                     <Switch
                                         id="show_on_home"
                                         checked={editForm.show_on_home}

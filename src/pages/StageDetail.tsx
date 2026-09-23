@@ -12,7 +12,9 @@ const StageDetail = () => {
   const { stageId } = useParams();
   const { t, direction } = useLanguage();
   const { data: stage, isLoading: stageLoading } = useStage(stageId);
-  const { data: subjects = [], isLoading: subjectsLoading, error } = useSubjects(stageId);
+  // Filter subjects by the resolved uuid, never by the route param: the param
+  // may be a slug (`/stages/primary`), and `subjects.stage_id` holds uuids.
+  const { data: subjects = [], isLoading: subjectsLoading, error } = useSubjects(stage?.id);
 
   const ArrowIcon = direction === 'rtl' ? ArrowLeft : ArrowRight;
   const BackIcon = direction === 'rtl' ? ChevronRight : ChevronLeft;
