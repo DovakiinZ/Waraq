@@ -299,7 +299,36 @@ The Flutter app shares the same Supabase database as the web app. Key tables use
 - `announcements` — Teacher broadcast messages
 - `ratings` — Unified ratings (lesson/subject/teacher)
 
-### Color Palette
+### Brand — Waraq Academy (ورق أكاديمي)
+
+Source of truth: `waraq_brand_kit.md`. Brand tokens live in **`lib/brand/brand_colors.dart`** (`BrandColors` + `BrandStrings`); keep them in sync with the web's `src/styles/brand.css`.
+
+| Token | Hex | Use |
+|---|---|---|
+| `deep` | `#0B3B2C` | text, borders, logo leaf on light |
+| `green` | `#1E6B52` | primary brand green, app-icon background |
+| `mint` | `#9FD3BE` | folded corner of the mark |
+| `paper` | `#F7F2E8` | cream surfaces, logo on dark |
+| `sun` | `#F4A340` | CTA highlight, Primary stage |
+| `coral` / `sky` | `#EE6C4D` / `#3A8FB7` | Kindergarten / Middle stage |
+
+Stage colours: kindergarten coral · primary sun · middle sky · secondary green.
+
+**Font — do not regress this.** IBM Plex Sans Arabic is **bundled** in `assets/fonts` and referenced as the family name `IBMPlexSansArabic` in `AppTheme._ff`. It previously used `GoogleFonts.cairo()`, which fetches over the network on first use while the bundled 1.2 MB went unused — bad on the weak connections this app targets. `google_fonts` has been removed from `pubspec.yaml`. Two brand rules are enforced in `_textTheme`: weights cap at **700** (the heaviest face the family ships), and **Arabic text carries no letterSpacing** (tracking breaks the joined letterforms).
+
+**Assets** in `assets/brand/`: `mark.svg`, `mark-on-dark.svg`, `app-icon.{svg,png}` (1024), `icon-foreground.png` (adaptive foreground, mark inside the central safe zone), `icon-monochrome.png` (Android 13+ themed icons), `splash-mark.png`.
+
+**Icon and splash** are configured in `pubspec.yaml` but **not yet generated** — run both once a Flutter toolchain is available:
+```bash
+dart run flutter_launcher_icons
+dart run flutter_native_splash:create
+```
+
+**Technical names are intentionally unchanged.** The Dart package stays `ayman_academy_app`, the folder stays `ayman_academy_flutter/`, and the Android `applicationId` is untouched — renaming any of them breaks `package:` imports and stops the app updating over installed versions. Only display strings carry the new brand (`android:label`, `MaterialApp(title:)`, UI copy).
+
+**Still outstanding:** 52 hard-coded `Color(0x…)` values across 7 files (worst: `xp_progress_bar.dart` 15, `lesson_editor_screen.dart` 10) still need moving onto the theme, the `lib/brand/widgets/` set (`BrandButton`, `BrandCard`, `LevelChip`, `LogoMark`, `BrandLogo`) is not built yet, and there is **no OneSignal notification small icon** (`ic_stat_onesignal_default`), so Android renders the colored app icon as a white square.
+
+### Color Palette (legacy, being replaced by the brand tokens above)
 - **Primary**: Deep Navy (`#1E3A5F`)
 - **Accent**: Gold (`#AE944F`)
 - **Background**: Warm Ivory (`#F7F4EF`) / Dark (`#131921`)

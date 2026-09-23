@@ -20,7 +20,8 @@ dependencies:
   # UI / UX
   cached_network_image: ^3.3.1
   shimmer: ^3.0.0
-  google_fonts: ^6.2.1
+  # google_fonts removed: the app bundles IBM Plex Sans Arabic in assets/fonts
+  # and must not fetch a font at runtime. See AppTheme._ff.
 
   # Video
   youtube_player_flutter: ^9.1.1
@@ -63,6 +64,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.1
 
 flutter:
   uses-material-design: true
@@ -86,8 +88,29 @@ flutter:
 
 # App launcher icon, generated from the Waraq brand mark.
 # Regenerate with: dart run flutter_launcher_icons
+#
+# Android gets a proper adaptive icon: the OS masks the foreground over the
+# brand green, so the mark must stay inside the central safe zone (which
+# icon-foreground.png already does). adaptive_icon_monochrome drives the
+# Android 13+ themed-icon treatment.
+# ios is false: this project has no ios/ directory.
 flutter_launcher_icons:
   android: true
-  ios: true
+  ios: false
   image_path: "assets/brand/app-icon.png"
-  remove_alpha_ios: true
+  adaptive_icon_background: "#1E6B52"
+  adaptive_icon_foreground: "assets/brand/icon-foreground.png"
+  adaptive_icon_monochrome: "assets/brand/icon-monochrome.png"
+
+# Splash screen. Paper ground in light, brand deep green in dark.
+# Regenerate with: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#F7F2E8"
+  image: assets/brand/splash-mark.png
+  color_dark: "#0B3B2C"
+  image_dark: assets/brand/splash-mark.png
+  android_12:
+    color: "#F7F2E8"
+    image: assets/brand/splash-mark.png
+    color_dark: "#0B3B2C"
+    image_dark: assets/brand/splash-mark.png

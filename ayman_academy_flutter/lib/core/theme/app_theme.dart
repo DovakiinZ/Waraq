@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  // ── Cairo: premium modern Arabic font ──
-  static String get _ff => GoogleFonts.cairo().fontFamily!;
+  // IBM Plex Sans Arabic, bundled in assets/fonts and declared in pubspec.yaml.
+  //
+  // This used to be `GoogleFonts.cairo()`, which fetches the font over the
+  // network on first use. The 1.2 MB of IBM Plex Sans Arabic shipped inside the
+  // APK was never used, and students on weak or intermittent connections (the
+  // Syrian market this targets) got a download or a fallback face instead of
+  // the brand font. Keep this a bundled family name; do not reintroduce a
+  // runtime font fetch.
+  static const String _ff = 'IBMPlexSansArabic';
 
   static TextTheme get _textTheme {
-    final f = _ff;
-    return TextTheme(
-      displayLarge: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.5, height: 1.2, fontFamily: f),
-      displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.3, height: 1.25, fontFamily: f),
-      displaySmall: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.2, height: 1.3, fontFamily: f),
+    const f = _ff;
+    // Two brand rules are enforced here:
+    //  - weight caps at 700, the heaviest face the family ships. w800 had no
+    //    real face and was being synthesised.
+    //  - no letterSpacing on Arabic: tracking breaks the joined letterforms.
+    return const TextTheme(
+      displayLarge: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, height: 1.2, fontFamily: f),
+      displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.25, fontFamily: f),
+      displaySmall: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, height: 1.3, fontFamily: f),
       headlineLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, height: 1.3, fontFamily: f),
       headlineMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.4, fontFamily: f),
       bodyLarge: TextStyle(fontSize: 17, fontWeight: FontWeight.w400, height: 1.5, fontFamily: f),
@@ -20,7 +30,7 @@ class AppTheme {
       bodySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, height: 1.4, fontFamily: f),
       labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.4, fontFamily: f),
       labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, height: 1.3, fontFamily: f),
-      labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: 0.2, height: 1.3, fontFamily: f),
+      labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, height: 1.3, fontFamily: f),
     );
   }
 
