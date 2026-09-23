@@ -1,24 +1,27 @@
 /**
- * TeacherApplication — Public teacher registration + application form
+ * TeacherApplication - Public teacher registration + application form.
  * Creates auth account + profile (is_active: false) + application record.
  * Teacher can log in immediately but is restricted until admin approves.
+ *
+ * Styled in the arcade (green + white) language to match the landing page.
+ * The submit flow, zod rules, field ids, field order and grade values are
+ * unchanged; validation messages are now bilingual, which they were not
+ * before (the schema was Arabic-only), so the schema is built inside the
+ * component where `t` is available.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import Layout from '@/components/layout/Layout';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { GraduationCap, CheckCircle, Loader2, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { GraduationCap, CheckCircle, ArrowRight, ArrowLeft, Eye, EyeOff, Check } from 'lucide-react';
+import { A, PIXEL_STRIP } from '@/components/arcade/theme';
+import { ArcadeButton, ArcadeCard, ArcadeField, ArcadeLink } from '@/components/arcade/primitives';
 
 const GRADE_OPTIONS = [
     { value: 'kindergarten', ar: 'تمهيدي', en: 'Kindergarten' },
@@ -27,29 +30,44 @@ const GRADE_OPTIONS = [
     { value: 'high', ar: 'ثانوي', en: 'High School (10-12)' },
 ];
 
-const applicationSchema = z.object({
-    full_name: z.string().min(3, 'الاسم مطلوب (3 أحرف على الأقل)'),
-    email: z.string().email('بريد إلكتروني غير صالح'),
-    password: z.string().min(6, 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'),
-    confirm_password: z.string(),
-    phone: z.string().min(6, 'رقم الهاتف مطلوب'),
-    bio: z.string().min(20, 'يرجى كتابة نبذة عنك (20 حرف على الأقل)'),
-    profession: z.string().min(2, 'المهنة مطلوبة'),
-    major: z.string().optional(),
-    grades_taught: z.string().min(1, 'يرجى اختيار مرحلة واحدة على الأقل'),
-}).refine((data) => data.password === data.confirm_password, {
-    message: 'كلمات المرور غير متطابقة',
-    path: ['confirm_password'],
-});
-
-type ApplicationFormData = z.infer<typeof applicationSchema>;
-
 export default function TeacherApplication() {
     const { t, language, direction } = useLanguage();
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
     const [showPassword, setShowPassword] = useState(false);
+
+    // Built here rather than at module scope so the messages can be bilingual.
+    const applicationSchema = useMemo(
+        () =>
+            z
+                .object({
+                    full_name: z
+                        .string()
+                        .min(3, t('الاسم مطلوب (3 أحرف على الأقل)', 'Name is required (at least 3 characters)')),
+                    email: z.string().email(t('بريد إلكتروني غير صالح', 'Invalid email address')),
+                    password: z
+                        .string()
+                        .min(6, t('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'Password must be at least 6 characters')),
+                    confirm_password: z.string(),
+                    phone: z.string().min(6, t('رقم الهاتف مطلوب', 'Phone number is required')),
+                    bio: z
+                        .string()
+                        .min(20, t('يرجى كتابة نبذة عنك (20 حرف على الأقل)', 'Please write a short bio (at least 20 characters)')),
+                    profession: z.string().min(2, t('المهنة مطلوبة', 'Profession is required')),
+                    major: z.string().optional(),
+                    grades_taught: z
+                        .string()
+                        .min(1, t('يرجى اختيار مرحلة واحدة على الأقل', 'Please pick at least one stage')),
+                })
+                .refine((data) => data.password === data.confirm_password, {
+                    message: t('كلمات المرور غير متطابقة', 'Passwords do not match'),
+                    path: ['confirm_password'],
+                }),
+        [t],
+    );
+
+    type ApplicationFormData = z.infer<typeof applicationSchema>;
 
     const {
         register,
@@ -168,36 +186,49 @@ export default function TeacherApplication() {
     const BackArrow = direction === 'rtl' ? ArrowRight : ArrowLeft;
     const PasswordIcon = showPassword ? EyeOff : Eye;
 
+    const SectionHeading = ({ children }: { children: React.ReactNode }) => (
+        <h2 className="text-[18px] font-black tracking-tight" style={{ color: A.ink }}>
+            {children}
+        </h2>
+    );
+
     if (submitted) {
         return (
             <Layout>
-                <div className="min-h-[60vh] flex items-center justify-center px-4 py-16">
-                    <div className="max-w-md w-full text-center space-y-6">
-                        <div className="flex justify-center">
-                            <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                <CheckCircle className="w-10 h-10 text-green-600" />
-                            </div>
-                        </div>
-                        <h1 className="text-2xl font-bold">
-                            {t('تم إنشاء حسابك بنجاح!', 'Account Created Successfully!')}
-                        </h1>
-                        <p className="text-muted-foreground leading-relaxed">
-                            {t(
-                                'حسابك قيد المراجعة من قبل الإدارة. يمكنك تسجيل الدخول ومتابعة حالة طلبك وتعديل ملفك الشخصي.',
-                                'Your account is under review. You can log in to check your application status and edit your profile.'
-                            )}
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                            <Button asChild>
-                                <Link to="/login">{t('تسجيل الدخول', 'Sign In')}</Link>
-                            </Button>
-                            <Button asChild variant="outline">
-                                <Link to="/">
-                                    <BackArrow className="w-4 h-4 me-2" />
+                <div className="flex min-h-[60vh] items-center justify-center px-5 py-16">
+                    <div className="w-full max-w-[520px]">
+                        <ArcadeCard className="p-9 text-center">
+                            <span
+                                className="mx-auto flex h-16 w-16 items-center justify-center border-2"
+                                style={{ background: A.accent, color: A.onAccent, borderColor: A.line }}
+                            >
+                                <CheckCircle className="h-8 w-8" />
+                            </span>
+                            <h1
+                                className="mt-6 text-[28px] font-black leading-tight tracking-tight"
+                                style={{ color: A.ink }}
+                            >
+                                {t('تم إنشاء حسابك', 'Your account is created')}
+                            </h1>
+                            <p
+                                className="mx-auto mt-4 max-w-[44ch] text-[15px] font-medium leading-relaxed"
+                                style={{ color: A.inkSoft }}
+                            >
+                                {t(
+                                    'حسابك قيد المراجعة من الإدارة. يمكنك تسجيل الدخول لمتابعة حالة طلبك وتعديل ملفك الشخصي.',
+                                    'Your account is under review. You can log in to check your application status and edit your profile.',
+                                )}
+                            </p>
+                            <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+                                <ArcadeLink to="/login" variant="solid">
+                                    {t('تسجيل الدخول', 'Log in')}
+                                </ArcadeLink>
+                                <ArcadeLink to="/" variant="outline">
+                                    <BackArrow className="h-4 w-4" />
                                     {t('الصفحة الرئيسية', 'Homepage')}
-                                </Link>
-                            </Button>
-                        </div>
+                                </ArcadeLink>
+                            </div>
+                        </ArcadeCard>
                     </div>
                 </div>
             </Layout>
@@ -206,171 +237,264 @@ export default function TeacherApplication() {
 
     return (
         <Layout>
-            <div className="py-12 px-4" dir={direction}>
-                <div className="max-w-2xl mx-auto">
-                    {/* Header */}
-                    <div className="text-center mb-10 space-y-3">
-                        <div className="flex justify-center">
-                            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                                <GraduationCap className="w-8 h-8 text-primary" />
-                            </div>
-                        </div>
-                        <h1 className="text-3xl font-bold">
-                            {t('انضم كمعلم في أكاديمية أيمن', 'Join Ayman Academy as a Teacher')}
+            <div dir={direction}>
+                {/* Intro band */}
+                <div className="relative overflow-hidden" style={{ background: A.grad }}>
+                    <div
+                        className="pointer-events-none absolute inset-0 opacity-[0.16]"
+                        style={{
+                            backgroundImage: `radial-gradient(${A.onInk} 1px, transparent 1px)`,
+                            backgroundSize: '18px 18px',
+                        }}
+                        aria-hidden
+                    />
+                    <div className="relative mx-auto max-w-[760px] px-5 py-14 text-center lg:py-16">
+                        <span
+                            className="mx-auto flex h-14 w-14 items-center justify-center border-2"
+                            style={{ background: A.accent, color: A.onAccent, borderColor: A.accent }}
+                        >
+                            <GraduationCap className="h-7 w-7" />
+                        </span>
+                        <h1
+                            className="mt-6 text-[30px] font-black leading-tight tracking-tight sm:text-[40px]"
+                            style={{ color: A.onInk }}
+                        >
+                            {t('انضم كمعلّم في أكاديمية أيمن', 'Teach with Ayman Academy')}
                         </h1>
-                        <p className="text-muted-foreground max-w-lg mx-auto">
+                        <p
+                            className="mx-auto mt-4 max-w-[54ch] text-[16px] font-medium leading-relaxed"
+                            style={{ color: A.onInkMuted }}
+                        >
                             {t(
-                                'أنشئ حسابك وأخبرنا عن نفسك. سنراجع طلبك وستتمكن من البدء بنشر موادك بعد الموافقة.',
-                                'Create your account and tell us about yourself. We\'ll review your application and you can start publishing once approved.'
+                                'أنشئ حسابك وأخبرنا عن نفسك. نراجع طلبك، وبعد الموافقة تبدأ بنشر موادك وتحديد أسعارك.',
+                                'Create your account and tell us about yourself. We review your application, and once approved you publish your subjects and set your prices.',
                             )}
                         </p>
                     </div>
+                    <div className="h-[6px] w-full opacity-40" style={{ background: PIXEL_STRIP }} aria-hidden />
+                </div>
 
-                    {/* Form Card */}
-                    <div className="bg-background rounded-xl shadow-sm border border-border p-6 sm:p-8">
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                            {/* Account Section */}
-                            <div className="pb-4 border-b border-border">
-                                <h2 className="text-base font-semibold mb-4">
-                                    {t('بيانات الحساب', 'Account Details')}
-                                </h2>
-                                <div className="space-y-4">
-                                    {/* Full Name */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="full_name">{t('الاسم الكامل', 'Full Name')} *</Label>
-                                        <Input id="full_name" {...register('full_name')} />
-                                        {errors.full_name && <p className="text-sm text-destructive">{errors.full_name.message}</p>}
-                                    </div>
+                <div className="mx-auto max-w-[760px] px-5 py-12 lg:py-16">
+                    <ArcadeCard className="p-6 sm:p-9">
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-9">
+                            {/* Account section */}
+                            <div>
+                                <SectionHeading>{t('بيانات الحساب', 'Account details')}</SectionHeading>
+                                <div className="mt-5 space-y-5">
+                                    <ArcadeField
+                                        id="full_name"
+                                        label={`${t('الاسم الكامل', 'Full name')} *`}
+                                        error={errors.full_name?.message}
+                                    >
+                                        <input
+                                            id="full_name"
+                                            className="arc-input"
+                                            aria-invalid={!!errors.full_name}
+                                            {...register('full_name')}
+                                        />
+                                    </ArcadeField>
 
-                                    {/* Email */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">{t('البريد الإلكتروني', 'Email')} *</Label>
-                                        <Input id="email" type="email" dir="ltr" {...register('email')} />
-                                        {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-                                    </div>
+                                    <ArcadeField
+                                        id="email"
+                                        label={`${t('البريد الإلكتروني', 'Email')} *`}
+                                        error={errors.email?.message}
+                                    >
+                                        <input
+                                            id="email"
+                                            className="arc-input"
+                                            type="email"
+                                            dir="ltr"
+                                            autoComplete="email"
+                                            aria-invalid={!!errors.email}
+                                            {...register('email')}
+                                        />
+                                    </ArcadeField>
 
-                                    {/* Password */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="password">{t('كلمة المرور', 'Password')} *</Label>
+                                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                        <ArcadeField
+                                            id="password"
+                                            label={`${t('كلمة المرور', 'Password')} *`}
+                                            error={errors.password?.message}
+                                        >
                                             <div className="relative">
-                                                <Input
+                                                <input
                                                     id="password"
+                                                    className="arc-input pe-12"
                                                     type={showPassword ? 'text' : 'password'}
                                                     dir="ltr"
+                                                    autoComplete="new-password"
+                                                    aria-invalid={!!errors.password}
                                                     {...register('password')}
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowPassword(!showPassword)}
-                                                    className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
+                                                    className="arc-focus absolute top-1/2 -translate-y-1/2 end-3"
+                                                    style={{ color: A.inkSoft }}
+                                                    aria-label={
+                                                        showPassword
+                                                            ? t('إخفاء كلمة المرور', 'Hide password')
+                                                            : t('إظهار كلمة المرور', 'Show password')
+                                                    }
+                                                    tabIndex={-1}
                                                 >
-                                                    <PasswordIcon className="w-4 h-4" />
+                                                    <PasswordIcon className="h-4 w-4" />
                                                 </button>
                                             </div>
-                                            {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="confirm_password">{t('تأكيد كلمة المرور', 'Confirm Password')} *</Label>
-                                            <Input
+                                        </ArcadeField>
+
+                                        <ArcadeField
+                                            id="confirm_password"
+                                            label={`${t('تأكيد كلمة المرور', 'Confirm password')} *`}
+                                            error={errors.confirm_password?.message}
+                                        >
+                                            <input
                                                 id="confirm_password"
+                                                className="arc-input"
                                                 type={showPassword ? 'text' : 'password'}
                                                 dir="ltr"
+                                                autoComplete="new-password"
+                                                aria-invalid={!!errors.confirm_password}
                                                 {...register('confirm_password')}
                                             />
-                                            {errors.confirm_password && <p className="text-sm text-destructive">{errors.confirm_password.message}</p>}
-                                        </div>
+                                        </ArcadeField>
                                     </div>
 
-                                    {/* Phone */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone">{t('رقم الهاتف', 'Phone Number')} *</Label>
-                                        <Input id="phone" type="tel" dir="ltr" {...register('phone')} />
-                                        {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
-                                    </div>
+                                    <ArcadeField
+                                        id="phone"
+                                        label={`${t('رقم الهاتف', 'Phone number')} *`}
+                                        error={errors.phone?.message}
+                                    >
+                                        <input
+                                            id="phone"
+                                            className="arc-input"
+                                            type="tel"
+                                            dir="ltr"
+                                            autoComplete="tel"
+                                            aria-invalid={!!errors.phone}
+                                            {...register('phone')}
+                                        />
+                                    </ArcadeField>
                                 </div>
                             </div>
 
-                            {/* Professional Info Section */}
-                            <div className="space-y-4">
-                                <h2 className="text-base font-semibold">
-                                    {t('المعلومات المهنية', 'Professional Info')}
-                                </h2>
+                            {/* Professional section */}
+                            <div style={{ borderTop: `2px solid ${A.line}`, paddingTop: '2rem' }}>
+                                <SectionHeading>{t('المعلومات المهنية', 'Professional info')}</SectionHeading>
+                                <div className="mt-5 space-y-5">
+                                    <ArcadeField
+                                        id="profession"
+                                        label={`${t('مهنتك أو ماذا تدرّس؟', 'Your profession, or what do you teach?')} *`}
+                                        error={errors.profession?.message}
+                                    >
+                                        <input
+                                            id="profession"
+                                            className="arc-input"
+                                            aria-invalid={!!errors.profession}
+                                            {...register('profession')}
+                                        />
+                                    </ArcadeField>
 
-                                {/* Profession */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="profession">
-                                        {t('مهنتك / ماذا تدرّس؟', 'Your Profession / What do you teach?')} *
-                                    </Label>
-                                    <Input id="profession" {...register('profession')} />
-                                    {errors.profession && <p className="text-sm text-destructive">{errors.profession.message}</p>}
-                                </div>
+                                    <ArcadeField id="major" label={t('تخصصك الجامعي', 'Your university major')}>
+                                        <input id="major" className="arc-input" {...register('major')} />
+                                    </ArcadeField>
 
-                                {/* Major */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="major">{t('تخصصك الجامعي', 'Your University Major')}</Label>
-                                    <Input id="major" {...register('major')} />
-                                </div>
-
-                                {/* Bio */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="bio">{t('نبذة عنك', 'About You')} *</Label>
-                                    <Textarea
+                                    <ArcadeField
                                         id="bio"
-                                        rows={4}
-                                        placeholder={t(
-                                            'أخبرنا عن نفسك وخبرتك التعليمية...',
-                                            'Tell us about yourself and your teaching experience...'
-                                        )}
-                                        {...register('bio')}
-                                    />
-                                    {errors.bio && <p className="text-sm text-destructive">{errors.bio.message}</p>}
-                                </div>
+                                        label={`${t('نبذة عنك', 'About you')} *`}
+                                        error={errors.bio?.message}
+                                    >
+                                        <textarea
+                                            id="bio"
+                                            className="arc-input"
+                                            rows={4}
+                                            placeholder={t(
+                                                'أخبرنا عن نفسك وخبرتك التعليمية',
+                                                'Tell us about yourself and your teaching experience',
+                                            )}
+                                            aria-invalid={!!errors.bio}
+                                            {...register('bio')}
+                                        />
+                                    </ArcadeField>
 
-                                {/* Grades Taught */}
-                                <div className="space-y-3">
-                                    <Label>{t('المراحل التي تدرّسها', 'Grades You Teach')} *</Label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {GRADE_OPTIONS.map((grade) => (
-                                            <label
-                                                key={grade.value}
-                                                className="flex items-center gap-3 p-3 rounded-lg border border-border cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                                    {/* Grades. Native checkbox for keyboard and screen-reader
+                                        support, visually replaced by a square arcade marker. */}
+                                    <fieldset>
+                                        <legend className="text-[13px] font-black" style={{ color: A.ink }}>
+                                            {t('المراحل التي تدرّسها', 'Stages you teach')} *
+                                        </legend>
+                                        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            {GRADE_OPTIONS.map((grade) => {
+                                                const checked = selectedGrades.includes(grade.value);
+                                                return (
+                                                    <label
+                                                        key={grade.value}
+                                                        className="flex cursor-pointer items-center gap-3 border-2 p-3.5 transition-colors"
+                                                        style={{
+                                                            background: checked ? A.wash : A.surface,
+                                                            borderColor: A.line,
+                                                        }}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            className="sr-only"
+                                                            checked={checked}
+                                                            onChange={(e) =>
+                                                                handleGradeToggle(grade.value, e.target.checked)
+                                                            }
+                                                        />
+                                                        <span
+                                                            className="flex h-[18px] w-[18px] shrink-0 items-center justify-center border-2"
+                                                            style={{
+                                                                background: checked ? A.accent : A.surface,
+                                                                borderColor: A.line,
+                                                                color: A.onAccent,
+                                                            }}
+                                                            aria-hidden
+                                                        >
+                                                            {checked && <Check className="h-3 w-3" strokeWidth={4} />}
+                                                        </span>
+                                                        <span
+                                                            className="text-[14px] font-bold"
+                                                            style={{ color: A.ink }}
+                                                        >
+                                                            {language === 'ar' ? grade.ar : grade.en}
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                        {errors.grades_taught && (
+                                            <p
+                                                className="mt-2 text-[12px] font-bold"
+                                                style={{ color: 'hsl(var(--destructive))' }}
+                                                role="alert"
                                             >
-                                                <Checkbox
-                                                    checked={selectedGrades.includes(grade.value)}
-                                                    onCheckedChange={(checked) =>
-                                                        handleGradeToggle(grade.value, !!checked)
-                                                    }
-                                                />
-                                                <span className="text-sm font-medium">
-                                                    {language === 'ar' ? grade.ar : grade.en}
-                                                </span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                    {errors.grades_taught && <p className="text-sm text-destructive">{errors.grades_taught.message}</p>}
+                                                {errors.grades_taught.message}
+                                            </p>
+                                        )}
+                                    </fieldset>
                                 </div>
                             </div>
 
-                            {/* Submit */}
-                            <Button type="submit" className="w-full h-12 text-base" disabled={submitting}>
-                                {submitting ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin me-2" />
-                                        {t('جارٍ إنشاء الحساب...', 'Creating account...')}
-                                    </>
-                                ) : (
-                                    t('إنشاء الحساب وإرسال الطلب', 'Create Account & Submit Application')
-                                )}
-                            </Button>
+                            <ArcadeButton
+                                type="submit"
+                                variant="solid"
+                                size="lg"
+                                className="w-full"
+                                loading={submitting}
+                            >
+                                {submitting
+                                    ? t('جارٍ إنشاء الحساب', 'Creating account')
+                                    : t('إنشاء الحساب وإرسال الطلب', 'Create account and submit')}
+                            </ArcadeButton>
                         </form>
-                    </div>
+                    </ArcadeCard>
 
-                    {/* Footer note */}
-                    <p className="text-center text-sm text-muted-foreground mt-6">
+                    <p className="mt-7 text-center text-[14px] font-medium" style={{ color: A.inkSoft }}>
                         {t('لديك حساب بالفعل؟', 'Already have an account?')}{' '}
-                        <Link to="/login" className="text-primary hover:underline font-medium">
-                            {t('تسجيل الدخول', 'Sign In')}
+                        <Link to="/login" className="arc-link arc-focus">
+                            {t('تسجيل الدخول', 'Log in')}
                         </Link>
                     </p>
                 </div>

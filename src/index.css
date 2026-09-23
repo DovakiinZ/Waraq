@@ -69,6 +69,34 @@
     --paper-dark: 42 20% 93%;
     --ink: 220 30% 12%;
     --ink-light: 220 15% 40%;
+
+    /* ── Arcade theme (green + white) ───────────────────────────
+       Drives the public-facing surfaces styled after LandingV10:
+       Header, Footer, Register, Login, Marketplace, Teacher
+       Application. Consumed through src/components/arcade/theme.ts,
+       never by hard-coded hex in components.
+
+       Two colours only: white plus one green scale. `arc-ink` is the
+       TEXT colour, `arc-line` the border colour and `arc-shadow` the
+       hard offset shadow. In light mode all three coincide; in dark
+       they must not, which is why they are separate tokens.
+       Contrast: text on arc-accent is always arc-on-accent (8.4:1).
+       Never white on arc-accent, the green is light. */
+    --arc-bg: #FFFFFF;
+    --arc-surface: #FFFFFF;
+    --arc-wash: #EFFBF4;
+    --arc-ink: #07301F;
+    --arc-ink-soft: #4A6B5C;
+    --arc-mid: #0F6B42;
+    --arc-line: #07301F;
+    --arc-shadow: #07301F;
+    --arc-accent: #22DE7C;
+    --arc-on-accent: #07301F;
+    --arc-on-ink: #FFFFFF;
+    --arc-on-ink-muted: #C2DCCF;
+    --arc-band: #07301F;
+    --arc-band-line: #1A4A35;
+    --arc-grad: linear-gradient(135deg, #062A1B 0%, #0B4F32 60%, #0E603C 100%);
   }
 
   .dark {
@@ -115,6 +143,135 @@
     --paper-dark: 220 25% 11%;
     --ink: 42 15% 93%;
     --ink-light: 42 12% 65%;
+
+    /* Arcade theme, dark. Same electric green, inverted ground. Text
+       goes pale, borders lift to a mid green so they stay visible, and
+       the hard shadow becomes mid green rather than near-black. */
+    --arc-bg: #061A11;
+    --arc-surface: #0B2A1C;
+    --arc-wash: #0E3625;
+    --arc-ink: #E6F5EC;
+    --arc-ink-soft: #9CBCAA;
+    --arc-mid: #4FE39A;
+    --arc-line: #2F7C55;
+    --arc-shadow: #2F7C55;
+    --arc-accent: #22DE7C;
+    --arc-on-accent: #05200F;
+    --arc-on-ink: #FFFFFF;
+    --arc-on-ink-muted: #C2DCCF;
+    --arc-band: #04150D;
+    --arc-band-line: #1F5C3C;
+    --arc-grad: linear-gradient(135deg, #04150D 0%, #0A4028 60%, #0C5133 100%);
+  }
+}
+
+/* ── Arcade component classes ──────────────────────────────────
+   Interactive states for the green + white public surfaces. These live in
+   CSS rather than inline styles because :hover, :focus-visible, :active and
+   ::placeholder cannot be expressed inline. Tokens come from --arc-* above,
+   so these follow dark mode automatically.
+
+   The signature press: the element shifts toward its shadow while the shadow
+   shrinks, so the whole thing reads as physically pushed down. */
+@layer components {
+  /* --arc-press-color lets a caller recolour the shadow (a button sitting on a
+     dark band needs a light one) WITHOUT setting box-shadow inline. An inline
+     box-shadow would beat these :hover and :active rules and the press effect
+     would silently stop working. */
+  .arc-press {
+    box-shadow: 5px 5px 0 var(--arc-press-color, var(--arc-shadow));
+    transition: box-shadow 120ms ease-out, transform 120ms ease-out;
+  }
+
+  .arc-press:hover {
+    box-shadow: 2px 2px 0 var(--arc-press-color, var(--arc-shadow));
+    transform: translate(3px, 3px);
+  }
+
+  .arc-press:active {
+    box-shadow: 0 0 0 var(--arc-press-color, var(--arc-shadow));
+    transform: translate(5px, 5px);
+  }
+
+  .arc-press-sm {
+    box-shadow: 3px 3px 0 var(--arc-press-color, var(--arc-shadow));
+    transition: box-shadow 120ms ease-out, transform 120ms ease-out;
+  }
+
+  .arc-press-sm:hover {
+    box-shadow: 1px 1px 0 var(--arc-press-color, var(--arc-shadow));
+    transform: translate(2px, 2px);
+  }
+
+  .arc-press-sm:active {
+    box-shadow: 0 0 0 var(--arc-press-color, var(--arc-shadow));
+    transform: translate(3px, 3px);
+  }
+
+  /* Disabled buttons must not look pressable. */
+  .arc-press:disabled,
+  .arc-press-sm:disabled {
+    box-shadow: none;
+    transform: none;
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* Focus ring uses arc-mid, not arc-accent: electric green only reaches
+     1.9:1 against white, which fails the 3:1 a11y floor for focus
+     indicators. arc-mid clears it in both modes. */
+  .arc-focus:focus-visible {
+    outline: 3px solid var(--arc-mid);
+    outline-offset: 2px;
+  }
+
+  .arc-input {
+    width: 100%;
+    border: 2px solid var(--arc-line);
+    border-radius: 0;
+    background: var(--arc-surface);
+    color: var(--arc-ink);
+    padding: 0.7rem 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: box-shadow 120ms ease-out;
+  }
+
+  .arc-input::placeholder {
+    color: var(--arc-ink-soft);
+    font-weight: 400;
+  }
+
+  .arc-input:focus {
+    outline: none;
+    box-shadow: 3px 3px 0 var(--arc-shadow);
+  }
+
+  .arc-input:focus-visible {
+    outline: 3px solid var(--arc-mid);
+    outline-offset: 2px;
+  }
+
+  .arc-input[aria-invalid='true'] {
+    border-color: hsl(var(--destructive));
+  }
+
+  /* Hides the reveal control browsers inject into password fields, which
+     would otherwise sit on top of our own toggle button. */
+  .arc-input::-ms-reveal,
+  .arc-input::-ms-clear {
+    display: none;
+  }
+
+  .arc-link {
+    color: var(--arc-mid);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .arc-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 }
 

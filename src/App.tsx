@@ -20,6 +20,17 @@ import LessonPage from "./pages/LessonPage";
 import Plans from "./pages/Plans";
 import Account from "./pages/Account";
 import LandingPreview from "./pages/LandingPreview";
+import LandingIndex from "./pages/landing/LandingIndex";
+import LandingV1 from "./pages/landing/LandingV1";
+import LandingV2 from "./pages/landing/LandingV2";
+import LandingV3 from "./pages/landing/LandingV3";
+import LandingV4 from "./pages/landing/LandingV4";
+import LandingV5 from "./pages/landing/LandingV5";
+import LandingV6 from "./pages/landing/LandingV6";
+import LandingV7 from "./pages/landing/LandingV7";
+import LandingV8 from "./pages/landing/LandingV8";
+import LandingV9 from "./pages/landing/LandingV9";
+import LandingV10 from "./pages/landing/LandingV10";
 import NotFound from "./pages/NotFound";
 import PublicMarketplace from "./pages/PublicMarketplace";
 import PublicCoursePreview from "./pages/PublicCoursePreview";
@@ -111,6 +122,18 @@ const App = () => (
                 <Routes>
                   {/* Public routes */}
                   <Route path="/" element={<LandingPreview />} />
+                  {/* Landing design variants for preview/selection */}
+                  <Route path="/landing" element={<LandingIndex />} />
+                  <Route path="/landing/1" element={<LandingV1 />} />
+                  <Route path="/landing/2" element={<LandingV2 />} />
+                  <Route path="/landing/3" element={<LandingV3 />} />
+                  <Route path="/landing/4" element={<LandingV4 />} />
+                  <Route path="/landing/5" element={<LandingV5 />} />
+                  <Route path="/landing/6" element={<LandingV6 />} />
+                  <Route path="/landing/7" element={<LandingV7 />} />
+                  <Route path="/landing/8" element={<LandingV8 />} />
+                  <Route path="/landing/9" element={<LandingV9 />} />
+                  <Route path="/landing/10" element={<LandingV10 />} />
                   <Route path="/old" element={<Index />} />
                   <Route path="/stages" element={<Stages />} />
                   <Route path="/stages/:stageId" element={<StageDetail />} />

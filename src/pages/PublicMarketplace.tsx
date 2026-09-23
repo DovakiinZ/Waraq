@@ -1,6 +1,13 @@
 /**
- * PublicMarketplace — Udemy-style course marketplace (public, no auth needed)
- * Layout: Left sidebar filters + Main content (hero, tabs, course grid)
+ * PublicMarketplace - course marketplace (public, no auth needed).
+ * Layout: left sidebar filters + main content (banner, stage tabs, course grid).
+ *
+ * Styled in the arcade (green + white) language to match the landing page:
+ * sharp edges, 2px borders, hard offset shadows, one green scale. The previous
+ * version rotated six unrelated hues (violet, emerald, amber, rose, cyan,
+ * fuchsia) for card thumbnails; that is replaced by the single green system.
+ *
+ * All data fetching, filtering and derived values are unchanged.
  */
 
 import { useState, useMemo } from 'react';
@@ -10,22 +17,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import { STALE_TIMES } from '@/lib/queryConfig';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import Layout from '@/components/layout/Layout';
+import { A, PIXEL_STRIP } from '@/components/arcade/theme';
 import {
-    BookOpen, User, Clock, Search, Loader2, Play, Star,
-    ChevronDown, ChevronUp, SlidersHorizontal, X, GraduationCap,
+    ArcadeButton,
+    ArcadeEmpty,
+    ArcadeLink,
+    ArcadeSkeleton,
+} from '@/components/arcade/primitives';
+import {
+    BookOpen, Clock, Search, Play, Star,
+    ChevronDown, ChevronUp, SlidersHorizontal, X, GraduationCap, Check,
 } from 'lucide-react';
-
-const GRADIENTS = [
-    'from-violet-600/80 to-indigo-900/80',
-    'from-emerald-600/80 to-teal-900/80',
-    'from-amber-600/80 to-orange-900/80',
-    'from-rose-600/80 to-pink-900/80',
-    'from-cyan-600/80 to-blue-900/80',
-    'from-fuchsia-600/80 to-purple-900/80',
-];
 
 export default function PublicMarketplace() {
     const { t, language, direction } = useLanguage();
@@ -77,7 +80,6 @@ export default function PublicMarketplace() {
                 });
             }
 
-            // Ratings per subject
             // Ratings: aggregate lesson ratings per subject
             const ratingMap = new Map<string, { avg: number; count: number }>();
             if (subjectIds.length > 0) {
@@ -164,35 +166,56 @@ export default function PublicMarketplace() {
         return m > 0 ? `${h}${t('س', 'h')} ${m.toString().padStart(2, '0')}${t('د', 'm')}` : `${h}${t('س', 'h')}`;
     };
 
+    const hasActiveFilters = stageFilter !== 'all' || selectedCategories.size > 0 || !!searchQuery;
+
+    // Square arcade checkbox. Replaces the shadcn Checkbox, which is themed
+    // off --primary (navy) and would not match.
+    const ArcCheckbox = ({ checked }: { checked: boolean }) => (
+        <span
+            className="flex h-[18px] w-[18px] shrink-0 items-center justify-center border-2"
+            style={{
+                background: checked ? A.accent : A.surface,
+                borderColor: A.line,
+                color: A.onAccent,
+            }}
+            aria-hidden
+        >
+            {checked && <Check className="h-3 w-3" strokeWidth={4} />}
+        </span>
+    );
+
     // ── Sidebar Content ──────────────────────────
     const SidebarContent = () => (
-        <div className="space-y-6">
-            {/* Sidebar Search */}
-            <div>
-                <div className="relative">
-                    <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={t('ابحث عن مادة...', 'Search Courses')}
-                        className="w-full ps-9 pe-3 py-2 rounded-lg border border-border bg-secondary/50 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition"
-                    />
-                </div>
+        <div className="space-y-7">
+            <div className="relative">
+                <Search
+                    className="absolute top-1/2 h-4 w-4 -translate-y-1/2 start-3"
+                    style={{ color: A.inkSoft }}
+                />
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t('ابحث عن مادة', 'Search courses')}
+                    aria-label={t('ابحث عن مادة', 'Search courses')}
+                    className="arc-input ps-10"
+                />
             </div>
 
-            {/* Stages as categories */}
+            {/* Stages */}
             {stageOptions.length > 0 && (
                 <div>
                     <button
                         onClick={() => setCategoriesExpanded(!categoriesExpanded)}
-                        className="flex items-center justify-between w-full text-sm font-semibold mb-3"
+                        className="arc-focus mb-3 flex w-full items-center justify-between text-[13px] font-black"
+                        style={{ color: A.ink }}
+                        aria-expanded={categoriesExpanded}
                     >
-                        {t('المراحل الدراسية', 'Course categories')}
-                        {categoriesExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                        {t('المراحل الدراسية', 'Stages')}
+                        {categoriesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </button>
                     {categoriesExpanded && (
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                             {stageOptions.map((stage: any) => {
                                 const count = subjects.filter((s: any) => s.stage?.id === stage.id).length;
                                 const isActive = stageFilter === stage.id;
@@ -200,13 +223,19 @@ export default function PublicMarketplace() {
                                     <button
                                         key={stage.id}
                                         onClick={() => setStageFilter(isActive ? 'all' : stage.id)}
-                                        className={`flex items-center justify-between w-full px-2 py-1.5 rounded-md text-sm transition-colors ${isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                                        className="arc-focus flex w-full items-center justify-between border-2 px-2.5 py-2 text-[13px] font-bold transition-colors"
+                                        style={{
+                                            background: isActive ? A.accent : 'transparent',
+                                            color: isActive ? A.onAccent : A.ink,
+                                            borderColor: isActive ? A.line : 'transparent',
+                                        }}
+                                        aria-pressed={isActive}
                                     >
-                                        <span className="flex items-center gap-2">
-                                            <GraduationCap className="w-3.5 h-3.5" />
+                                        <span className="flex items-center gap-2 text-start">
+                                            <GraduationCap className="h-3.5 w-3.5 shrink-0" />
                                             {language === 'ar' ? stage.title_ar : stage.title_en || stage.title_ar}
                                         </span>
-                                        <span className="text-xs opacity-60">{count}</span>
+                                        <span className="font-mono text-[11px]">{count}</span>
                                     </button>
                                 );
                             })}
@@ -215,31 +244,40 @@ export default function PublicMarketplace() {
                 </div>
             )}
 
-            {/* Teachers filter */}
+            {/* Teachers */}
             {teacherNames.length > 0 && (
                 <div>
-                    <h3 className="text-sm font-semibold mb-3">{t('المعلمون', 'Teachers')}</h3>
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    <h3 className="mb-3 text-[13px] font-black" style={{ color: A.ink }}>
+                        {t('المعلّمون', 'Teachers')}
+                    </h3>
+                    <div className="max-h-48 space-y-2 overflow-y-auto">
                         {teacherNames.map(([id, name]) => (
-                            <label key={id} className="flex items-center gap-2.5 cursor-pointer px-1 py-0.5 rounded hover:bg-muted/30 transition">
-                                <Checkbox
+                            <label
+                                key={id}
+                                className="flex cursor-pointer items-center gap-2.5 py-0.5 text-[13px] font-semibold"
+                                style={{ color: A.ink }}
+                            >
+                                <input
+                                    type="checkbox"
                                     checked={selectedCategories.has(id)}
-                                    onCheckedChange={() => toggleCategory(id)}
+                                    onChange={() => toggleCategory(id)}
+                                    className="sr-only"
                                 />
-                                <span className="text-sm text-muted-foreground">{name}</span>
+                                <ArcCheckbox checked={selectedCategories.has(id)} />
+                                <span>{name}</span>
                             </label>
                         ))}
                     </div>
                 </div>
             )}
 
-            {/* Clear filters */}
-            {(stageFilter !== 'all' || selectedCategories.size > 0 || searchQuery) && (
+            {hasActiveFilters && (
                 <button
                     onClick={() => { setStageFilter('all'); setSelectedCategories(new Set()); setSearchQuery(''); }}
-                    className="text-xs text-destructive hover:underline flex items-center gap-1"
+                    className="arc-focus flex items-center gap-1.5 text-[12px] font-bold"
+                    style={{ color: A.mid }}
                 >
-                    <X className="w-3 h-3" />
+                    <X className="h-3.5 w-3.5" />
                     {t('مسح الفلاتر', 'Clear filters')}
                 </button>
             )}
@@ -248,37 +286,58 @@ export default function PublicMarketplace() {
 
     return (
         <Layout>
-            <div dir={direction} className="min-h-screen">
-                <div className="max-w-[1400px] mx-auto px-4 py-6">
+            <div dir={direction}>
+                <div className="mx-auto max-w-[1400px] px-5 py-8 lg:px-8">
                     {/* Mobile filter toggle */}
-                    <div className="lg:hidden mb-4">
-                        <Button
+                    <div className="mb-5 lg:hidden">
+                        <ArcadeButton
                             variant="outline"
                             size="sm"
                             onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-                            className="gap-2"
                         >
-                            <SlidersHorizontal className="w-4 h-4" />
+                            <SlidersHorizontal className="h-4 w-4" />
                             {t('الفلاتر', 'Filters')}
-                        </Button>
+                        </ArcadeButton>
                     </div>
 
-                    <div className="flex gap-6">
+                    <div className="flex gap-7">
                         {/* ── LEFT SIDEBAR ─────────────── */}
-                        {/* Desktop sidebar */}
-                        <aside className="hidden lg:block w-64 flex-shrink-0">
-                            <div className="sticky top-20 bg-background border border-border rounded-xl p-5">
+                        <aside className="hidden w-64 flex-shrink-0 lg:block">
+                            <div
+                                className="sticky top-24 border-2 p-5"
+                                style={{
+                                    background: A.surface,
+                                    borderColor: A.line,
+                                    boxShadow: `6px 6px 0 var(--arc-shadow)`,
+                                }}
+                            >
                                 <SidebarContent />
                             </div>
                         </aside>
 
                         {/* Mobile sidebar overlay */}
                         {mobileSidebarOpen && (
-                            <div className="lg:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setMobileSidebarOpen(false)}>
-                                <div className="absolute top-0 start-0 bottom-0 w-72 bg-background p-5 overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h2 className="font-semibold">{t('الفلاتر', 'Filters')}</h2>
-                                        <button onClick={() => setMobileSidebarOpen(false)}><X className="w-5 h-5" /></button>
+                            <div
+                                className="fixed inset-0 z-50 bg-black/60 lg:hidden"
+                                onClick={() => setMobileSidebarOpen(false)}
+                            >
+                                <div
+                                    className="absolute bottom-0 top-0 w-[300px] overflow-y-auto p-5 start-0"
+                                    style={{ background: A.surface, borderInlineEnd: `2px solid ${A.line}` }}
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <div className="mb-5 flex items-center justify-between">
+                                        <h2 className="text-[16px] font-black" style={{ color: A.ink }}>
+                                            {t('الفلاتر', 'Filters')}
+                                        </h2>
+                                        <button
+                                            onClick={() => setMobileSidebarOpen(false)}
+                                            className="arc-focus flex h-9 w-9 items-center justify-center border-2"
+                                            style={{ borderColor: A.line, color: A.ink }}
+                                            aria-label={t('إغلاق', 'Close')}
+                                        >
+                                            <X className="h-5 w-5" />
+                                        </button>
                                     </div>
                                     <SidebarContent />
                                 </div>
@@ -286,33 +345,65 @@ export default function PublicMarketplace() {
                         )}
 
                         {/* ── MAIN CONTENT ─────────────── */}
-                        <main className="flex-1 min-w-0">
-                            {/* Hero Banner */}
-                            <div className="relative rounded-2xl overflow-hidden mb-6 bg-gradient-to-br from-primary/90 via-primary to-violet-700 p-8 md:p-10">
-                                <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%221%22%20cy%3D%221%22%20r%3D%221%22%20fill%3D%22rgba(255%2C255%2C255%2C0.05)%22%2F%3E%3C%2Fsvg%3E')] opacity-50" />
-                                <div className="relative z-10 max-w-lg">
-                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                                        {t('اختر المادة المناسبة لمستواك', 'The right choice of course')}
-                                    </h2>
-                                    <p className="text-white/70 text-sm mb-5">
+                        <main className="min-w-0 flex-1">
+                            {/* Banner */}
+                            <div
+                                className="relative mb-7 overflow-hidden border-2 p-8 md:p-10"
+                                style={{
+                                    background: A.grad,
+                                    borderColor: A.line,
+                                    boxShadow: `6px 6px 0 var(--arc-shadow)`,
+                                }}
+                            >
+                                {/* Dot plate for texture. CSS gradient, not an asset. */}
+                                <div
+                                    className="pointer-events-none absolute inset-0 opacity-[0.16]"
+                                    style={{
+                                        backgroundImage: `radial-gradient(${A.onInk} 1px, transparent 1px)`,
+                                        backgroundSize: '18px 18px',
+                                    }}
+                                    aria-hidden
+                                />
+                                <div className="relative z-10 max-w-xl">
+                                    <h1
+                                        className="text-[28px] font-black leading-tight tracking-tight md:text-[36px]"
+                                        style={{ color: A.onInk }}
+                                    >
+                                        {t('اختر المادة المناسبة لمستواك', 'Find the course that fits your level')}
+                                    </h1>
+                                    <p
+                                        className="mt-4 max-w-[52ch] text-[15px] font-medium leading-relaxed"
+                                        style={{ color: A.onInkMuted }}
+                                    >
                                         {t(
-                                            'تصفح المواد الدراسية المتاحة واشترك في ما يناسبك مع أفضل المعلمين',
-                                            'Browse available courses and enroll with the best teachers'
+                                            'تصفّح المواد المتاحة واشترك في ما يناسبك مع معلّمين تثق بهم.',
+                                            'Browse the available subjects and subscribe with teachers you trust.',
                                         )}
                                     </p>
-                                    <Link to={isAuthenticated ? '/student/marketplace' : '/register'}>
-                                        <Button variant="secondary" size="sm" className="rounded-full px-6">
-                                            {t('استكشف المزيد', 'Explore more')}
-                                        </Button>
-                                    </Link>
+                                    {!isAuthenticated && (
+                                        <div className="mt-7">
+                                            <ArcadeLink to="/register" variant="onDark">
+                                                {t('ابدأ الآن', 'Get started')}
+                                            </ArcadeLink>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Stage Tabs */}
-                            <div className="flex gap-2 overflow-x-auto pb-1 mb-4 scrollbar-none">
+                            {/* Stage tabs */}
+                            <div
+                                className="mb-6 flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
+                                style={{ scrollbarWidth: 'none' }}
+                            >
                                 <button
                                     onClick={() => setStageFilter('all')}
-                                    className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${stageFilter === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80'}`}
+                                    className="arc-focus flex-shrink-0 whitespace-nowrap border-2 px-4 py-2 text-[13px] font-black transition-colors"
+                                    style={{
+                                        background: stageFilter === 'all' ? A.accent : A.surface,
+                                        color: stageFilter === 'all' ? A.onAccent : A.ink,
+                                        borderColor: A.line,
+                                    }}
+                                    aria-pressed={stageFilter === 'all'}
                                 >
                                     {t('الكل', 'All')}
                                 </button>
@@ -320,114 +411,201 @@ export default function PublicMarketplace() {
                                     <button
                                         key={stage.id}
                                         onClick={() => setStageFilter(stage.id)}
-                                        className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${stageFilter === stage.id ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80'}`}
+                                        className="arc-focus flex-shrink-0 whitespace-nowrap border-2 px-4 py-2 text-[13px] font-black transition-colors"
+                                        style={{
+                                            background: stageFilter === stage.id ? A.accent : A.surface,
+                                            color: stageFilter === stage.id ? A.onAccent : A.ink,
+                                            borderColor: A.line,
+                                        }}
+                                        aria-pressed={stageFilter === stage.id}
                                     >
                                         {language === 'ar' ? stage.title_ar : stage.title_en || stage.title_ar}
                                     </button>
                                 ))}
                             </div>
 
-                            {/* Section Header */}
-                            <div className="flex items-center justify-between mb-5">
-                                <h3 className="text-lg font-semibold">
-                                    {t('المواد المتاحة', 'Recommended courses for you')}
-                                </h3>
-                                <span className="text-sm text-muted-foreground">
+                            {/* Section header */}
+                            <div className="mb-5 flex items-end justify-between gap-4">
+                                <h2 className="text-[22px] font-black tracking-tight" style={{ color: A.ink }}>
+                                    {t('المواد المتاحة', 'Available courses')}
+                                </h2>
+                                <span
+                                    className="shrink-0 font-mono text-[13px] font-bold"
+                                    style={{ color: A.inkSoft }}
+                                >
                                     {filtered.length} {t('مادة', 'courses')}
                                 </span>
                             </div>
 
-                            {/* Loading */}
                             {isLoading ? (
-                                <div className="flex items-center justify-center py-20">
-                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                                        <ArcadeSkeleton key={i} className="h-[320px]" />
+                                    ))}
                                 </div>
                             ) : filtered.length === 0 ? (
-                                <div className="text-center py-20 bg-secondary/30 rounded-xl">
-                                    <BookOpen className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-                                    <p className="text-muted-foreground">
-                                        {searchQuery ? t('لا توجد نتائج', 'No results') : t('لا توجد مواد متاحة حالياً', 'No courses available yet')}
-                                    </p>
-                                </div>
+                                <ArcadeEmpty>
+                                    <BookOpen
+                                        className="mx-auto mb-3 h-10 w-10"
+                                        style={{ color: A.inkSoft }}
+                                    />
+                                    {hasActiveFilters
+                                        ? t(
+                                            'لا توجد مواد تطابق الفلاتر. جرّب مسح الفلاتر أو تغيير المرحلة.',
+                                            'No courses match these filters. Try clearing them or picking another stage.',
+                                        )
+                                        : t(
+                                            'لا توجد مواد متاحة حالياً. تُضاف المواد من لوحة المعلّم.',
+                                            'No courses available yet. Teachers add subjects from their dashboard.',
+                                        )}
+                                </ArcadeEmpty>
                             ) : (
                                 /* ── COURSE GRID ── */
-                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                                     {filtered.map((subject: any, idx: number) => {
                                         const isFree = !subject.price_amount || subject.price_amount === 0;
-                                        const gradient = GRADIENTS[idx % GRADIENTS.length];
                                         const hasCover = !!subject.cover_image_url;
+                                        // Every third card leans on the accent so the grid has
+                                        // rhythm without introducing a second hue.
+                                        const accentLean = idx % 3 === 1;
 
                                         return (
-                                            <div key={subject.id} className="group bg-background border border-border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-lg transition-all duration-300">
+                                            <div
+                                                key={subject.id}
+                                                className="arc-press group flex flex-col overflow-hidden border-2"
+                                                style={{
+                                                    background: A.surface,
+                                                    borderColor: A.line,
+                                                }}
+                                            >
                                                 {/* Thumbnail */}
-                                                <Link to={getCourseLink(subject.id)} className="block relative aspect-[16/9] overflow-hidden">
+                                                <Link
+                                                    to={getCourseLink(subject.id)}
+                                                    className="arc-focus relative block aspect-[16/9] overflow-hidden"
+                                                    style={{ borderBottom: `2px solid ${A.line}` }}
+                                                >
                                                     {hasCover ? (
-                                                        <img src={subject.cover_image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                        <img
+                                                            src={subject.cover_image_url}
+                                                            alt=""
+                                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                        />
                                                     ) : (
-                                                        <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                                                            <BookOpen className="w-10 h-10 text-white/25" />
+                                                        <div
+                                                            className="flex h-full w-full items-center justify-center"
+                                                            style={{
+                                                                background: accentLean ? A.accent : A.grad,
+                                                            }}
+                                                        >
+                                                            <BookOpen
+                                                                className="h-10 w-10"
+                                                                style={{
+                                                                    color: accentLean ? A.onAccent : A.onInk,
+                                                                    opacity: 0.75,
+                                                                }}
+                                                            />
                                                         </div>
                                                     )}
-                                                    {/* Play overlay */}
-                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                                        <div className="w-11 h-11 rounded-full bg-white/0 group-hover:bg-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
-                                                            <Play className="w-5 h-5 text-white ms-0.5" />
-                                                        </div>
+                                                    {/* Play affordance on hover */}
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                                                        <span
+                                                            className="flex h-12 w-12 items-center justify-center border-2"
+                                                            style={{
+                                                                background: A.accent,
+                                                                color: A.onAccent,
+                                                                borderColor: A.line,
+                                                            }}
+                                                        >
+                                                            <Play className="h-5 w-5" />
+                                                        </span>
                                                     </div>
-                                                    {/* Stage badge */}
                                                     {subject.stage && (
-                                                        <span className="absolute top-2.5 start-2.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-0.5 rounded">
+                                                        <span
+                                                            className="absolute top-2.5 border-2 px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-[0.1em] start-2.5"
+                                                            style={{
+                                                                background: A.surface,
+                                                                color: A.ink,
+                                                                borderColor: A.line,
+                                                            }}
+                                                        >
                                                             {language === 'ar' ? subject.stage.title_ar : subject.stage.title_en || subject.stage.title_ar}
                                                         </span>
                                                     )}
                                                 </Link>
 
                                                 {/* Content */}
-                                                <div className="p-4">
-                                                    {/* Title */}
-                                                    <Link to={getCourseLink(subject.id)}>
-                                                        <h3 className="font-semibold text-sm leading-snug mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                                                <div className="flex flex-1 flex-col p-4">
+                                                    <Link to={getCourseLink(subject.id)} className="arc-focus">
+                                                        <h3
+                                                            className="line-clamp-2 text-[16px] font-black leading-snug"
+                                                            style={{ color: A.ink }}
+                                                        >
                                                             {t(subject.title_ar, subject.title_en || subject.title_ar)}
                                                         </h3>
                                                     </Link>
 
-                                                    {/* Teacher */}
                                                     {subject.teacher && (
-                                                        <Link to={`/t/${subject.teacher.id}`} className="text-xs text-muted-foreground mb-2.5 truncate block hover:text-primary transition-colors">
+                                                        <Link
+                                                            to={`/t/${subject.teacher.id}`}
+                                                            className="arc-focus mt-1.5 block truncate text-[13px] font-semibold"
+                                                            style={{ color: A.mid }}
+                                                        >
                                                             {subject.teacher.full_name}
                                                         </Link>
                                                     )}
 
-                                                    {/* Meta row: lessons · duration */}
-                                                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-3">
+                                                    {/* Meta: lessons, duration, rating */}
+                                                    <div
+                                                        className="mt-3 flex flex-wrap items-center gap-3 font-mono text-[11px] font-bold"
+                                                        style={{ color: A.inkSoft }}
+                                                    >
                                                         <span className="flex items-center gap-1">
-                                                            <BookOpen className="w-3 h-3" />
+                                                            <BookOpen className="h-3 w-3" />
                                                             {subject.lesson_count}
                                                         </span>
                                                         {subject.total_duration > 0 && (
                                                             <span className="flex items-center gap-1">
-                                                                <Clock className="w-3 h-3" />
+                                                                <Clock className="h-3 w-3" />
                                                                 {fmtDuration(subject.total_duration)}
                                                             </span>
                                                         )}
                                                         {subject.avg_rating > 0 && (
-                                                            <span className="flex items-center gap-1 text-amber-500">
-                                                                <Star className="w-3 h-3 fill-amber-500" />
+                                                            <span
+                                                                className="flex items-center gap-1"
+                                                                style={{ color: A.mid }}
+                                                            >
+                                                                <Star
+                                                                    className="h-3 w-3"
+                                                                    style={{ fill: A.mid }}
+                                                                />
                                                                 {subject.avg_rating}
-                                                                <span className="text-muted-foreground">({subject.rating_count})</span>
+                                                                <span style={{ color: A.inkSoft }}>
+                                                                    ({subject.rating_count})
+                                                                </span>
                                                             </span>
                                                         )}
                                                     </div>
 
-                                                    {/* Price + Enroll */}
-                                                    <div className="flex items-center justify-between">
-                                                        <span className={`text-lg font-bold ${isFree ? 'text-green-500' : ''}`}>
+                                                    {/* Price + details. The card's action goes to the
+                                                        course page, the same destination as the title
+                                                        and thumbnail, so nothing here promises an
+                                                        enrolment the page cannot complete. */}
+                                                    <div
+                                                        className="mt-4 flex items-center justify-between gap-3 pt-3"
+                                                        style={{ borderTop: `2px solid ${A.line}` }}
+                                                    >
+                                                        <span
+                                                            className="text-[17px] font-black"
+                                                            style={{ color: isFree ? A.mid : A.ink }}
+                                                        >
                                                             {formatPrice(subject.price_amount, subject.price_currency)}
                                                         </span>
-                                                        <Link to={isAuthenticated && role === 'student' ? '/student/marketplace' : '/register'}>
-                                                            <Button size="sm" variant="secondary" className="text-xs h-7 rounded-full px-4">
-                                                                {t('سجّل الآن', 'Enrol now')}
-                                                            </Button>
+                                                        <Link
+                                                            to={getCourseLink(subject.id)}
+                                                            className="arc-focus flex items-center gap-1 text-[12px] font-black"
+                                                            style={{ color: A.ink }}
+                                                        >
+                                                            {t('تفاصيل المادة', 'Course details')}
                                                         </Link>
                                                     </div>
                                                 </div>
@@ -437,19 +615,48 @@ export default function PublicMarketplace() {
                                 </div>
                             )}
 
-                            {/* CTA for non-authenticated */}
+                            {/* Closing CTA for guests */}
                             {!isAuthenticated && filtered.length > 0 && (
-                                <div className="text-center mt-10 p-8 bg-primary/5 rounded-2xl border border-primary/10">
-                                    <h2 className="text-xl font-bold mb-2">
-                                        {t('جاهز لبدء التعلم؟', 'Ready to Start Learning?')}
+                                <div
+                                    className="relative mt-12 overflow-hidden border-2 p-9 text-center"
+                                    style={{
+                                        background: A.grad,
+                                        borderColor: A.line,
+                                        boxShadow: `6px 6px 0 var(--arc-shadow)`,
+                                    }}
+                                >
+                                    <h2
+                                        className="text-[26px] font-black leading-tight tracking-tight sm:text-[32px]"
+                                        style={{ color: A.onInk }}
+                                    >
+                                        {t('جاهز لبدء التعلّم؟', 'Ready to start learning?')}
                                     </h2>
-                                    <p className="text-muted-foreground text-sm mb-4">
-                                        {t('أنشئ حسابك المجاني وابدأ بالتسجيل في المواد', 'Create your free account and start enrolling')}
+                                    <p
+                                        className="mx-auto mt-4 max-w-[48ch] text-[15px] font-medium leading-relaxed"
+                                        style={{ color: A.onInkMuted }}
+                                    >
+                                        {t(
+                                            'أنشئ حسابك واختر مرحلتك، ثم اشترك في المواد التي تحتاجها.',
+                                            'Create an account, choose your stage, then subscribe to the subjects you need.',
+                                        )}
                                     </p>
-                                    <div className="flex gap-3 justify-center">
-                                        <Button asChild><Link to="/register">{t('إنشاء حساب', 'Create Account')}</Link></Button>
-                                        <Button variant="outline" asChild><Link to="/login">{t('تسجيل الدخول', 'Sign In')}</Link></Button>
+                                    <div className="mt-8 flex flex-wrap justify-center gap-4">
+                                        <ArcadeLink to="/register" variant="onDark">
+                                            {t('ابدأ الآن', 'Get started')}
+                                        </ArcadeLink>
+                                        <Link
+                                            to="/login"
+                                            className="arc-focus inline-flex items-center px-2 text-[15px] font-black"
+                                            style={{ color: A.onInk }}
+                                        >
+                                            {t('دخول', 'Log in')}
+                                        </Link>
                                     </div>
+                                    <div
+                                        className="mt-9 h-[6px] w-full opacity-40"
+                                        style={{ background: PIXEL_STRIP }}
+                                        aria-hidden
+                                    />
                                 </div>
                             )}
                         </main>

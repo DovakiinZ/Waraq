@@ -1,18 +1,23 @@
+// Student registration, styled in the arcade (green + white) language to match
+// the landing page. Split layout: a gradient brand panel beside the form at
+// desktop, form only on mobile.
+//
+// Only presentation changed here. The auth flow, validation rules, field ids,
+// field order and autoComplete values are all preserved, since analytics and
+// browser autofill depend on them.
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2, ArrowRight, ArrowLeft, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Eye, EyeOff, AlertCircle, CheckCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { A, PIXEL_STRIP } from '@/components/arcade/theme';
+import { ArcadeButton, ArcadeCard, ArcadeField, ArcadeLink } from '@/components/arcade/primitives';
 import logo from '@/assets/logo.png';
 
 export default function Register() {
     const { signUp, role, isAuthenticated, redirectByRole, isLoading: authLoading } = useAuth();
     const { t, direction } = useLanguage();
-    const navigate = useNavigate();
 
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
@@ -85,181 +90,284 @@ export default function Register() {
 
     const ArrowIcon = direction === 'rtl' ? ArrowLeft : ArrowRight;
 
-    // Show success message
+    // Success state
     if (success) {
         return (
-            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-                <div className="w-full max-w-sm">
-                    <div className="text-center mb-8">
-                        <Link to="/">
-                            <img src={logo} alt="Ayman Academy" className="h-24 mx-auto mb-4" />
-                        </Link>
-                    </div>
+            <div
+                className="flex min-h-[100dvh] flex-col items-center justify-center p-5 font-arabic"
+                style={{ background: A.bg }}
+            >
+                <div className="w-full max-w-md">
+                    <Link to="/" className="arc-focus mb-8 flex items-center justify-center gap-2.5">
+                        <img
+                            src={logo}
+                            alt=""
+                            className="h-10 w-10 object-contain"
+                            style={{ border: `2px solid ${A.line}`, background: A.surface }}
+                        />
+                        <span className="text-[18px] font-black" style={{ color: A.ink }}>
+                            {t('أكاديمية أيمن', 'Ayman Academy')}
+                        </span>
+                    </Link>
 
-                    <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-6 text-center">
-                        <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                        <h2 className="text-lg font-semibold text-foreground mb-2">
-                            {t('تم إنشاء الحساب!', 'Account Created!')}
+                    <ArcadeCard className="p-8 text-center">
+                        <span
+                            className="mx-auto flex h-14 w-14 items-center justify-center border-2"
+                            style={{ background: A.accent, color: A.onAccent, borderColor: A.line }}
+                        >
+                            <CheckCircle className="h-7 w-7" />
+                        </span>
+                        <h2 className="mt-5 text-[24px] font-black" style={{ color: A.ink }}>
+                            {t('تم إنشاء الحساب', 'Account created')}
                         </h2>
-                        <p className="text-sm text-muted-foreground mb-4">
+                        <p
+                            className="mx-auto mt-3 max-w-[38ch] text-[15px] font-medium leading-relaxed"
+                            style={{ color: A.inkSoft }}
+                        >
                             {t(
-                                'تحقق من بريدك الإلكتروني لتأكيد حسابك، ثم قم بتسجيل الدخول.',
-                                'Check your email to confirm your account, then sign in.'
+                                'تحقق من بريدك الإلكتروني لتأكيد حسابك، ثم سجّل الدخول.',
+                                'Check your email to confirm your account, then sign in.',
                             )}
                         </p>
-                        <Link to="/login">
-                            <Button className="w-full">
-                                {t('الذهاب لتسجيل الدخول', 'Go to Sign In')}
-                                <ArrowIcon className="w-4 h-4 ms-2" />
-                            </Button>
-                        </Link>
-                    </div>
+                        <div className="mt-7">
+                            <ArcadeLink to="/login" variant="solid" className="w-full">
+                                {t('الذهاب لتسجيل الدخول', 'Go to sign in')}
+                                <ArrowIcon className="h-4 w-4" />
+                            </ArcadeLink>
+                        </div>
+                    </ArcadeCard>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-sm">
-                {/* Logo */}
-                <div className="text-center mb-8">
-                    <Link to="/">
-                        <img src={logo} alt="Ayman Academy" className="h-24 mx-auto mb-4" />
+        <div
+            className="grid min-h-[100dvh] font-arabic lg:grid-cols-[0.9fr_1.1fr]"
+            style={{ background: A.bg }}
+        >
+            {/* Brand panel. Desktop only: on mobile it would push the form
+                below the fold for no benefit. */}
+            <aside
+                className="relative hidden flex-col justify-between overflow-hidden p-12 lg:flex"
+                style={{ background: A.grad }}
+            >
+                <Link to="/" className="arc-focus flex items-center gap-3">
+                    <img
+                        src={logo}
+                        alt=""
+                        className="h-10 w-10 object-contain"
+                        style={{ border: `2px solid ${A.onInk}` }}
+                    />
+                    <span className="text-[18px] font-black" style={{ color: A.onInk }}>
+                        {t('أكاديمية أيمن', 'Ayman Academy')}
+                    </span>
+                </Link>
+
+                <div>
+                    <h2
+                        className="text-[38px] font-black leading-[1.1] tracking-tight"
+                        style={{ color: A.onInk }}
+                    >
+                        {t('ارفع مستواك', 'Level up in every')}
+                        <br />
+                        <span style={{ color: A.accent }}>
+                            {t('في كل مادة', 'school subject')}
+                        </span>
+                    </h2>
+
+                    <ul className="mt-9 space-y-4">
+                        {[
+                            { ar: 'مواد مرتّبة حسب مرحلتك الدراسية', en: 'Subjects ordered by your grade' },
+                            { ar: 'دروس بالفيديو وتمارين واختبارات قصيرة', en: 'Video lessons, exercises and short quizzes' },
+                            { ar: 'شهادة قابلة للتحقق عند إتمام المادة', en: 'A verifiable certificate when you finish' },
+                        ].map((item) => (
+                            <li key={item.en} className="flex items-start gap-3">
+                                <span
+                                    className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center"
+                                    style={{ background: A.accent, color: A.onAccent }}
+                                >
+                                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                                </span>
+                                <span
+                                    className="text-[15px] font-semibold leading-relaxed"
+                                    style={{ color: A.onInkMuted }}
+                                >
+                                    {t(item.ar, item.en)}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                <div className="h-[6px] w-full opacity-40" style={{ background: PIXEL_STRIP }} aria-hidden />
+            </aside>
+
+            {/* Form */}
+            <main className="flex items-center justify-center p-5 py-12 lg:p-12">
+                <div className="w-full max-w-[420px]">
+                    {/* Compact brand lockup, mobile only. */}
+                    <Link to="/" className="arc-focus mb-8 flex items-center gap-2.5 lg:hidden">
+                        <img
+                            src={logo}
+                            alt=""
+                            className="h-9 w-9 object-contain"
+                            style={{ border: `2px solid ${A.line}`, background: A.surface }}
+                        />
+                        <span className="text-[17px] font-black" style={{ color: A.ink }}>
+                            {t('أكاديمية أيمن', 'Ayman Academy')}
+                        </span>
                     </Link>
-                    <h1 className="text-xl font-semibold text-foreground">
-                        {t('إنشاء حساب طالب', 'Create Student Account')}
+
+                    <h1
+                        className="text-[30px] font-black leading-tight tracking-tight sm:text-[36px]"
+                        style={{ color: A.ink }}
+                    >
+                        {t('إنشاء حساب طالب', 'Create a student account')}
                     </h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        {t('انضم إلى أكاديمية أيمن اليوم', 'Join Ayman Academy today')}
+                    <p className="mt-3 text-[15px] font-medium" style={{ color: A.inkSoft }}>
+                        {t('انضم إلى أكاديمية أيمن اليوم.', 'Join Ayman Academy today.')}
                     </p>
-                </div>
 
-                {/* Note about teachers */}
-                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-6 text-center">
-                    <p className="text-xs text-muted-foreground">
-                        {t('هل أنت معلم؟', 'Are you a teacher?')}{' '}
-                        <a href="/apply/teacher" className="text-primary font-medium hover:underline">
-                            {t('سجّل كمعلم من هنا', 'Register as a teacher here')}
-                        </a>
-                    </p>
-                </div>
-
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="fullName">{t('الاسم الكامل', 'Full Name')}</Label>
-                        <Input
-                            id="fullName"
-                            type="text"
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
-                            placeholder={t('أدخل اسمك الكامل', 'Enter your full name')}
-                            required
-                            disabled={isSubmitting}
-                            autoComplete="name"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="email">{t('البريد الإلكتروني', 'Email')}</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder={t('أدخل بريدك الإلكتروني', 'Enter your email')}
-                            required
-                            disabled={isSubmitting}
-                            autoComplete="email"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="password">{t('كلمة المرور', 'Password')}</Label>
-                        <div className="relative">
-                            <Input
-                                id="password"
-                                type={showPassword ? 'text' : 'password'}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder={t('كلمة مرور قوية', 'Strong password')}
-                                required
-                                disabled={isSubmitting}
-                                autoComplete="new-password"
-                                className="pe-10"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                tabIndex={-1}
-                            >
-                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            {t('6 أحرف على الأقل', 'At least 6 characters')}
+                    {/* Teacher route. Uses Link, not <a>, so it does not reload
+                        the whole app. */}
+                    <div
+                        className="mt-6 border-2 p-3.5"
+                        style={{ background: A.wash, borderColor: A.line }}
+                    >
+                        <p className="text-[13px] font-semibold" style={{ color: A.ink }}>
+                            {t('هل أنت معلّم؟', 'Are you a teacher?')}{' '}
+                            <Link to="/apply/teacher" className="arc-link arc-focus">
+                                {t('قدّم كمعلّم من هنا', 'Teach with us here')}
+                            </Link>
                         </p>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">{t('تأكيد كلمة المرور', 'Confirm Password')}</Label>
-                        <Input
-                            id="confirmPassword"
-                            type={showPassword ? 'text' : 'password'}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder={t('أعد إدخال كلمة المرور', 'Re-enter password')}
-                            required
-                            disabled={isSubmitting}
-                            autoComplete="new-password"
-                        />
-                    </div>
+                    <form onSubmit={handleSubmit} className="mt-7 space-y-5">
+                        <ArcadeField id="fullName" label={t('الاسم الكامل', 'Full name')}>
+                            <input
+                                id="fullName"
+                                className="arc-input"
+                                type="text"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                placeholder={t('أدخل اسمك الكامل', 'Enter your full name')}
+                                required
+                                disabled={isSubmitting}
+                                autoComplete="name"
+                            />
+                        </ArcadeField>
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                            <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
-                            <p className="text-sm text-destructive">{error}</p>
-                        </div>
-                    )}
+                        <ArcadeField id="email" label={t('البريد الإلكتروني', 'Email')}>
+                            <input
+                                id="email"
+                                className="arc-input"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder={t('أدخل بريدك الإلكتروني', 'Enter your email')}
+                                required
+                                disabled={isSubmitting}
+                                autoComplete="email"
+                            />
+                        </ArcadeField>
 
-                    <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <>
-                                {t('إنشاء الحساب', 'Create Account')}
-                                <ArrowIcon className="w-4 h-4 ms-2" />
-                            </>
+                        <ArcadeField
+                            id="password"
+                            label={t('كلمة المرور', 'Password')}
+                            hint={t('6 أحرف على الأقل', 'At least 6 characters')}
+                        >
+                            <div className="relative">
+                                <input
+                                    id="password"
+                                    className="arc-input pe-12"
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder={t('كلمة مرور قوية', 'Strong password')}
+                                    required
+                                    disabled={isSubmitting}
+                                    autoComplete="new-password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="arc-focus absolute end-3 top-1/2 -translate-y-1/2"
+                                    style={{ color: A.inkSoft }}
+                                    aria-label={
+                                        showPassword
+                                            ? t('إخفاء كلمة المرور', 'Hide password')
+                                            : t('إظهار كلمة المرور', 'Show password')
+                                    }
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
+                        </ArcadeField>
+
+                        <ArcadeField id="confirmPassword" label={t('تأكيد كلمة المرور', 'Confirm password')}>
+                            <input
+                                id="confirmPassword"
+                                className="arc-input"
+                                type={showPassword ? 'text' : 'password'}
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder={t('أعد إدخال كلمة المرور', 'Re-enter password')}
+                                required
+                                disabled={isSubmitting}
+                                autoComplete="new-password"
+                            />
+                        </ArcadeField>
+
+                        {error && (
+                            <div
+                                className="flex items-start gap-2.5 border-2 p-3"
+                                style={{
+                                    borderColor: 'hsl(var(--destructive))',
+                                    background: 'hsl(var(--destructive) / 0.08)',
+                                }}
+                                role="alert"
+                            >
+                                <AlertCircle
+                                    className="mt-0.5 h-4 w-4 shrink-0"
+                                    style={{ color: 'hsl(var(--destructive))' }}
+                                />
+                                <p
+                                    className="text-[13px] font-bold"
+                                    style={{ color: 'hsl(var(--destructive))' }}
+                                >
+                                    {error}
+                                </p>
+                            </div>
                         )}
-                    </Button>
-                </form>
 
-                <div className="mt-6 text-center text-sm text-muted-foreground">
-                    <p>
+                        <ArcadeButton
+                            type="submit"
+                            variant="solid"
+                            className="w-full"
+                            loading={isSubmitting}
+                        >
+                            {!isSubmitting && t('إنشاء الحساب', 'Create account')}
+                            {isSubmitting && t('جارٍ الإنشاء', 'Creating')}
+                            {!isSubmitting && <ArrowIcon className="h-4 w-4" />}
+                        </ArcadeButton>
+                    </form>
+
+                    <p className="mt-7 text-[14px] font-medium" style={{ color: A.inkSoft }}>
                         {t('لديك حساب بالفعل؟', 'Already have an account?')}{' '}
-                        <Link to="/login" className="text-primary hover:underline font-medium">
-                            {t('تسجيل الدخول', 'Sign In')}
+                        <Link to="/login" className="arc-link arc-focus">
+                            {t('تسجيل الدخول', 'Log in')}
+                        </Link>
+                    </p>
+
+                    <p className="mt-3 text-[14px] font-medium">
+                        <Link to="/" className="arc-focus" style={{ color: A.inkSoft }}>
+                            {t('العودة للرئيسية', 'Back to home')}
                         </Link>
                     </p>
                 </div>
-
-                {/* Back to home */}
-                <div className="mt-6 text-center">
-                    <Link
-                        to="/"
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        {t('العودة للرئيسية', 'Back to Home')}
-                    </Link>
-                </div>
-            </div>
+            </main>
         </div>
     );
 }

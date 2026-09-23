@@ -135,6 +135,39 @@ src/
 └── assets/                   # Images, logos
 ```
 
+### Landing Page Design Variants (`src/pages/landing/`)
+
+Ten competing homepage directions live side by side for selection. They are **preview-only** and do not affect `/`, which still renders `LandingPreview`.
+
+- Chooser at `/landing`, each variant at `/landing/1` … `/landing/10` (routes in `App.tsx`).
+- `useLandingData.ts` — all variants pull the **same live data** (`useHomeStages`, `useFeaturedTeachers`, `useFeaturedSubjects`) so they differ only in art direction. Also exports `VARIANTS` (the registry driving the index + switcher) and legacy `BRAND` navy/gold tokens used by V1 to V6.
+- `useReveal.tsx` — `<Reveal>`, an IntersectionObserver scroll-reveal that respects `prefers-reduced-motion`. **Use this instead of adding an animation library**; the project has no Motion/GSAP dependency.
+- `VariantSwitcher.tsx` — floating variant hopper on every variant. Preview tool, delete when a winner is picked.
+- `palettes.ts` + `PaletteSwitcher.tsx` — four complete palettes (Cobalt & Citrus, Teal & Coral, Plum & Lime, Midnight & Aqua) switchable live in the browser and persisted to `localStorage` under `ayman-academy-palette`. Used by V9 only. Also exports `R`, the one radius scale for V9 (pill interactive / 20px cards / 14px chips).
+
+Directions: 1 Bold Editorial · 2 Quiet Minimal · 3 Playful · 4 Premium Dark · 5 Conversion · 6 Premium Marketplace · 7 Thmanyah Editorial · 8 Wijha Refined · **9 Colorful** (Pikbest-style illustration-led, the 4 live palettes) · **10 Pixel Arcade** (Young&&Yandex-inspired: radius 0, 2px borders, hard offset shadows, grades framed as levels). **Two colours only, white plus one green scale** — deep green `#07301F` carries text/borders/shadows, electric green `#22DE7C` is the only fill, and a dark-half green gradient appears on exactly two full-bleed bands. Text on electric green is always deep green, never white (electric green is light).
+
+**Conventions to keep when adding a variant:** every user-facing string through `t()`; real routes only (`/register`, `/marketplace`, `/course/:id`, `/stages/:slug`, `/t/:id`, `/apply/teacher`, `/plans`); logical RTL properties (`ms-`/`me-`/`ps-`/`pe-`/`start-`/`end-`) and a direction-flipped arrow icon; loading skeletons and empty states for every data-backed section. **Never invent stats** — `useFeaturedTeachers`/`useFeaturedSubjects` are capped by `.limit()`, so their lengths are not totals; only `stages.length` is a real count.
+
+### Arcade Theme — the green + white public design language
+
+The V10 landing style is now the shared look for **all public-facing pages**. Three layers, in order:
+
+1. **`src/index.css`** — `--arc-*` CSS variables define the palette, once in `:root` and again under `.dark`. **This is the only file containing arcade hex values.** Tune colours here and every surface follows.
+2. **`src/components/arcade/theme.ts`** — exports `A` (tokens as `var(--arc-*)` strings), `hard(n)` (the offset shadow), `PIXEL_STRIP`, `RADIUS`.
+3. **`src/components/arcade/primitives.tsx`** — `ArcadeButton`, `ArcadeLink`, `ArcadeCard`, `ArcadeChip`, `ArcadeField`, `ArcadeSkeleton`, `ArcadeEmpty`, `PixelDivider`.
+
+Interactive states (`:hover`, `:focus-visible`, `:active`, `::placeholder`) live in `@layer components` in `index.css` as `.arc-press`, `.arc-press-sm`, `.arc-focus`, `.arc-input`, `.arc-link` — they cannot be expressed as inline styles.
+
+**Rules that are easy to get wrong:**
+- **`ink` is a TEXT colour, `line` is a BORDER colour, `band` is a deep-green FILL.** They coincide in light mode and diverge in dark. Never use `A.ink` as a background or a border, or dark mode breaks.
+- **Text on `A.accent` is always `A.onAccent`, never white** — electric green is light (white on it fails contrast; `onAccent` gives 8.4:1).
+- **Never set `boxShadow` inline on a `.arc-press` element.** Inline styles beat the `:hover`/`:active` rules and the press effect silently dies. To recolour it, set the `--arc-press-color` custom property instead (that's what `variant="onDark"` does).
+- Focus rings use `A.mid`, not `A.accent` — accent only reaches 1.9:1 against white, below the 3:1 floor for focus indicators.
+- Radius is **0 everywhere**, borders are **2px**. Error text is the one non-green colour, via the existing semantic `hsl(var(--destructive))` token, because an error rendered in the brand green would not read as an error.
+
+**Surfaces using it:** `layout/Header`, `layout/Footer`, `layout/Layout` (so all 21 pages that wrap in `Layout` inherit it), `auth/Register`, `auth/Login`, `PublicMarketplace`, `TeacherApplication`, `landing/LandingV10`. Dark mode still works throughout via the Header toggle. Admin/teacher/student shells do **not** use `Layout` and are untouched.
+
 ### User Roles & Access
 
 | Role | Routes | Access |
