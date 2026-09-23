@@ -81,7 +81,7 @@ export async function evaluateCourseQuality(subjectId: string): Promise<CourseQu
     // 3. Drop-off Rate
     // ============================
     const lessonStudentCounts = new Map<number, number>();
-    const lessonMap = new Map(lessons.map((l: any, i: number) => [l.id, i]));
+    const lessonMap = new Map<string, number>(lessons.map((l: any, i: number) => [l.id, i] as [string, number]));
 
     progressRecords.forEach((p: any) => {
         const idx = lessonMap.get(p.lesson_id);

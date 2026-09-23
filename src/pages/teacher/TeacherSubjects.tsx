@@ -202,7 +202,7 @@ function useSubjectDetail(subjectId: string | undefined, teacherId: string | und
                     const { data: profiles } = await supabase
                         .from('profiles')
                         .select('id, full_name, email, avatar_url')
-                        .in('id', uniqueUserIds)
+                        .in('id', uniqueUserIds as string[])
                         .eq('role', 'student');
 
                     // Get latest activity per student

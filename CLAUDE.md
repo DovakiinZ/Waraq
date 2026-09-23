@@ -369,6 +369,39 @@ const form = useForm<FormData>({
 - **Sham Cash QR code is placeholder** — The checkout page shows a dashed QR placeholder. Need to add real QR code image upload via admin settings or teacher profile.
 - **Payment model is per-teacher** — Money goes directly to teachers via Sham Cash. Currently using a single platform-level QR. Per-teacher QR codes should be added to teacher profiles.
 - **lesson_content vs lesson_blocks**: Old `lesson_content` table referenced in earlier docs, but code uses `lesson_sections` + `lesson_blocks`. Need to verify which is active in Supabase.
+- **Quiz schema — fixed 2026-09-22.** `QuizEditor.tsx` was writing `question_text_ar`, `question_text_en`, `question_type`, `options` and `correct_option_index`; none of those columns exist in the live database, so no question ever saved. `QuizPlayer.tsx` read `q.options` / `q.correct_answer` (also nonexistent) and never inserted a `quiz_attempts` row, so results were discarded. Both now use the real schema: `quiz_questions` (`type`, `question_ar/en`, `explanation_ar/en`, `sort_order`) with choices in `quiz_options` (`text_ar/en`, `is_correct`, `sort_order`), and attempts are recorded. `multi_select` is supported alongside `mcq` / `true_false`.
+- **`/auth/bridge` is a session handoff endpoint for the mobile app** (`src/pages/auth/AuthBridge.tsx`). The Flutter admin WebView opens `/auth/bridge#at=…&rt=…&redirect=/admin`; the page calls `supabase.auth.setSession()` and forwards. Tokens travel in the fragment (never sent to a server), the params avoid the `access_token`/`refresh_token` names so `detectSessionInUrl` doesn't race it, and `redirect` is restricted to in-app paths so it can't be used as an open redirect. Do not remove this route — the app's admin panel depends on it.
+- **`QuizManagement.tsx` — fixed 2026-09-22.** It was a second, full quiz editor writing the denormalised `options: string[]` + `correct_answer` shape, so nothing it saved ever landed. It is now a thin summary card that opens `QuizEditor`, leaving one editor implementation for one schema.
+- **Migrations 102-105 are APPLIED and verified** against the live database (2026-09-22). Anonymous callers now get `42501` from the admin enrollment RPCs, see 0 student and 0 admin rows on `profiles`, and 401 on `email` / `grade` / `shamcash_account_number`. Quiz grading runs server-side via `submit_quiz_attempt`. See `supabase/migrations/README.md` for the full state of that folder — **`supabase db push` must never be run here**; the two destructive files are renamed `.DO-NOT-RUN`. Historical detail on what each migration fixed: **104** Findings from auditing all 39 tables and 12 functions the clients touch, probed against the live database on 2026-09-22:
+  - **`profiles` was world-readable.** Anonymous callers got every row of every role, including `email`, `grade`, `student_stage` and teachers' `shamcash_account_name`/`shamcash_account_number`. The anon key is public by design (it ships inside the APK), so this was open to anyone. 104 enables RLS with per-role policies and restricts anon to a teacher's public-facing columns only.
+  - **Five functions the UI calls do not exist**, so those buttons always failed: `request_certificate` (student "Request certificate"), `admin_approve_certificate` / `admin_revoke_certificate` (teacher certificate actions), `get_admin_enrollments` / `get_admin_enrollment_detail` (the whole admin Enrollments Explorer page). 104 creates all five.
+  - **`teacher_evaluations` does not exist** though `src/lib/teacherEvaluationService.ts` reads and upserts it. 104 creates it with RLS.
+  - Writes were already correctly guarded on all other tables; `teacher_applications` accepts anonymous INSERT by design for `/apply/teacher`.
+  - Because anon now has column-level grants, `select('*')` on profiles fails for logged-out visitors — `TeacherPublicProfile.tsx` lists its columns explicitly. Keep public profile queries explicit.
+  - `profiles.featured_stages` does not exist in the live database; the branch in `TeacherPublicProfile.tsx` that reads it never runs.
+- **ACTION REQUIRED — run `supabase/migrations/103_submit_quiz_attempt.sql`.** Paste it into the Supabase SQL editor. It adds the `submit_quiz_attempt` RPC, which grades quizzes in the database so a student cannot forge a score, and enforces `attempts_allowed` server-side. Both clients already call it and fall back to local grading while it is absent (PGRST202), so nothing breaks before it is applied — and nothing needs rebuilding after. **Never run `supabase db push` on this project**: the migrations folder still contains `100_clean_rewrite.sql`, which drops the entire public schema.
+- **Quiz answers are still readable from the API** — `quiz_options.is_correct` is sent to the client so the review screen can show the right answer. Hiding it needs a student-facing fetch RPC that omits the flag, plus RLS on `quiz_options`. Grading integrity is handled by `submit_quiz_attempt`; this is the remaining half.
+
+---
+
+## Android Release Policy
+
+**Every update ships an APK, and old versions are never removed.**
+
+1. Bump `version:` in `ayman_academy_flutter/pubspec.yaml` (e.g. `1.0.2+102`) — a new `versionCode` is what lets the new APK install over the old one.
+2. Build with the dart-defines:
+   ```bash
+   flutter build apk --release      --dart-define=SUPABASE_URL=<url>      --dart-define=SUPABASE_ANON_KEY=<key>      --dart-define=WEB_APP_URL=https://aymanacademy.com      --dart-define=ONESIGNAL_APP_ID=<id>   # omit and push is disabled
+   ```
+3. Publish a **new** GitHub release tagged `vX.Y.Z-android` with the APK attached as `ayman-academy-vX.Y.Z.apk`:
+   ```bash
+   gh release create vX.Y.Z-android --target main --latest      --title "Ayman Academy — Android vX.Y.Z"      --notes-file notes.md "<path>/app-release.apk#Ayman Academy vX.Y.Z (Android APK)"
+   ```
+4. **Never delete or overwrite a previous release or its APK.** Each published version stays downloadable at its own permanent URL so anyone can re-download an earlier build. Only the `Latest` marker moves.
+5. The newest build is always at `https://github.com/DovakiinZ/ayman-academy-portal/releases/latest`; a specific version is at `/releases/tag/vX.Y.Z-android`.
+6. Before publishing, verify the binary really contains the change — unzip `lib/arm64-v8a/libapp.so` from the APK and grep for a string the change introduced. A build that overlapped a `git checkout` cannot be trusted otherwise.
+
+Published so far: `v1.0.0-android`, `v1.0.1-android`, `v1.0.2-android`, `v1.0.3-android`.
 
 ---
 
@@ -385,6 +418,7 @@ const form = useForm<FormData>({
 - [x] **Dashboard CTA** — New students directed to marketplace instead of old browse page.
 - [ ] **Sham Cash QR code configuration** — Admin needs UI to upload/configure the Sham Cash QR code (currently placeholder).
 - [ ] **Teacher profile payment info** — Teachers should set their Sham Cash account in profile (for per-teacher payments later).
+- [x] **Admin students page** (`/admin/students`) — all students with stage, grade, gender, contact, enrolled subjects, orders, certificates, XP/level and last activity, with search and stage filter.
 - [x] **Teacher application flow** — Public form at `/apply/teacher`, admin review at `/admin/applications`, approve → creates invite link.
 - [x] **Landing page "Teach with Us" section** — CTA section on homepage linking to teacher application.
 - [ ] **Create `teacher_applications` table in Supabase** — Run the SQL migration (see Known Issues).

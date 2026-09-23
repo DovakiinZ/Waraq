@@ -17,7 +17,7 @@ final teacherQuizzesProvider = FutureProvider.family<List<Quiz>, String>((ref, s
 
   final data = await supabase
       .from('quizzes')
-      .select('*, quiz_questions(*)')
+      .select('*, quiz_questions(*, quiz_options(*))')
       .inFilter('lesson_id', lessonIds);
   return (data as List).map((e) => Quiz.fromJson(e as Map<String, dynamic>)).toList();
 });
@@ -102,7 +102,7 @@ class TeacherQuizzesScreen extends ConsumerWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             subtitle: Text(
-                              '${question.type == "true_false" ? t("صح/خطأ", "True/False") : t("اختيار متعدد", "MCQ")} | ${t("الجواب", "Answer")}: ${question.correctAnswer}',
+                              '${question.type == "true_false" ? t("صح/خطأ", "True/False") : question.type == "multi_select" ? t("متعدد الإجابات", "Multi-select") : t("اختيار متعدد", "MCQ")} | ${t("الجواب", "Answer")}: ${question.correctText(lang)}',
                               style: const TextStyle(fontSize: 11, color: AppColors.inkMuted),
                             ),
                           );

@@ -56,7 +56,7 @@ export default function RatingWidget({ lessonId, title }: RatingWidgetProps) {
 
         const payload = {
             user_id: profile.id,
-            entity_type: 'lesson',
+            entity_type: 'lesson' as const,
             entity_id: lessonId,
             stars: rating,
             comment: comment.trim() || null

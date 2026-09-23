@@ -1,13 +1,12 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ayman_academy_app/core/router/routes.dart';
-import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/features/auth/screens/login_screen.dart';
 import 'package:ayman_academy_app/features/auth/screens/register_screen.dart';
 import 'package:ayman_academy_app/features/auth/screens/reset_password_screen.dart';
+import 'package:ayman_academy_app/features/admin/screens/admin_panel_screen.dart';
 import 'package:ayman_academy_app/features/auth/screens/admin_web_only_screen.dart';
 import 'package:ayman_academy_app/features/onboarding/screens/student_onboarding_screen.dart';
 import 'package:ayman_academy_app/features/student/dashboard/screens/student_dashboard_screen.dart';
@@ -37,43 +36,54 @@ import 'package:ayman_academy_app/features/student/subjects/screens/student_teac
 import 'package:ayman_academy_app/shared/widgets/shells/student_shell.dart';
 import 'package:ayman_academy_app/shared/widgets/shells/teacher_shell.dart';
 
-class GoRouterRefreshStream extends ChangeNotifier {
-  late final StreamSubscription _sub;
-  GoRouterRefreshStream(Stream stream) {
-    _sub = stream.listen((_) => notifyListeners());
-  }
-  @override
-  void dispose() {
-    _sub.cancel();
-    super.dispose();
+/// Bridges Riverpod auth state to GoRouter's [Listenable] refresh hook.
+class _AuthRefreshNotifier extends ChangeNotifier {
+  _AuthRefreshNotifier(Ref ref) {
+    ref.listen<AuthState>(authProvider, (_, _) => notifyListeners());
   }
 }
 
+// NOTE: this Provider deliberately does NOT watch authProvider. Watching it
+// rebuilt the entire GoRouter on every auth change, which threw away the
+// navigation stack and leaked a stream subscription each time. The router is
+// built once; redirects re-run via refreshListenable and read state on demand.
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authProvider);
+  final refresh = _AuthRefreshNotifier(ref);
+  ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    initialLocation: Routes.login,
-    refreshListenable: GoRouterRefreshStream(
-      supabase.auth.onAuthStateChange,
-    ),
+    initialLocation: Routes.splash,
+    refreshListenable: refresh,
     redirect: (context, state) {
-      if (auth.status == AuthStatus.loading) return null;
-
+      final auth = ref.read(authProvider);
       final path = state.uri.path;
       final isAuthRoute = path.startsWith('/auth');
+      final isSplash = path == Routes.splash;
 
-      if (!auth.isAuthenticated && !isAuthRoute) return Routes.login;
-
-      if (auth.isAuthenticated && isAuthRoute) {
-        if (auth.isAdmin) return Routes.adminWebOnly;
-        return auth.isTeacher ? Routes.teacherHome : Routes.studentHome;
+      // Still restoring the session: hold on the splash instead of flashing
+      // the login screen on every cold start.
+      if (auth.status == AuthStatus.loading) {
+        return isSplash ? null : Routes.splash;
       }
 
-      if (auth.isAdmin && path != Routes.adminWebOnly) return Routes.adminWebOnly;
+      if (!auth.isAuthenticated) {
+        return isAuthRoute ? null : Routes.login;
+      }
 
-      if (auth.needsOnboarding && path != Routes.onboarding) {
-        return Routes.onboarding;
+      // Admins get the web CMS embedded in the app (see AdminPanelScreen).
+      // adminWebOnly is kept as a fallback for builds without a web app URL.
+      if (auth.isAdmin) {
+        const adminPaths = {Routes.adminPanel, Routes.adminWebOnly};
+        return adminPaths.contains(path) ? null : Routes.adminPanel;
+      }
+
+      if (auth.needsOnboarding) {
+        return path == Routes.onboarding ? null : Routes.onboarding;
+      }
+
+      // Signed in and settled: get off the splash/auth screens.
+      if (isSplash || isAuthRoute || path == Routes.onboarding) {
+        return auth.isTeacher ? Routes.teacherHome : Routes.studentHome;
       }
 
       if (auth.isTeacher && path.startsWith('/student')) return Routes.teacherHome;
@@ -82,11 +92,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(path: Routes.splash, builder: (_, _) => const _SplashScreen()),
+
       // Auth routes
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: Routes.register, builder: (_, _) => const RegisterScreen()),
       GoRoute(path: Routes.resetPassword, builder: (_, _) => const ResetPasswordScreen()),
       GoRoute(path: Routes.onboarding, builder: (_, _) => const StudentOnboardingScreen()),
+      GoRoute(path: Routes.adminPanel, builder: (_, _) => const AdminPanelScreen()),
       GoRoute(path: Routes.adminWebOnly, builder: (_, _) => const AdminWebOnlyScreen()),
 
       // Student shell
@@ -220,3 +233,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Shown while the stored session is being restored and the profile fetched.
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}

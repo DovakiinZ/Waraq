@@ -22,6 +22,7 @@ lint_output*
 tsc_output*
 *.timestamp-*
 .claude/
+supabase/.temp/
 
 # Editor directories and files
 .vscode/*

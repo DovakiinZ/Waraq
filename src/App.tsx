@@ -50,6 +50,7 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AcceptInvite from "./pages/auth/AcceptInvite";
+import AuthBridge from "./pages/auth/AuthBridge";
 import AccessDenied from "./pages/AccessDenied";
 import TeacherProfilePublic from "./pages/TeacherProfilePublic";
 
@@ -75,6 +76,7 @@ import CoursePreview from "./pages/student/CoursePreview";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import TeachersManagement from "./pages/admin/TeachersManagement";
+import StudentsManagement from "./pages/admin/StudentsManagement";
 import StagesManagement from "./pages/admin/TaxonomyManagement"; // Reusing as StagesManagement
 import SubjectsManagement from "./pages/admin/SubjectsManagement";
 import LessonsManagement from "./pages/admin/LessonsManagement";
@@ -164,6 +166,8 @@ const App = () => (
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/invite/:token" element={<AcceptInvite />} />
                   <Route path="/access-denied" element={<AccessDenied />} />
+                  {/* Session handoff from the mobile app's admin WebView */}
+                  <Route path="/auth/bridge" element={<AuthBridge />} />
 
                   {/* Student Onboarding (outside protected layout so it can redirect) */}
                   <Route path="/student/onboarding" element={
@@ -180,6 +184,7 @@ const App = () => (
                   }>
                     <Route index element={<AdminDashboard />} />
                     <Route path="teachers" element={<TeachersManagement />} />
+                    <Route path="students" element={<StudentsManagement />} />
                     <Route path="stages" element={<StagesManagement />} />
                     <Route path="stages/:stageId/subjects" element={<SubjectsManagement />} />
                     <Route path="subjects" element={<SubjectsManagement />} />

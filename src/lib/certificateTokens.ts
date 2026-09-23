@@ -207,8 +207,8 @@ export async function buildLiveSnapshot(
                         const { data: comments } = await supabase
                             .from('lesson_comments')
                             .select('content')
-                            .in('lesson_id', lessonIds)
-                            .in('user_id', teacherIds)
+                            .in('lesson_id', lessonIds as string[])
+                            .in('user_id', teacherIds as string[])
                             .eq('is_pinned', true)
                             .order('created_at', { ascending: false })
                             .limit(1) as any;

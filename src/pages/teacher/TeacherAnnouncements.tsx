@@ -61,7 +61,7 @@ export default function TeacherAnnouncements() {
                 .eq('teacher_id', user!.id)
                 .order('created_at', { ascending: false });
             if (error) throw error;
-            return (data || []) as Announcement[];
+            return (data || []) as unknown as Announcement[];
         },
         enabled: !!user?.id,
     });

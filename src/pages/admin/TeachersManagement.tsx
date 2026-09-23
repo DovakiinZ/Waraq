@@ -962,7 +962,6 @@ export default function TeachersManagement() {
                                 <div className="space-y-1">
                                     <Label className="text-xs">{t('فيسبوك', 'Facebook')}</Label>
                                     <Input
-                                        size="sm"
                                         value={editForm.social_links.facebook}
                                         onChange={(e) => setEditForm({
                                             ...editForm,
@@ -973,7 +972,6 @@ export default function TeachersManagement() {
                                 <div className="space-y-1">
                                     <Label className="text-xs">{t('تويتر', 'Twitter')}</Label>
                                     <Input
-                                        size="sm"
                                         value={editForm.social_links.twitter}
                                         onChange={(e) => setEditForm({
                                             ...editForm,
@@ -984,7 +982,6 @@ export default function TeachersManagement() {
                                 <div className="space-y-1">
                                     <Label className="text-xs">{t('لينكد إن', 'LinkedIn')}</Label>
                                     <Input
-                                        size="sm"
                                         value={editForm.social_links.linkedin}
                                         onChange={(e) => setEditForm({
                                             ...editForm,
@@ -995,7 +992,6 @@ export default function TeachersManagement() {
                                 <div className="space-y-1">
                                     <Label className="text-xs">{t('إنستغرام', 'Instagram')}</Label>
                                     <Input
-                                        size="sm"
                                         value={editForm.social_links.instagram}
                                         onChange={(e) => setEditForm({
                                             ...editForm,
@@ -1006,7 +1002,6 @@ export default function TeachersManagement() {
                                 <div className="col-span-2 space-y-1">
                                     <Label className="text-xs">{t('الموقع الشخصي', 'Personal Website')}</Label>
                                     <Input
-                                        size="sm"
                                         value={editForm.social_links.website}
                                         onChange={(e) => setEditForm({
                                             ...editForm,

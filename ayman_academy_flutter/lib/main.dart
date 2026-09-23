@@ -10,10 +10,27 @@ import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/providers/theme_provider.dart';
 import 'package:ayman_academy_app/shared/services/cache_service.dart';
 import 'package:ayman_academy_app/shared/services/notification_service.dart';
+import 'package:ayman_academy_app/shared/providers/connectivity_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/connectivity_banner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Render a readable error card instead of the grey/red crash box if a widget
+  // throws in a release build.
+  ErrorWidget.builder = (details) => Material(
+        color: const Color(0xFF131921),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: Text(
+              'حدث خطأ غير متوقع\nSomething went wrong.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+          ),
+        ),
+      );
 
   // Guard: if the build was compiled without the required --dart-define
   // values, the Supabase client would silently init with empty URL/key and
@@ -74,6 +91,35 @@ class _ConfigErrorApp extends StatelessWidget {
   }
 }
 
+/// Puts the offline banner above the app *only while offline*.
+///
+/// When online this adds no wrapper at all. When offline the banner consumes
+/// the status-bar inset itself, so the child's top padding is removed to stop
+/// the app double-padding underneath it.
+class _OfflineChrome extends ConsumerWidget {
+  final Widget child;
+
+  const _OfflineChrome({required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOnline = ref.watch(isOnlineProvider);
+    if (isOnline) return child;
+
+    return Column(
+      children: [
+        const ConnectivityBanner(),
+        Expanded(
+          child: MediaQuery(
+            data: MediaQuery.of(context).removePadding(removeTop: true),
+            child: child,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class AymanAcademyApp extends ConsumerStatefulWidget {
   const AymanAcademyApp({super.key});
 
@@ -118,12 +164,7 @@ class _AymanAcademyAppState extends ConsumerState<AymanAcademyApp> {
       themeMode: themeMode,
       routerConfig: router,
       builder: (context, child) {
-        return Column(
-          children: [
-            const ConnectivityBanner(),
-            Expanded(child: child ?? const SizedBox.shrink()),
-          ],
-        );
+        return _OfflineChrome(child: child ?? const SizedBox.shrink());
       },
     );
   }

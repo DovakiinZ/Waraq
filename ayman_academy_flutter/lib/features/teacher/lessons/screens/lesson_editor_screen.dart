@@ -589,7 +589,6 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
   void _showAddBlockSheet() {
     if (widget.lessonId == null) return;
     final t = ref.read(languageProvider.notifier).t;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final blockTypes = [
       {'type': 'rich_text', 'label': t('نص', 'Text'), 'icon': Icons.text_fields_rounded, 'color': AppColors.accent},
@@ -617,10 +616,10 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
               child: Container(width: 36, height: 5, margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(3))),
             ),
-            Text(t('إضافة محتوى', 'Add Content') as String,
+            Text(t('إضافة محتوى', 'Add Content'),
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            Text(t('اختر نوع المحتوى', 'Choose content type') as String,
+            Text(t('اختر نوع المحتوى', 'Choose content type'),
                 style: const TextStyle(fontSize: 14, color: AppColors.inkMuted)),
             const SizedBox(height: 20),
             GridView.count(
@@ -688,12 +687,12 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
               Center(child: Container(width: 36, height: 5, margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(3)))),
               Text(
-                existing != null ? t('تعديل المحتوى', 'Edit Content') as String : t('إضافة محتوى', 'Add Content') as String,
+                existing != null ? t('تعديل المحتوى', 'Edit Content') : t('إضافة محتوى', 'Add Content'),
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 16),
               if (needsTitle) ...[
-                TextFormField(controller: titleController, decoration: InputDecoration(hintText: t('العنوان', 'Title') as String)),
+                TextFormField(controller: titleController, decoration: InputDecoration(hintText: t('العنوان', 'Title'))),
                 const SizedBox(height: 12),
               ],
               if (needsUrl) ...[
@@ -702,7 +701,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                 const SizedBox(height: 12),
               ],
               TextFormField(controller: contentController, maxLines: 6,
-                  decoration: InputDecoration(hintText: t('المحتوى', 'Content') as String)),
+                  decoration: InputDecoration(hintText: t('المحتوى', 'Content'))),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity, height: 48,
@@ -732,7 +731,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent, foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  child: Text(t('حفظ', 'Save') as String, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  child: Text(t('حفظ', 'Save'), style: const TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ),
             ],
@@ -789,13 +788,13 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                   child: const Icon(Icons.auto_awesome, size: 18, color: Colors.white),
                 ),
                 const SizedBox(width: 10),
-                Text(t('مساعد AI', 'AI Assistant') as String,
+                Text(t('مساعد AI', 'AI Assistant'),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
               ],
             ),
             const SizedBox(height: 6),
             Text(
-              t('اختر إجراء لتطبيقه على هذا المحتوى', 'Choose an action for this content') as String,
+              t('اختر إجراء لتطبيقه على هذا المحتوى', 'Choose an action for this content'),
               style: const TextStyle(fontSize: 14, color: AppColors.inkMuted),
             ),
             const SizedBox(height: 18),
@@ -837,7 +836,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
       content: Row(children: [
         const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
         const SizedBox(width: 12),
-        Text(t('جاري المعالجة...', 'Processing...') as String),
+        Text(t('جاري المعالجة...', 'Processing...')),
       ]),
       duration: const Duration(seconds: 10),
       backgroundColor: AppColors.accent,
@@ -859,7 +858,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
         _loadLesson();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(t('تم التحديث بنجاح', 'Updated successfully') as String),
+            content: Text(t('تم التحديث بنجاح', 'Updated successfully')),
             backgroundColor: AppColors.success,
           ));
         }
@@ -876,7 +875,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(t('خطأ في خدمة AI: تأكد من إعداد GROQ_API_KEY', 'AI service error: Check GROQ_API_KEY setup') as String),
+          content: Text(t('خطأ في خدمة AI: تأكد من إعداد GROQ_API_KEY', 'AI service error: Check GROQ_API_KEY setup')),
           backgroundColor: AppColors.error,
         ));
       }

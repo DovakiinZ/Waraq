@@ -335,7 +335,8 @@ export interface QuizAttempt {
 
 // ── Certificate Types ──
 
-export type CertificateStatus = 'draft' | 'eligible' | 'pending_approval' | 'issued' | 'revoked';
+// 'valid' is a legacy synonym for 'issued' still present in some rows/queries.
+export type CertificateStatus = 'draft' | 'eligible' | 'pending_approval' | 'issued' | 'valid' | 'revoked';
 
 export interface CertificateSnapshot {
     student_name: string;
@@ -625,191 +626,175 @@ export interface Announcement {
     updated_at?: string;
 }
 
+// ── Gamification Types ────────────────────────────────────
+
+export type StudentLevelName = 'beginner' | 'learner' | 'scholar' | 'expert';
+
+export type XPEventType =
+    | 'lesson_complete'
+    | 'quiz_pass'
+    | 'streak_day'
+    | 'assignment_submit'
+    | 'certificate_earned'
+    | 'badge_earned';
+
+export interface StudentXP {
+    id: string;
+    student_id: string;
+    event_type: XPEventType;
+    points: number;
+    source_id: string | null;
+    created_at: string;
+}
+
+export interface StudentLevel {
+    id?: string;
+    student_id: string;
+    total_xp: number;
+    current_level: StudentLevelName;
+    streak_days: number;
+    last_activity_date: string | null;
+    updated_at?: string;
+}
+
+export type BadgeCriteriaType = 'streak' | 'xp_total' | 'score' | 'courses_completed';
+
+export interface Badge {
+    id: string;
+    name_ar: string;
+    name_en: string | null;
+    description_ar: string | null;
+    description_en: string | null;
+    icon: string | null;
+    criteria_type: BadgeCriteriaType;
+    criteria_value: number;
+    sort_order: number;
+    created_at?: string;
+}
+
+export interface StudentBadge {
+    id: string;
+    student_id: string;
+    badge_id: string;
+    earned_at: string;
+    // Joins
+    badge?: Badge;
+}
+
+// ── Parent Dashboard Types ────────────────────────────────
+
+export interface ParentLink {
+    id: string;
+    parent_id: string;
+    student_id: string;
+    created_at: string;
+    // Joins
+    student?: Profile;
+}
+
+export interface ParentStudentReport {
+    progressPercent: number;
+    weeklyLessonsCompleted: number;
+    avgScore: number;
+    timeSpentMinutes: number;
+    strengths: string[];
+    weaknesses: string[];
+    comparisonToClassAverage: number;
+}
+
+// ── Teacher Evaluation / Course Quality Types ─────────────
+
+export interface CourseQualityReport {
+    qualityScore: number;
+    difficultyBalanceScore: number;
+    engagementScore: number;
+    dropoutRisk: number;
+    detectedIssues: string[];
+    recommendations: string[];
+}
+
+// ── AI Student Coach Types ────────────────────────────────
+
+export interface StudentCoachReport {
+    riskScore: number;
+    strengths: string[];
+    weaknesses: string[];
+    suggestedLessons: { id: string; title: string }[];
+    motivationalMessage: string;
+}
+
+// ── Backward-compat aliases ───────────────────────────────
+// "Course" was renamed to "Subject"; keep the alias for any
+// remaining references. QuestionType == QuizQuestionType.
+export type Course = Subject;
+export type QuestionType = QuizQuestionType;
+
 // Database helper type
+// ------------------------------------------------------------
+// supabase-js v2 requires every table to expose a `Relationships`
+// array and the schema to declare Views/Functions/Enums/
+// CompositeTypes; otherwise query results collapse to `never`.
+// TableDef adds the required (empty) Relationships tuple so the
+// hand-written Row/Insert/Update types are honored.
+// NOTE: `Row`/`Insert`/`Update` are intersected with Record<string, unknown>
+// because supabase-js's GenericTable constraint requires an index signature.
+// Plain `interface` types don't satisfy that on their own, which is what
+// collapsed every query result to `never`.
+type TableDef<Row, Ins = Partial<Row>, Upd = Partial<Row>> = {
+    Row: Row & Record<string, unknown>;
+    Insert: Ins & Record<string, unknown>;
+    Update: Upd & Record<string, unknown>;
+    Relationships: [];
+};
+
 export type Database = {
     public: {
         Tables: {
-            profiles: {
-                Row: Profile;
-                Insert: Partial<Profile>;
-                Update: Partial<Profile>;
-            };
-            stages: {
-                Row: Stage;
-                Insert: Partial<Stage>;
-                Update: Partial<Stage>;
-            };
-            subjects: {
-                Row: Subject;
-                Insert: Partial<Subject>;
-                Update: Partial<Subject>;
-            };
-            lessons: {
-                Row: Lesson;
-                Insert: Partial<Lesson>;
-                Update: Partial<Lesson>;
-            };
-            system_settings: {
-                Row: SystemSetting;
-                Insert: Partial<SystemSetting>;
-                Update: Partial<SystemSetting>;
-            };
-            content_templates: {
-                Row: ContentTemplate;
-                Insert: Partial<ContentTemplate>;
-                Update: Partial<ContentTemplate>;
-            };
-            lesson_comments: {
-                Row: LessonComment;
-                Insert: Partial<LessonComment>;
-                Update: Partial<LessonComment>;
-            };
-            ratings: {
-                Row: Rating;
-                Insert: Partial<Rating>;
-                Update: Partial<Rating>;
-            };
-            lesson_progress: {
-                Row: LessonProgress;
-                Insert: Partial<LessonProgress>;
-                Update: Partial<LessonProgress>;
-            };
-            lesson_notes: {
-                Row: LessonNote;
-                Insert: Partial<LessonNote>;
-                Update: Partial<LessonNote>;
-            };
-            messages: {
-                Row: Message;
-                Insert: Partial<Message>;
-                Update: Partial<Message>;
-            };
-            audit_logs: {
-                Row: AuditLog;
-                Insert: Partial<AuditLog>;
-                Update: never;
-            };
-            teacher_invites: {
-                Row: TeacherInvite;
-                Insert: Partial<TeacherInvite>;
-                Update: Partial<TeacherInvite>;
-            };
-            lesson_sections: {
-                Row: LessonSection;
-                Insert: Partial<LessonSection>;
-                Update: Partial<LessonSection>;
-            };
-            lesson_blocks: {
-                Row: LessonBlock;
-                Insert: Partial<LessonBlock>;
-                Update: Partial<LessonBlock>;
-            };
-            quizzes: {
-                Row: Quiz;
-                Insert: Partial<Quiz>;
-                Update: Partial<Quiz>;
-            };
-            quiz_questions: {
-                Row: QuizQuestion;
-                Insert: Partial<QuizQuestion>;
-                Update: Partial<QuizQuestion>;
-            };
-            quiz_options: {
-                Row: QuizOption;
-                Insert: Partial<QuizOption>;
-                Update: Partial<QuizOption>;
-            };
-            quiz_attempts: {
-                Row: QuizAttempt;
-                Insert: Partial<QuizAttempt>;
-                Update: Partial<QuizAttempt>;
-            };
-            templates: {
-                Row: Template;
-                Insert: Partial<Template>;
-                Update: Partial<Template>;
-            };
-            certificates: {
-                Row: Certificate;
-                Insert: Partial<Certificate>;
-                Update: Partial<Certificate>;
-            };
-            certificate_rules: {
-                Row: CertificateRule;
-                Insert: Partial<CertificateRule>;
-                Update: Partial<CertificateRule>;
-            };
-            student_subjects: {
-                Row: StudentSubject;
-                Insert: Partial<StudentSubject>;
-                Update: Partial<StudentSubject>;
-            };
-            plans: {
-                Row: Plan;
-                Insert: Partial<Plan>;
-                Update: Partial<Plan>;
-            };
-            plan_subjects: {
-                Row: PlanSubject;
-                Insert: Partial<PlanSubject>;
-                Update: Partial<PlanSubject>;
-            };
-            subscriptions: {
-                Row: Subscription;
-                Insert: Partial<Subscription>;
-                Update: Partial<Subscription>;
-            };
-            family_members: {
-                Row: FamilyMember;
-                Insert: Partial<FamilyMember>;
-                Update: Partial<FamilyMember>;
-            };
-            subject_invites: {
-                Row: SubjectInvite;
-                Insert: Partial<SubjectInvite>;
-                Update: Partial<SubjectInvite>;
-            };
-            organizations: {
-                Row: Organization;
-                Insert: Partial<Organization>;
-                Update: Partial<Organization>;
-            };
-            org_members: {
-                Row: OrgMember;
-                Insert: Partial<OrgMember>;
-                Update: Partial<OrgMember>;
-            };
-            org_subjects: {
-                Row: OrgSubject;
-                Insert: Partial<OrgSubject>;
-                Update: Partial<OrgSubject>;
-            };
-            coupons: {
-                Row: Coupon;
-                Insert: Partial<Coupon>;
-                Update: Partial<Coupon>;
-            };
-            coupon_redemptions: {
-                Row: CouponRedemption;
-                Insert: Partial<CouponRedemption>;
-                Update: Partial<CouponRedemption>;
-            };
-            announcements: {
-                Row: Announcement;
-                Insert: Partial<Announcement>;
-                Update: Partial<Announcement>;
-            };
-            orders: {
-                Row: Order;
-                Insert: Partial<Order>;
-                Update: Partial<Order>;
-            };
-            teacher_applications: {
-                Row: TeacherApplication;
-                Insert: Partial<TeacherApplication>;
-                Update: Partial<TeacherApplication>;
-            };
+            profiles: TableDef<Profile>;
+            stages: TableDef<Stage>;
+            subjects: TableDef<Subject>;
+            lessons: TableDef<Lesson>;
+            system_settings: TableDef<SystemSetting>;
+            content_templates: TableDef<ContentTemplate>;
+            lesson_comments: TableDef<LessonComment>;
+            ratings: TableDef<Rating>;
+            lesson_progress: TableDef<LessonProgress>;
+            lesson_notes: TableDef<LessonNote>;
+            messages: TableDef<Message>;
+            audit_logs: TableDef<AuditLog, Partial<AuditLog>, never>;
+            teacher_invites: TableDef<TeacherInvite>;
+            lesson_sections: TableDef<LessonSection>;
+            lesson_blocks: TableDef<LessonBlock>;
+            quizzes: TableDef<Quiz>;
+            quiz_questions: TableDef<QuizQuestion>;
+            quiz_options: TableDef<QuizOption>;
+            quiz_attempts: TableDef<QuizAttempt>;
+            templates: TableDef<Template>;
+            certificates: TableDef<Certificate>;
+            certificate_rules: TableDef<CertificateRule>;
+            student_subjects: TableDef<StudentSubject>;
+            plans: TableDef<Plan>;
+            plan_subjects: TableDef<PlanSubject>;
+            subscriptions: TableDef<Subscription>;
+            family_members: TableDef<FamilyMember>;
+            subject_invites: TableDef<SubjectInvite>;
+            organizations: TableDef<Organization>;
+            org_members: TableDef<OrgMember>;
+            org_subjects: TableDef<OrgSubject>;
+            coupons: TableDef<Coupon>;
+            coupon_redemptions: TableDef<CouponRedemption>;
+            announcements: TableDef<Announcement>;
+            orders: TableDef<Order>;
+            teacher_applications: TableDef<TeacherApplication>;
+            student_xp: TableDef<StudentXP>;
+            student_levels: TableDef<StudentLevel>;
+            badges: TableDef<Badge>;
+            student_badges: TableDef<StudentBadge>;
+            parent_links: TableDef<ParentLink>;
         };
+        Views: Record<string, never>;
+        Enums: Record<string, never>;
+        CompositeTypes: Record<string, never>;
         Functions: {
             get_student_teachers: {
                 Args: { student_uuid: string };
@@ -846,6 +831,18 @@ export type Database = {
             check_subject_access: {
                 Args: { p_student_id: string; p_subject_id: string };
                 Returns: { has_access: boolean; reason: string; access_type?: string };
+            };
+            issue_certificate: {
+                Args: { p_student_id: string; p_subject_id: string };
+                Returns: Record<string, unknown>;
+            };
+            get_admin_enrollments: {
+                Args: { p_view: string; p_search: string | null; p_stage_id: string | null; p_page: number; p_limit: number };
+                Returns: { data: any[]; total: number };
+            };
+            get_admin_enrollment_detail: {
+                Args: { p_view: string; p_id: string };
+                Returns: any[];
             };
         };
     };

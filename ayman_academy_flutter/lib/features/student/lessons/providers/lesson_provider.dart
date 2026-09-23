@@ -66,17 +66,25 @@ class LessonProgressService {
   static Future<void> saveProgress({
     required String lessonId,
     required int progressPercent,
+    int? lastPositionSeconds,
   }) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
 
-    await supabase.from('lesson_progress').upsert({
-      'user_id': userId,
-      'lesson_id': lessonId,
-      'progress_percent': progressPercent,
-      'last_position_seconds': 0,
-      'updated_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'user_id,lesson_id');
+    try {
+      await supabase.from('lesson_progress').upsert({
+        'user_id': userId,
+        'lesson_id': lessonId,
+        'progress_percent': progressPercent,
+        // Only write the resume position when we actually have one. The old
+        // code hard-coded 0 here, which wiped the saved position on every
+        // single progress tick so nothing ever resumed.
+        'last_position_seconds': ?lastPositionSeconds,
+        'updated_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id,lesson_id');
+    } catch (_) {
+      // Progress is best-effort; never surface a write failure mid-lesson.
+    }
   }
 
   static Future<bool> markComplete(String lessonId) async {
@@ -105,9 +113,9 @@ class LessonProgressService {
       try {
         await supabase.from('student_xp').insert({
           'student_id': userId,
-          'event_type': 'lesson_complete',
-          'points': 50,
-          'source_id': lessonId,
+          'reason': 'lesson_complete',
+          'amount': 50,
+          'entity_id': lessonId,
         });
       } catch (_) {
         // XP table might not exist, ignore

@@ -144,7 +144,7 @@ export default function SubjectsManagement() {
             return {
                 allStages: (stagesData || []) as Stage[],
                 stage: currentStage,
-                subjects: (subjectsData as SubjectWithJoins[]) || [],
+                subjects: (subjectsData as unknown as SubjectWithJoins[]) || [],
             };
         },
         staleTime: 2 * 60 * 1000, // 2 minutes

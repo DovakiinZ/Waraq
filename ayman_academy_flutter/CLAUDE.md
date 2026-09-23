@@ -43,7 +43,7 @@ You are a **senior project manager and full-stack developer** working on Waraq A
 
 - **Teachers**: Manage courses, verify orders, communicate with students, view analytics.
 - **Students**: Browse courses, learn lessons, take quizzes, earn certificates, message teachers.
-- **Admins**: Redirected to web app (admin features are web-only).
+- **Admins**: Full control panel inside the app — the web CMS embedded in a WebView with the session handed over, so no second login.
 
 ### Target Audience
 - **Students**: School-age, Arabic-speaking. On Android phones. Need supplementary learning for school subjects.
@@ -76,6 +76,7 @@ You are a **senior project manager and full-stack developer** working on Waraq A
 | Certificates | qr_flutter + pdf + share_plus |
 | Notifications | onesignal_flutter |
 | Connectivity | connectivity_plus |
+| Admin panel | webview_flutter (embeds the web CMS) |
 | Images | cached_network_image + shimmer loading |
 
 ### Dev Commands
@@ -129,6 +130,8 @@ lib/
 │   │   ├── data/auth_repository.dart  # Supabase auth calls
 │   │   ├── providers/auth_provider.dart # AuthNotifier + AuthState
 │   │   └── screens/                   # Login, Register, ResetPassword, AdminWebOnly
+│   ├── admin/
+│   │   └── screens/admin_panel_screen.dart   # Web CMS in a WebView + session handoff
 │   ├── onboarding/
 │   │   └── screens/student_onboarding_screen.dart
 │   ├── student/                       # All student features
@@ -198,7 +201,7 @@ lib/
 
 | Role | Routes | Access |
 |------|--------|--------|
-| `super_admin` | Redirected to `/admin-web-only` | Admin features are web-only |
+| `super_admin` | `/admin` | Full admin CMS, embedded in a WebView (`AdminPanelScreen`) |
 | `teacher` | `/teacher/*` | Own courses, lessons, orders, certificates, messaging |
 | `student` | `/student/*` | Enrolled courses, marketplace, quiz, certificates, messaging |
 
@@ -362,7 +365,66 @@ The Flutter app shares the same Supabase database as the web app. Key tables use
 
 ## Known Issues
 
-- **Admin features are web-only** — Admin users see a "use web app" screen. This is intentional.
+### Schema reality check (verified live 2026-09-21)
+The Supabase project was paused and has since been **resumed**; it is
+reachable and holds real data. The live schema was probed column-by-column
+through PostgREST, so the notes below are measured, not inferred.
+
+**Do NOT trust these two files as the schema source of truth:**
+- `schema.json` (repo root) is a stale pre-066 PostgREST dump.
+- `migrations/100_clean_rewrite.sql` drops the entire `public` schema and
+  rebuilds it. It has **not** been applied to this database and must not be —
+  it would delete `orders`, `teacher_applications` and the Sham Cash columns.
+  It also renames `order_index` -> `sort_order`; the live DB already uses
+  `sort_order`, so the app is correct as written.
+
+**Confirmed present live:** `orders`, `teacher_applications`,
+`profiles.shamcash_account_name/number`, `profiles.expertise_tags_ar/en`,
+`subjects.is_paid`, `ratings.comment`, `quizzes.passing_score`,
+`quiz_options.text_ar`, `lessons.sort_order`, `lesson_blocks.sort_order`,
+and the RPCs `get_student_subjects`, `get_discover_subjects`,
+`check_subject_access`, `is_super_admin`, `get_user_role`.
+
+**Confirmed missing live — fixed by `migrations/102_live_schema_gaps.sql`:**
+- `quiz_attempts.passed` — written on every quiz submission, so the INSERT
+  fails and **no student can submit a quiz**. This is the highest-impact gap.
+- `student_levels` — queried by the student profile; the provider swallows
+  the error and silently shows a default level.
+
+**Fixed — quiz layer rewritten onto `quiz_options` (2026-09-22):**
+`shared/models/quiz.dart`, `quiz_provider.dart`, `quiz_screen.dart`,
+`quiz_builder_screen.dart` and `teacher_quizzes_screen.dart` previously assumed
+denormalised `quiz_questions.options` (JSON array) + `quiz_questions.correct_answer`.
+Neither column exists live. They now read and write the normalised
+`quiz_options` table (`text_ar`, `text_en`, `is_correct`, `sort_order`), and
+`multi_select` questions are supported alongside `mcq` and `true_false`.
+Attempt answers are stored as `{question_id: [option_id, ...]}`.
+Do **not** add the denormalised columns — that would fork web and mobile.
+
+The **web portal was broken too**, on a *different* set of nonexistent columns
+(`question_text_ar`, `question_type`, `correct_option_index`) and its student
+player never wrote a `quiz_attempts` row at all. Both were rewritten in the same
+pass — see the web CLAUDE.md.
+
+**Grading — `submit_quiz_attempt` RPC (needs applying).**
+`QuizService.submitQuiz` now calls the `submit_quiz_attempt` RPC so the score is
+computed in the database and cannot be forged from the device. While the
+function is absent PostgREST answers `PGRST202`, and the service falls back to
+the previous local grading path — so the app works before and after the
+migration, with no rebuild needed. Apply
+`supabase/migrations/103_submit_quiz_attempt.sql` through the Supabase SQL
+editor (**not** `supabase db push`).
+
+**Open — answers are still readable from the API.** `quiz_options.is_correct`
+is sent to the device so the review screen can show the correct answer. Hiding
+it needs a student-facing fetch RPC that omits the flag, plus RLS on
+`quiz_options`.
+
+**Keep-alive:** the free tier pauses after 7 days idle. Add a daily scheduled
+request against the REST API so this cannot recur.
+
+### Other
+- **Admin panel is the web CMS in a WebView** — `features/admin/screens/admin_panel_screen.dart`. The app opens `<WEB_APP_URL>/auth/bridge#at=…&rt=…&redirect=/admin`; the web `AuthBridge` page calls `supabase.auth.setSession()` with those tokens and forwards to `/admin`, so the admin is not asked to sign in twice. Tokens ride in the URL **fragment**, which is never sent to a server. The params are named `at`/`rt` rather than `access_token`/`refresh_token` on purpose — the web client runs with `detectSessionInUrl`, and supabase-js would try to consume the standard names itself and throw on the missing `expires_in`. WebView navigation is pinned to the portal's own origin, so a stray link cannot carry the session elsewhere. This requires `WEB_APP_URL` to be a reachable deployment; `/admin-web-only` is kept as the fallback screen. A native Flutter port of the 15 admin pages is the long-term alternative.
 - **Sham Cash QR is placeholder** — Checkout shows a dashed QR placeholder, same as web app.
 - **Environment variables** — Must be passed via `--dart-define` at build time. `main.dart` now guards on `Env.isConfigured` and shows a config-error screen if `SUPABASE_URL`/`SUPABASE_ANON_KEY` are missing (instead of failing cryptically).
 - **Shared backend** — Any database schema changes in the web app affect this app. Keep models in `shared/models/` in sync.
@@ -380,7 +442,45 @@ The Flutter app shares the same Supabase database as the web app. Key tables use
 
 > Update this section as tasks are completed or new ones are discovered.
 
+### Phase 0: Unblock (do these first)
+- [ ] **Restore the Supabase project** — restore from the dashboard if it is only
+      paused; otherwise create a new project and run `100_clean_rewrite.sql`
+      then `102_post_rewrite_app_gaps.sql`.
+- [ ] **Add a keep-alive** — a daily scheduled request against the REST API so
+      the free tier never auto-pauses again.
+- [ ] **Repoint both clients** — new `SUPABASE_URL` / anon key in the web `.env`
+      and in the Flutter `--dart-define` build args.
+- [x] **Rewrite the quiz layer onto `quiz_options`** — done 2026-09-22, mobile
+      and web. `flutter analyze`: 0 errors.
+- [x] **Move quiz grading server-side** — `submit_quiz_attempt` RPC written and
+      wired into both clients (migration 103 still needs applying).
+- [ ] **Hide `is_correct` from students** — needs a fetch RPC + RLS on
+      `quiz_options`.
+- [x] **Lint clean** — `flutter analyze` reports no issues (was 19).
+- [ ] **Retire the `20260207*` migrations** so they cannot run after 100.
+
 ### Phase 1: Polish & Bug Fixes (Current Priority)
+- [x] **Android release blockers** — `targetSdk` raised 34 → 36 (Play rejects 34),
+      Gradle heap cut from 8G/4G metaspace to 4G/1G (failed to start on normal machines).
+- [x] **Router no longer rebuilt on every auth change** — `routerProvider` watched
+      `authProvider`, recreating the whole `GoRouter` (and leaking a stream
+      subscription) on every auth event. Now built once, refreshed via a listenable.
+- [x] **Cold-start splash** — added `/splash`; the app no longer flashes the login
+      screen on every launch while the stored session is restored.
+- [x] **Silent login failure fixed** — a missing/unreadable `profiles` row used to
+      bounce the user back to login with no message; now raises `ProfileMissingException`.
+      A transient network failure no longer signs an authenticated user out.
+- [x] **Offline detection on cold start** — `connectivityProvider` now seeds with
+      `checkConnectivity()`; `onConnectivityChanged` alone only fires on transitions.
+- [x] **Offline banner insets** — banner consumed no status-bar inset and drew under
+      the system icons once edge-to-edge kicked in at targetSdk 35+.
+- [x] **Notification permission timing** — no longer prompted on first launch before
+      sign-in (one-shot prompt on Android 13+, usually denied); now asked after login.
+- [x] **Lesson resume position** — `saveProgress` wrote `last_position_seconds: 0` on
+      every tick, so no lesson ever resumed where the student left off.
+- [x] **XP awards / lesson ratings** — were writing columns that do not exist
+      (`student_xp.points/event_type/source_id`, `ratings.comment`); corrected to
+      `amount`/`reason`/`entity_id` and `feedback`.
 - [ ] **Test all screens end-to-end** — Verify every feature works against live Supabase.
 - [ ] **Fix any broken Supabase queries** — Ensure models match current DB schema.
 - [ ] **Lesson notes polish** — Make notes screen fully functional.
@@ -401,6 +501,7 @@ The Flutter app shares the same Supabase database as the web app. Key tables use
 - [ ] **Play Store assets** — Screenshots, description, icon, feature graphic.
 - [ ] **Release build** — Signing, ProGuard, version bumps.
 - [ ] **Deep linking** — Handle web URLs opening in app.
+- [x] **Admin panel in the app** — web CMS embedded with session handoff.
 - [ ] **Analytics** — Firebase Analytics or equivalent.
 
 ### Backlog (Ideas / Later)

@@ -7,12 +7,21 @@ class NotificationService {
   static Future<void> initialize() async {
     if (Env.oneSignalAppId.isEmpty) return;
     OneSignal.initialize(Env.oneSignalAppId);
-    OneSignal.Notifications.requestPermission(true);
+    // NOTE: permission is deliberately NOT requested here. Prompting on first
+    // launch, before the user has even signed in, gets denied most of the time
+    // and the Android 13+ prompt is one-shot. We ask after sign-in instead.
   }
 
   static Future<void> login(String userId) async {
     if (Env.oneSignalAppId.isEmpty) return;
     await OneSignal.login(userId);
+    // Ask once we know who the user is and there is something worth notifying
+    // them about. No-op if they already answered the prompt.
+    try {
+      await OneSignal.Notifications.requestPermission(true);
+    } catch (_) {
+      // Permission prompt is best-effort; never block sign-in on it.
+    }
   }
 
   static Future<void> logout() async {

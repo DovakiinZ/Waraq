@@ -10,13 +10,19 @@ class ConnectivityBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOnline = ref.watch(isOnlineProvider);
+    // watch (not read) so the banner re-renders when the user flips AR/EN.
+    ref.watch(languageProvider);
     final t = ref.read(languageProvider.notifier).t;
 
     if (isOnline) return const SizedBox.shrink();
 
+    // This widget renders above the Navigator, so no Scaffold or SafeArea is
+    // padding it. Consume the status-bar inset here.
+    final topInset = MediaQuery.of(context).padding.top;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 8),
       color: AppColors.error,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

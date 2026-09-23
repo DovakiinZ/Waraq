@@ -1,9 +1,11 @@
 abstract class Routes {
+  static const splash = '/splash';
   static const login = '/auth/login';
   static const register = '/auth/register';
   static const resetPassword = '/auth/reset-password';
   static const onboarding = '/onboarding';
   static const adminWebOnly = '/admin-web-only';
+  static const adminPanel = '/admin';
 
   // Student
   static const studentHome = '/student';
