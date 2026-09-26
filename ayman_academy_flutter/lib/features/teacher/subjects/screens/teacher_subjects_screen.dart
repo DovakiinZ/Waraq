@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/models/subject.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -145,23 +146,30 @@ class _SummaryBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: isDark ? [const Color(0xFF2D1B69), const Color(0xFF1A1A3E)] : [AppColors.accent, const Color(0xFF7C4DFF)],
-        ),
-        borderRadius: BorderRadius.circular(16),
+        // The arcade band gradient, which already carries its own dark stops —
+        // hence no `isDark` branch here any more.
+        gradient: context.arc.gradient,
+        border: Border.all(color: context.arc.line, width: Arc.borderWidth),
+        boxShadow: context.arc.hard(Arc.cardRest),
       ),
       child: Row(
         children: [
           _MiniStat(value: '$courseCount', label: t('مواد', 'Courses') as String),
-          Container(width: 1, height: 28, margin: const EdgeInsets.symmetric(horizontal: 14), color: Colors.white24),
+          _statDivider(),
           _MiniStat(value: '$totalLessons', label: t('دروس', 'Lessons') as String),
-          Container(width: 1, height: 28, margin: const EdgeInsets.symmetric(horizontal: 14), color: Colors.white24),
+          _statDivider(),
           _MiniStat(value: '$totalStudents', label: t('طلاب', 'Students') as String),
         ],
       ),
     );
   }
+
+  Widget _statDivider() => Container(
+        width: Arc.borderWidth,
+        height: 28,
+        margin: const EdgeInsets.symmetric(horizontal: 14),
+        color: Colors.white.withValues(alpha: 0.28),
+      );
 }
 
 class _MiniStat extends StatelessWidget {
@@ -170,9 +178,9 @@ class _MiniStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(child: Column(children: [
-      Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+      Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: context.arc.onInk)),
       const SizedBox(height: 2),
-      Text(label, style: const TextStyle(fontSize: 11, color: Colors.white60, fontWeight: FontWeight.w500)),
+      Text(label, style: TextStyle(fontSize: 11, color: context.arc.onInkMuted, fontWeight: FontWeight.w500)),
     ]));
   }
 }
@@ -197,7 +205,7 @@ class _CourseCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.zero,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -208,9 +216,9 @@ class _CourseCard extends StatelessWidget {
             if (subject.coverImageUrl != null && subject.coverImageUrl!.isNotEmpty)
               CachedNetworkImage(
                 imageUrl: subject.coverImageUrl!, height: 150, width: double.infinity, fit: BoxFit.cover,
-                errorWidget: (_, _, _) => _placeholder(),
+                errorWidget: (_, _, _) => _placeholder(context),
               )
-            else _placeholder(),
+            else _placeholder(context),
             Positioned(
               top: 12, right: 12, left: 12,
               child: Row(children: [
@@ -218,7 +226,7 @@ class _CourseCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: subject.isActive ? AppColors.success.withValues(alpha: 0.9) : AppColors.inkMuted.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Text(
                     subject.isActive ? t('نشط', 'Active') as String : t('غير نشط', 'Inactive') as String,
@@ -231,7 +239,7 @@ class _CourseCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.zero,
                     ),
                     child: Text(
                       '${subject.priceAmount?.toInt() ?? 0} ${subject.priceCurrency ?? "SYP"}',
@@ -278,14 +286,13 @@ class _CourseCard extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() => Container(
-    height: 150, width: double.infinity,
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: isDark ? [AppColors.secondaryDark, AppColors.surfaceDark] : [const Color(0xFFE8E4FF), const Color(0xFFD5CFFF)],
-      ),
-    ),
-    child: Center(child: Icon(Icons.menu_book_rounded, size: 40, color: AppColors.accent.withValues(alpha: 0.4))),
+  /// Stands in for a missing cover. A flat wash with the brand mark, so it
+  /// reads as "no picture yet" rather than as a failed image load.
+  Widget _placeholder(BuildContext context) => Container(
+    height: 150,
+    width: double.infinity,
+    color: context.arc.wash,
+    child: const Center(child: Opacity(opacity: 0.55, child: LogoMark(size: 44))),
   );
 }
 
@@ -298,7 +305,7 @@ class _StatChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(child: Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(color: isDark ? AppColors.secondaryDark : AppColors.background, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(color: isDark ? AppColors.secondaryDark : AppColors.background, borderRadius: BorderRadius.zero),
       child: Column(children: [
         Icon(icon, size: 16, color: AppColors.inkMuted),
         const SizedBox(height: 4),
@@ -321,7 +328,7 @@ class _ActionBtn extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
         child: Column(children: [
           Icon(icon, size: 18, color: color),
           const SizedBox(height: 4),
@@ -346,7 +353,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Container(
           width: 80, height: 80,
-          decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.1), borderRadius: BorderRadius.zero),
           child: Icon(Icons.school_rounded, size: 40, color: AppColors.accent.withValues(alpha: 0.5)),
         ),
         const SizedBox(height: 24),
@@ -364,7 +371,7 @@ class _EmptyState extends StatelessWidget {
             onPressed: onCreateTap,
             icon: const Icon(Icons.add_rounded),
             label: Text(t('إنشاء مادة', 'Create Course') as String),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero)),
           ),
         ),
       ]),

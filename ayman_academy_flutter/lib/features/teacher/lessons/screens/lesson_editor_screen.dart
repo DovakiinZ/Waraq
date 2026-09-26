@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/models/lesson_block.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -153,7 +154,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           color: AppColors.accent,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                         ),
                         child: Text(
                           t('حفظ', 'Save'),
@@ -290,7 +291,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                 width: 80, height: 80,
                 decoration: BoxDecoration(
                   color: AppColors.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.zero,
                 ),
                 child: const Icon(Icons.save_outlined, size: 36, color: AppColors.accent),
               ),
@@ -331,7 +332,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                   margin: const EdgeInsets.only(left: 8, right: 8),
                   decoration: BoxDecoration(
                     color: AppColors.info.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -351,7 +352,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -434,7 +435,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
               color: isDark ? AppColors.surfaceDark : AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.zero,
             ),
             child: Row(
               children: [
@@ -442,7 +443,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                   width: 36, height: 36,
                   decoration: BoxDecoration(
                     color: _isPublished ? AppColors.success.withValues(alpha: 0.12) : AppColors.inkMuted.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Icon(
                     _isPublished ? Icons.visibility_rounded : Icons.visibility_off_rounded,
@@ -480,7 +481,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
               color: isDark ? AppColors.surfaceDark : AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.zero,
             ),
             child: Row(
               children: [
@@ -488,7 +489,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                   width: 36, height: 36,
                   decoration: BoxDecoration(
                     color: _isPaid ? AppColors.gold.withValues(alpha: 0.12) : AppColors.inkMuted.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Icon(
                     _isPaid ? Icons.monetization_on_rounded : Icons.money_off_rounded,
@@ -535,7 +536,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.error,
                   side: const BorderSide(color: AppColors.error),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                 ),
               ),
             ),
@@ -597,9 +598,9 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
       {'type': 'tip', 'label': t('نصيحة', 'Tip'), 'icon': Icons.lightbulb_rounded, 'color': AppColors.info},
       {'type': 'warning', 'label': t('تنبيه', 'Warning'), 'icon': Icons.warning_rounded, 'color': AppColors.warning},
       {'type': 'example', 'label': t('مثال', 'Example'), 'icon': Icons.auto_awesome_rounded, 'color': AppColors.success},
-      {'type': 'exercise', 'label': t('تمرين', 'Exercise'), 'icon': Icons.edit_note_rounded, 'color': const Color(0xFFF97316)},
-      {'type': 'equation', 'label': t('معادلة', 'Equation'), 'icon': Icons.functions_rounded, 'color': const Color(0xFF6366F1)},
-      {'type': 'qa', 'label': t('سؤال وجواب', 'Q&A'), 'icon': Icons.quiz_rounded, 'color': const Color(0xFFEC4899)},
+      {'type': 'exercise', 'label': t('تمرين', 'Exercise'), 'icon': Icons.edit_note_rounded, 'color': AppColors.exerciseBorder},
+      {'type': 'equation', 'label': t('معادلة', 'Equation'), 'icon': Icons.functions_rounded, 'color': AppColors.equationBorder},
+      {'type': 'qa', 'label': t('سؤال وجواب', 'Q&A'), 'icon': Icons.quiz_rounded, 'color': AppColors.qaBorder},
       {'type': 'link', 'label': t('رابط', 'Link'), 'icon': Icons.link_rounded, 'color': AppColors.inkMuted},
     ];
 
@@ -614,7 +615,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
           children: [
             Center(
               child: Container(width: 36, height: 5, margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(3))),
+                decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.zero)),
             ),
             Text(t('إضافة محتوى', 'Add Content'),
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
@@ -642,7 +643,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                         width: 52, height: 52,
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.zero,
                         ),
                         child: Icon(bt['icon'] as IconData, color: color, size: 24),
                       ),
@@ -685,7 +686,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(child: Container(width: 36, height: 5, margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(3)))),
+                decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.zero))),
               Text(
                 existing != null ? t('تعديل المحتوى', 'Edit Content') : t('إضافة محتوى', 'Add Content'),
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
@@ -730,7 +731,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                     }
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent, foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero)),
                   child: Text(t('حفظ', 'Save'), style: const TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ),
@@ -758,8 +759,8 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
       {'action': 'simplify', 'label': t('تبسيط', 'Simplify'), 'icon': Icons.compress_rounded, 'color': AppColors.info},
       {'action': 'generate_example', 'label': t('إنشاء مثال', 'Generate Example'), 'icon': Icons.auto_awesome_rounded, 'color': AppColors.success},
       {'action': 'improve_language', 'label': t('تحسين اللغة', 'Improve Language'), 'icon': Icons.spellcheck_rounded, 'color': AppColors.warning},
-      {'action': 'translate_ar_en', 'label': t('ترجمة عربي←إنجليزي', 'Translate AR→EN'), 'icon': Icons.translate_rounded, 'color': const Color(0xFF6366F1)},
-      {'action': 'translate_en_ar', 'label': t('ترجمة إنجليزي←عربي', 'Translate EN→AR'), 'icon': Icons.translate_rounded, 'color': const Color(0xFFEC4899)},
+      {'action': 'translate_ar_en', 'label': t('ترجمة عربي←إنجليزي', 'Translate AR→EN'), 'icon': Icons.translate_rounded, 'color': AppColors.info},
+      {'action': 'translate_en_ar', 'label': t('ترجمة إنجليزي←عربي', 'Translate EN→AR'), 'icon': Icons.translate_rounded, 'color': AppColors.qaBorder},
     ];
 
     showModalBottomSheet(
@@ -776,20 +777,24 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
           controller: scrollController,
           children: [
             Center(child: Container(width: 36, height: 5, margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(3)))),
+              color: AppColors.border)),
             Row(
               children: [
                 Container(
-                  width: 36, height: 36,
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [AppColors.accent, Color(0xFF7C4DFF)]),
-                    borderRadius: BorderRadius.circular(10),
+                    color: AppColors.accentFill,
+                    border: Border.all(color: AppColors.border, width: Arc.borderWidth),
                   ),
-                  child: const Icon(Icons.auto_awesome, size: 18, color: Colors.white),
+                  // On the electric-green fill the glyph is `onAccent`, never
+                  // white: white on this green fails contrast.
+                  child: const Icon(Icons.auto_awesome, size: 18, color: AppColors.onAccent),
                 ),
                 const SizedBox(width: 10),
                 Text(t('مساعد AI', 'AI Assistant'),
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
               ],
             ),
             const SizedBox(height: 6),
@@ -809,7 +814,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: (a['color'] as Color).withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Row(
                     children: [
@@ -964,7 +969,7 @@ class _BlockCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.zero,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -978,7 +983,7 @@ class _BlockCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1037,7 +1042,7 @@ class _BlockCard extends StatelessWidget {
               children: [
                 _actionBtn(Icons.edit_rounded, t('تعديل', 'Edit') as String, AppColors.accent, onEdit),
                 const SizedBox(width: 6),
-                _actionBtn(Icons.auto_awesome_rounded, 'AI', const Color(0xFF7C4DFF), onAI),
+                _actionBtn(Icons.auto_awesome_rounded, 'AI', AppColors.accent, onAI),
                 const SizedBox(width: 6),
                 _actionBtn(Icons.delete_outline_rounded, t('حذف', 'Delete') as String, AppColors.error, onDelete),
               ],
@@ -1056,7 +1061,7 @@ class _BlockCard extends StatelessWidget {
         width: 30, height: 26,
         decoration: BoxDecoration(
           color: enabled ? AppColors.accent.withValues(alpha: 0.08) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.zero,
         ),
         child: Icon(icon, size: 20, color: enabled ? AppColors.accent : AppColors.inkMuted.withValues(alpha: 0.3)),
       ),
@@ -1071,7 +1076,7 @@ class _BlockCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1094,9 +1099,9 @@ class _BlockCard extends StatelessWidget {
       'tip': {'label': 'Tip', 'icon': Icons.lightbulb_rounded, 'color': AppColors.info},
       'warning': {'label': 'Warning', 'icon': Icons.warning_rounded, 'color': AppColors.warning},
       'example': {'label': 'Example', 'icon': Icons.auto_awesome_rounded, 'color': AppColors.success},
-      'exercise': {'label': 'Exercise', 'icon': Icons.edit_note_rounded, 'color': const Color(0xFFF97316)},
-      'equation': {'label': 'Equation', 'icon': Icons.functions_rounded, 'color': const Color(0xFF6366F1)},
-      'qa': {'label': 'Q&A', 'icon': Icons.quiz_rounded, 'color': const Color(0xFFEC4899)},
+      'exercise': {'label': 'Exercise', 'icon': Icons.edit_note_rounded, 'color': AppColors.exerciseBorder},
+      'equation': {'label': 'Equation', 'icon': Icons.functions_rounded, 'color': AppColors.equationBorder},
+      'qa': {'label': 'Q&A', 'icon': Icons.quiz_rounded, 'color': AppColors.qaBorder},
       'link': {'label': 'Link', 'icon': Icons.link_rounded, 'color': AppColors.inkMuted},
     };
     return map[type] ?? {'label': type, 'icon': Icons.extension_rounded, 'color': AppColors.inkMuted};

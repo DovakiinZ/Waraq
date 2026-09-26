@@ -16,9 +16,17 @@ class PdfService {
     final signerRole = snapshot?.signerRole ?? 'مدير الأكاديمية';
     final completionDate = snapshot?.completionDate ?? cert.issuedAt;
 
-    final navyColor = PdfColor.fromHex('#1E3A5F');
-    final goldColor = PdfColor.fromHex('#AE944F');
-    final mutedColor = PdfColor.fromHex('#6B7280');
+    // The Waraq brand palette. These are the print counterparts of
+    // `BrandColors` in lib/brand/brand_colors.dart — kept as literals because
+    // `PdfColor` is a different colour type from `dart:ui`'s `Color`.
+    //
+    // The certificate keeps a rounded, classical treatment rather than the
+    // arcade's square borders: it is a printed document, not app chrome, and
+    // the arcade's radius-0 rule is about screens.
+    final deepColor = PdfColor.fromHex('#0B3B2C'); // brand deep green
+    final accentColor = PdfColor.fromHex('#1E6B52'); // brand green
+    final sunColor = PdfColor.fromHex('#F4A340'); // brand sun
+    final mutedColor = PdfColor.fromHex('#5E6E67'); // brand muted
 
     doc.addPage(
       pw.Page(
@@ -27,12 +35,12 @@ class PdfService {
         build: (pw.Context context) {
           return pw.Container(
             decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: navyColor, width: 4),
+              border: pw.Border.all(color: deepColor, width: 4),
             ),
             child: pw.Container(
               margin: const pw.EdgeInsets.all(8),
               decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: goldColor, width: 2),
+                border: pw.Border.all(color: accentColor, width: 2),
               ),
               padding: const pw.EdgeInsets.all(40),
               child: pw.Column(
@@ -40,17 +48,17 @@ class PdfService {
                 children: [
                   // Academy name
                   pw.Text(
-                    'ورق أكاديمي التعليمية',
+                    'ورق أكاديمي',
                     style: pw.TextStyle(
                       fontSize: 16,
-                      color: goldColor,
+                      color: accentColor,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
                   pw.SizedBox(height: 4),
                   pw.Text(
-                    'Ayman Educational Academy',
-                    style: pw.TextStyle(fontSize: 10, color: goldColor),
+                    'Waraq Academy',
+                    style: pw.TextStyle(fontSize: 10, color: accentColor),
                   ),
                   pw.SizedBox(height: 16),
 
@@ -60,12 +68,12 @@ class PdfService {
                     style: pw.TextStyle(
                       fontSize: 28,
                       fontWeight: pw.FontWeight.bold,
-                      color: navyColor,
+                      color: deepColor,
                     ),
                   ),
                   pw.Text(
                     'Certificate of Completion',
-                    style: pw.TextStyle(fontSize: 12, color: navyColor),
+                    style: pw.TextStyle(fontSize: 12, color: deepColor),
                   ),
                   pw.SizedBox(height: 24),
 
@@ -73,7 +81,7 @@ class PdfService {
                   pw.Container(
                     width: 80,
                     height: 2,
-                    color: goldColor,
+                    color: accentColor,
                   ),
                   pw.SizedBox(height: 24),
 
@@ -90,7 +98,7 @@ class PdfService {
                     style: pw.TextStyle(
                       fontSize: 30,
                       fontWeight: pw.FontWeight.bold,
-                      color: navyColor,
+                      color: deepColor,
                     ),
                   ),
                   pw.SizedBox(height: 16),
@@ -108,7 +116,7 @@ class PdfService {
                     style: pw.TextStyle(
                       fontSize: 20,
                       fontWeight: pw.FontWeight.bold,
-                      color: PdfColor.fromHex('#2A5298'),
+                      color: accentColor,
                     ),
                   ),
 
@@ -118,19 +126,20 @@ class PdfService {
                     pw.Container(
                       padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: pw.BoxDecoration(
-                        color: PdfColor.fromHex('#FFF7ED'),
+                        // brand paper
+                        color: PdfColor.fromHex('#F7F2E8'),
                         borderRadius: pw.BorderRadius.circular(12),
-                        border: pw.Border.all(color: goldColor),
+                        border: pw.Border.all(color: sunColor),
                       ),
                       child: pw.Text(
                         'الدرجة: ${cert.score!.toInt()}%',
-                        style: pw.TextStyle(fontSize: 12, color: goldColor, fontWeight: pw.FontWeight.bold),
+                        style: pw.TextStyle(fontSize: 12, color: accentColor, fontWeight: pw.FontWeight.bold),
                       ),
                     ),
                   ],
 
                   pw.SizedBox(height: 24),
-                  pw.Container(width: double.infinity, height: 1, color: PdfColor.fromHex('#DDD8CE')),
+                  pw.Container(width: double.infinity, height: 1, color: PdfColor.fromHex('#C9E3D6')),
                   pw.SizedBox(height: 16),
 
                   // Footer

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/models/quiz.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -65,10 +66,15 @@ class TeacherQuizzesScreen extends ConsumerWidget {
                     leading: Container(
                       width: 40, height: 40,
                       decoration: BoxDecoration(
-                        color: q.isEnabled ? AppColors.primary.withValues(alpha: 0.1) : AppColors.inkMuted.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
+                        color: context.arc.wash,
+                        border: Border.all(
+                          color: q.isEnabled ? context.arc.line : AppColors.inkMuted,
+                          width: Arc.borderWidth,
+                        ),
                       ),
-                      child: Center(child: Icon(Icons.quiz, color: q.isEnabled ? AppColors.primary : AppColors.inkMuted, size: 20)),
+                      // `AppColors.primary` is the light-mode ink and does not
+                      // invert; `arc.mid` is the readable green in both modes.
+                      child: Center(child: Icon(Icons.quiz, color: q.isEnabled ? context.arc.mid : AppColors.inkMuted, size: 20)),
                     ),
                     title: Text('${t("اختبار", "Quiz")} ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: Text(

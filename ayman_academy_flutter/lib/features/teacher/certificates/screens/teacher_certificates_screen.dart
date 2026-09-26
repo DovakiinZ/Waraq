@@ -115,7 +115,7 @@ class _CertCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: (cert.status == 'issued' ? AppColors.success : AppColors.warning).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Text(
                     cert.status == 'issued' ? t('صادرة', 'Issued') : t('قيد المراجعة', 'Pending'),

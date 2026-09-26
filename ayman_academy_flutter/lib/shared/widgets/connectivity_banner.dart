@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/providers/connectivity_provider.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -22,16 +23,21 @@ class ConnectivityBanner extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 8),
-      color: AppColors.error,
+      padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 10),
+      decoration: BoxDecoration(
+        color: AppColors.error,
+        // A hard rule under the banner, so it reads as a layer over the app
+        // rather than as part of the screen below it.
+        border: Border(bottom: BorderSide(color: context.arc.line, width: Arc.borderWidth)),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.wifi_off, color: Colors.white, size: 16),
+          const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 16),
           const SizedBox(width: 8),
           Text(
             t('لا يوجد اتصال بالإنترنت', 'No internet connection'),
-            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
           ),
         ],
       ),

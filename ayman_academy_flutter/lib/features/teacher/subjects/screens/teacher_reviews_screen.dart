@@ -84,7 +84,7 @@ class TeacherReviewsScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(colors: [AppColors.gold.withValues(alpha: 0.1), AppColors.gold.withValues(alpha: 0.04)]),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.zero,
                       border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
                     ),
                     child: Row(

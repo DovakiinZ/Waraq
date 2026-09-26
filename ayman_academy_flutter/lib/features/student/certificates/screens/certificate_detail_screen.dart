@@ -63,7 +63,7 @@ class CertificateDetailScreen extends ConsumerWidget {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.zero,
                       border: Border.all(color: AppColors.primary, width: 3),
                       boxShadow: [
                         BoxShadow(
@@ -76,7 +76,7 @@ class CertificateDetailScreen extends ConsumerWidget {
                     child: Container(
                       margin: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.zero,
                         border: Border.all(color: AppColors.gold, width: 1.5),
                       ),
                       padding: const EdgeInsets.all(24),
@@ -84,7 +84,7 @@ class CertificateDetailScreen extends ConsumerWidget {
                         children: [
                           // Academy name
                           Text(
-                            t('ورق أكاديمي التعليمية', 'Ayman Educational Academy'),
+                            t('ورق أكاديمي', 'Waraq Academy'),
                             style: TextStyle(
                               fontSize: 14,
                               color: AppColors.gold,
@@ -135,7 +135,7 @@ class CertificateDetailScreen extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                               decoration: BoxDecoration(
                                 color: AppColors.gold.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.zero,
                               ),
                               child: Text(
                                 '${t("الدرجة", "Score")}: ${cert.score!.toInt()}%',
@@ -180,7 +180,7 @@ class CertificateDetailScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: _statusColor(cert.status).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.zero,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -204,7 +204,7 @@ class CertificateDetailScreen extends ConsumerWidget {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.zero,
                         border: Border.all(color: AppColors.border),
                       ),
                       child: QrImageView(

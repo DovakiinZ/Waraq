@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/models/quiz.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -91,7 +92,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 children: [
                   // Progress bar - thin 3px
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.zero,
                     child: LinearProgressIndicator(
                       value: (_currentIndex + 1) / questions.length,
                       backgroundColor: isDark ? AppColors.secondaryDark : AppColors.secondary,
@@ -148,7 +149,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                               color: selected
                                   ? AppColors.accent.withValues(alpha: 0.08)
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.zero,
                               border: Border.all(
                                 color: selected
                                     ? AppColors.accent
@@ -164,7 +165,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                   height: 22,
                                   decoration: BoxDecoration(
                                     shape: q.isMultiSelect ? BoxShape.rectangle : BoxShape.circle,
-                                    borderRadius: q.isMultiSelect ? BorderRadius.circular(5) : null,
+                                    borderRadius: q.isMultiSelect ? BorderRadius.zero : null,
                                     color: selected ? AppColors.accent : Colors.transparent,
                                     border: Border.all(
                                       color: selected ? AppColors.accent : AppColors.inkMuted,
@@ -212,7 +213,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                   width: 1,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.zero,
                                 ),
                                 elevation: 0,
                               ),
@@ -243,7 +244,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                               backgroundColor: AppColors.accent,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.zero,
                               ),
                               elevation: 0,
                             ),
@@ -288,11 +289,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             width: 140,
             height: 140,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              color: context.arc.surface,
               border: Border.all(
                 color: passed ? AppColors.accent : AppColors.error,
                 width: 4,
               ),
+              boxShadow: context.arc.hard(Arc.cardRest),
             ),
             alignment: Alignment.center,
             child: Column(
@@ -344,7 +346,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.gold.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.zero,
               ),
               child: Text(
                 '+100 XP',
@@ -392,7 +394,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.zero,
                 border: Border.all(
                   color: isDark ? AppColors.borderDark : AppColors.border,
                   width: 0.5,
@@ -454,7 +456,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: AppColors.info.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: Text(
                         q.explanation(lang)!,
@@ -482,7 +484,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 backgroundColor: AppColors.accent,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.zero,
                 ),
                 elevation: 0,
               ),

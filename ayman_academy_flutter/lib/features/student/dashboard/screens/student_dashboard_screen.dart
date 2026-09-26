@@ -257,7 +257,7 @@ class _ContinueLearningCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isDark ? AppColors.surfaceDark : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.zero,
           border: Border.all(
             color: isDark ? AppColors.borderDark : AppColors.border,
             width: 0.5,
@@ -267,7 +267,7 @@ class _ContinueLearningCard extends StatelessWidget {
           children: [
             // Thumbnail
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.zero,
               child: Container(
                 width: 72,
                 height: 72,
@@ -305,7 +305,7 @@ class _ContinueLearningCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   // Progress bar
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.zero,
                     child: LinearProgressIndicator(
                       value: progress / 100,
                       backgroundColor: isDark ? AppColors.borderDark : AppColors.border,
@@ -350,7 +350,7 @@ class _QuickActionChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: isDark ? AppColors.secondaryDark : AppColors.secondary,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.zero,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

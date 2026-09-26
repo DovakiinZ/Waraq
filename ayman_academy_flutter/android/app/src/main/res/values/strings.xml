@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Default launcher label. The Arabic name lives in values-ar/ so an
+         Arabic device shows the Arabic brand and everyone else sees the
+         Latin one. Hard-coding either in AndroidManifest showed the wrong
+         name to half the users of an Arabic-first app. -->
+    <string name="app_name">Waraq Academy</string>
+</resources>

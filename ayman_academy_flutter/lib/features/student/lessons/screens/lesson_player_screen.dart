@@ -92,7 +92,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
         child: Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: BorderRadius.zero,
           ),
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Column(
@@ -107,7 +107,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                   height: 5,
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.borderDark : AppColors.border,
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.zero,
                   ),
                 ),
               ),
@@ -129,11 +129,11 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                   filled: true,
                   fillColor: isDark ? AppColors.secondaryDark : AppColors.secondary,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.zero,
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.zero,
                     borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
                   ),
                   contentPadding: const EdgeInsets.all(14),
@@ -157,7 +157,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.zero,
                     ),
                   ),
                   child: Text(
@@ -242,7 +242,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
           constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.6),
           decoration: BoxDecoration(
             color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: BorderRadius.zero,
           ),
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Column(
@@ -257,7 +257,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                   height: 5,
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.borderDark : AppColors.border,
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.zero,
                   ),
                 ),
               ),
@@ -282,11 +282,11 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                         filled: true,
                         fillColor: isDark ? AppColors.secondaryDark : AppColors.secondary,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.zero,
                           borderSide: BorderSide.none,
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.zero,
                           borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
                         ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -309,7 +309,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                       height: 44,
                       decoration: BoxDecoration(
                         color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: const Icon(Icons.send, color: Colors.white, size: 20),
                     ),
@@ -416,7 +416,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
         builder: (ctx, setDialogState) => Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: BorderRadius.zero,
           ),
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Column(
@@ -430,7 +430,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                   height: 5,
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.borderDark : AppColors.border,
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.zero,
                   ),
                 ),
               ),
@@ -472,7 +472,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                             width: 0.5,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.zero,
                           ),
                         ),
                         child: Text(
@@ -507,7 +507,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.zero,
                           ),
                         ),
                         child: Text(

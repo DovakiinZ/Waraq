@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/core/utils/date_formatter.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -97,9 +98,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         decoration: InputDecoration(
                           hintText: t('اكتب رسالة...', 'Type a message...'),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.zero,
                             borderSide: const BorderSide(color: AppColors.border),
                           ),
                         ),
@@ -107,15 +108,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                        onPressed: _send,
-                      ),
+                    // Square send button with the accent fill and the hard
+                    // shadow, so the one action on this screen looks like an
+                    // arcade control rather than a Material FAB.
+                    ArcadeButton(
+                      key: const Key('chat_send'),
+                      onPressed: _send,
+                      size: ArcadeSize.sm,
+                      child: Icon(Icons.send_rounded, color: context.arc.onAccent, size: 20),
                     ),
                   ],
                 ),
@@ -147,6 +147,7 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final arc = context.arc;
     return Align(
       alignment: isMe ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
       child: Container(
@@ -154,14 +155,14 @@ class _MessageBubble extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-            bottomRight: isMe ? Radius.zero : const Radius.circular(16),
+          // Square bubbles: radius is 0 everywhere. Who said what is carried
+          // by the fill and by which side the bubble sits on, not by a tail —
+          // my messages take the deep green band, theirs the plain surface.
+          color: isMe ? arc.band : arc.surface,
+          border: Border.all(
+            color: isMe ? arc.band : arc.line,
+            width: Arc.borderWidth,
           ),
-          border: isMe ? null : Border.all(color: AppColors.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +170,9 @@ class _MessageBubble extends StatelessWidget {
             Text(
               content,
               style: TextStyle(
-                color: isMe ? Colors.white : AppColors.ink,
+                // `arc.ink` inverts with the theme; this used to be the bare
+                // constant, which was invisible on the dark surface.
+                color: isMe ? AppColors.onBand : arc.ink,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -182,7 +185,7 @@ class _MessageBubble extends StatelessWidget {
                   timeAgo(time, arabic: lang == 'ar'),
                   style: TextStyle(
                     fontSize: 10,
-                    color: isMe ? Colors.white70 : AppColors.inkMuted,
+                    color: isMe ? AppColors.onBandMuted : arc.inkSoft,
                   ),
                 ),
                 if (isMe) ...[
@@ -190,7 +193,10 @@ class _MessageBubble extends StatelessWidget {
                   Icon(
                     isRead ? Icons.done_all : Icons.done,
                     size: 14,
-                    color: isRead ? Colors.lightBlueAccent : Colors.white54,
+                    // Read receipts take the accent green, the app's one
+                    // fill — a stray light blue here was the only non-brand
+                    // colour left on the screen.
+                    color: isRead ? arc.accent : AppColors.onBandMuted,
                   ),
                 ],
               ],

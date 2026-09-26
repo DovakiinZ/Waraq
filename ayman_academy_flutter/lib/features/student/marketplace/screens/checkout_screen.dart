@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -144,10 +145,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
+                          color: AppColors.accentFill,
+                          border: Border.all(color: context.arc.line, width: Arc.borderWidth),
                         ),
-                        child: const Icon(Icons.check, size: 40, color: AppColors.success),
+                        // On the electric-green fill the tick is `onAccent`.
+                        child: const Icon(Icons.check_rounded, size: 40, color: AppColors.onAccent),
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -175,7 +177,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.zero,
                             ),
                           ),
                           child: Text(
@@ -222,7 +224,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     height: 60,
                                     decoration: BoxDecoration(
                                       color: isDark ? AppColors.secondaryDark : AppColors.secondary,
-                                      borderRadius: BorderRadius.circular(4),
+                                      borderRadius: BorderRadius.zero,
                                     ),
                                     child: Center(
                                       child: Icon(
@@ -322,7 +324,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.zero,
                                     border: Border.all(
                                       color: isDark ? AppColors.borderDark : AppColors.border,
                                       width: 0.5,
@@ -382,7 +384,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                               padding: const EdgeInsets.all(8),
                                               decoration: BoxDecoration(
                                                 color: isDark ? AppColors.secondaryDark : AppColors.secondary,
-                                                borderRadius: BorderRadius.circular(6),
+                                                borderRadius: BorderRadius.zero,
                                               ),
                                               child: Icon(
                                                 Icons.copy,
@@ -441,11 +443,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   filled: true,
                                   fillColor: isDark ? AppColors.secondaryDark : AppColors.secondary,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide.none,
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.zero,
                                     borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -491,7 +493,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           disabledForegroundColor: Colors.white70,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.zero,
                           ),
                         ),
                         child: _submitting

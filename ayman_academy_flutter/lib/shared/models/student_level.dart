@@ -34,8 +34,33 @@ class StudentLevel {
     'expert': 'خبير',
   };
 
+  static const levelNamesEn = {
+    'beginner': 'Beginner',
+    'learner': 'Learner',
+    'scholar': 'Scholar',
+    'expert': 'Expert',
+  };
+
+  /// Ascending rank, 1-based. Drives the "مستوى 01" / "LEVEL 01" chip — the
+  /// arcade frames a student's progress as game levels.
+  static const _ascending = ['beginner', 'learner', 'scholar', 'expert'];
+
   String get icon => levelIcons[currentLevel] ?? '🌱';
   String get nameAr => levelNamesAr[currentLevel] ?? 'مبتدئ';
+  String get nameEn => levelNamesEn[currentLevel] ?? 'Beginner';
+
+  /// Bilingual level name. Every user-facing string in this app is bilingual;
+  /// the XP bar used to render [nameAr] even in English.
+  String name(String lang) => lang == 'ar' ? nameAr : nameEn;
+
+  /// 1-based rank for display, e.g. 2 for `learner`.
+  int get levelNumber {
+    final i = _ascending.indexOf(currentLevel);
+    return i < 0 ? 1 : i + 1;
+  }
+
+  /// Total number of levels, so the chip can read "02 / 04".
+  static int get levelCount => _ascending.length;
 
   double get progressToNext {
     final thresholds = levelThresholds.entries.toList()

@@ -5,6 +5,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:ayman_academy_app/core/env.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/core/theme/app_theme.dart';
+import 'package:ayman_academy_app/brand/brand_colors.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/router/router.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/providers/theme_provider.dart';
@@ -18,15 +20,23 @@ void main() async {
 
   // Render a readable error card instead of the grey/red crash box if a widget
   // throws in a release build.
+  //
+  // This runs outside any `Theme`, so it cannot use `context.arc` and takes the
+  // brand constants directly: the deep green band with on-band text.
   ErrorWidget.builder = (details) => Material(
-        color: const Color(0xFF131921),
+        color: BrandColors.deep,
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Center(
             child: Text(
               'حدث خطأ غير متوقع\nSomething went wrong.',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(
+                color: BrandColors.paper.withValues(alpha: 0.85),
+                fontSize: 14,
+                fontFamily: 'IBMPlexSansArabic',
+                height: 1.6,
+              ),
             ),
           ),
         ),
@@ -58,28 +68,44 @@ class _ConfigErrorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
       home: Directionality(
         textDirection: TextDirection.rtl,
         child: Scaffold(
-          backgroundColor: const Color(0xFF131921),
+          // The deep green band, drawn from brand constants rather than
+          // `context.arc`: this screen exists precisely because start-up failed,
+          // so it must not depend on anything the app sets up later.
+          backgroundColor: BrandColors.deep,
           body: Padding(
             padding: const EdgeInsets.all(24),
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.error_outline, color: Color(0xFFAE944F), size: 56),
-                  SizedBox(height: 16),
-                  Text(
+                children: [
+                  const BrandLogo(size: 56, onDark: true, markOnly: true),
+                  const SizedBox(height: 24),
+                  Icon(Icons.error_outline, color: BrandColors.sun, size: 40),
+                  const SizedBox(height: 16),
+                  const Text(
                     'إعدادات التطبيق غير مكتملة',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'IBMPlexSansArabic',
+                    ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'App configuration is missing.\nSUPABASE_URL and SUPABASE_ANON_KEY must be provided at build time via --dart-define.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                    style: TextStyle(
+                      color: BrandColors.mint,
+                      fontSize: 13,
+                      height: 1.5,
+                      fontFamily: 'IBMPlexSansArabic',
+                    ),
                   ),
                 ],
               ),

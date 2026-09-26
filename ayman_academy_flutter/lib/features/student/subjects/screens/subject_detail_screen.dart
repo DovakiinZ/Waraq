@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/loading_shimmer.dart';
@@ -320,7 +321,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.zero,
                                 ),
                                 padding: const EdgeInsets.symmetric(horizontal: 32),
                               ),
@@ -434,7 +435,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                 : progress > 0
                                     ? AppColors.accent.withValues(alpha: 0.12)
                                     : (isDark ? AppColors.secondaryDark : AppColors.secondary),
-                            shape: BoxShape.circle,
+                            border: Border.all(color: context.arc.line, width: Arc.borderWidth),
                           ),
                           child: Center(
                             child: isCompleted
@@ -481,7 +482,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: AppColors.accent.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.zero,
                             ),
                             child: Text(
                               '$progress%',

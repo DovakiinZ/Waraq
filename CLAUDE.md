@@ -174,7 +174,13 @@ Renamed from Ayman Academy. Source of truth: `C:\Users\yaman\Downloads\waraq_bra
 | `ayman-academy-theme` (`useDarkMode.ts`), `ayman-academy-cache` (`queryConfig.ts`) | persisted client keys |
 | Supabase tables/buckets/env vars, Vercel project, GitHub repo | out of scope per the kit |
 
-**Flutter:** `lib/brand/brand_colors.dart` holds `BrandColors` + `BrandStrings` (keep in sync with `brand.css`). Display name updated in `AndroidManifest.xml` (`android:label`) and `main.dart` (`MaterialApp title`). **There is no `ios/` directory**, so no `Info.plist` to update. `pubspec.yaml` gained `flutter_svg`, `flutter_launcher_icons`, the `assets/brand/` entry and a launcher-icons block — run `dart run flutter_launcher_icons` to generate the launcher icons.
+**Flutter:** `lib/brand/brand_colors.dart` holds `BrandColors` + `BrandStrings` (keep in sync with `brand.css`). **There is no `ios/` directory**, so no `Info.plist` to update. Launcher icons and the splash are generated (`dart run flutter_launcher_icons`, `dart run flutter_native_splash:create`).
+
+The **launcher label is locale-aware**: `android:label="@string/app_name"`, with `Waraq Academy` in `res/values/strings.xml` and `ورق أكاديمي` in `res/values-ar/strings.xml`. It was hard-coded to the English name in the manifest, which showed the wrong name to the Arabic-first majority. `MaterialApp(title:)` carries the Arabic name.
+
+**The app now shares the web's arcade design language.** `ayman_academy_flutter/lib/brand/arcade.dart` is the Dart mirror of the `--arc-*` variables in `src/index.css` — **`src/index.css` stays the source of truth for the hex values**, and the Dart side must be updated to match when they change. `lib/brand/widgets/` holds the Flutter counterparts of `src/components/arcade/primitives.tsx` (`ArcadeButton`, `ArcadeCard`, `ArcadeChip`, `ArcadeField`, `ArcadeSkeleton`, `ArcadeEmpty`, `PixelDivider`, plus `LogoMark`/`BrandLogo`). The same rules apply on both sides: radius 0, 2px borders, hard offset shadows, text on accent is `onAccent` and never white, focus rings and spinners use `mid`. See `ayman_academy_flutter/CLAUDE.md` for the Flutter specifics and the test map.
+
+The **certificate PDF** (`lib/shared/services/pdf_service.dart`) is the one surface that deliberately keeps rounded corners — it is a printed document, not app chrome, so the arcade's radius-0 rule does not apply to it. Its palette is the brand's (`deep`/`green`/`sun`/`paper`), no longer the pre-rebrand navy and gold.
 
 ### Arcade Theme — the green + white public design language
 

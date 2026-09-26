@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/core/utils/date_formatter.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -152,9 +153,9 @@ class MessagesContactsScreen extends ConsumerWidget {
                                         Container(
                                           width: 20,
                                           height: 20,
-                                          decoration: const BoxDecoration(
-                                            color: AppColors.accent,
-                                            shape: BoxShape.circle,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.accentFill,
+                                            border: Border.all(color: context.arc.line, width: Arc.borderWidth),
                                           ),
                                           alignment: Alignment.center,
                                           child: Text(

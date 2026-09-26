@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -89,7 +90,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Text(
           title,
           style: TextStyle(
@@ -112,11 +113,11 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
             filled: true,
             fillColor: isDark ? AppColors.secondaryDark : AppColors.secondary,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.zero,
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.zero,
               borderSide: const BorderSide(color: AppColors.accent, width: 1),
             ),
           ),
@@ -191,8 +192,8 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
                 width: 96,
                 height: 96,
                 decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+                  color: context.arc.wash,
+                  border: Border.all(color: context.arc.line, width: Arc.borderWidth),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -237,7 +238,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
             Container(
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.zero,
               ),
               child: Column(
                 children: [
@@ -286,7 +287,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
             Container(
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.zero,
               ),
               child: Column(
                 children: [
@@ -325,7 +326,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
             Container(
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.zero,
               ),
               child: Column(
                 children: [
@@ -352,7 +353,7 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: isDark ? AppColors.secondaryDark : AppColors.secondary,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.zero,
                             ),
                             child: Text(
                               lang.languageCode == 'ar' ? 'العربية' : 'English',
@@ -403,11 +404,11 @@ class _TeacherProfileScreenState extends ConsumerState<TeacherProfileScreen> {
             Container(
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.zero,
               ),
               child: InkWell(
                 onTap: () => ref.read(authProvider.notifier).signOut(),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.zero,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Row(

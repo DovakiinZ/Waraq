@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/router/routes.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
@@ -104,14 +105,11 @@ class TeacherDashboardScreen extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: isDark
-                              ? [const Color(0xFF2D1B69), const Color(0xFF1A1A3E)]
-                              : [AppColors.accent, const Color(0xFF7C4DFF)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
+                        // The arcade band gradient. `isDark` no longer branches
+                        // here: `arc.gradient` already carries the dark stops.
+                        gradient: context.arc.gradient,
+                        border: Border.all(color: context.arc.line, width: Arc.borderWidth),
+                        boxShadow: context.arc.hard(Arc.cardRest),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,20 +128,22 @@ class TeacherDashboardScreen extends ConsumerWidget {
                                   children: [
                                     Text(
                                       '${t("مرحباً", "Welcome back")}, $firstName',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.white70,
+                                        color: context.arc.onInkMuted,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       t('لوحة تحكم المعلم', 'Teacher Dashboard'),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 22,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                        letterSpacing: -0.3,
+                                        // Caps at 700: the bundled family ships no
+                                        // heavier face, and w800 was synthesised.
+                                        // Arabic never takes letterSpacing.
+                                        fontWeight: FontWeight.w700,
+                                        color: context.arc.onInk,
                                       ),
                                     ),
                                   ],
@@ -157,7 +157,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
                             loading: () => const SizedBox(
                               height: 30,
                               child: Center(
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white38),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
                               ),
                             ),
                             error: (_, __) => const SizedBox.shrink(),
@@ -203,7 +203,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             decoration: BoxDecoration(
                               color: AppColors.warning.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.zero,
                               border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                             ),
                             child: Row(
@@ -213,7 +213,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
                                   height: 40,
                                   decoration: BoxDecoration(
                                     color: AppColors.warning.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.zero,
                                   ),
                                   child: const Icon(Icons.receipt_long_rounded, color: AppColors.warning, size: 20),
                                 ),
@@ -257,7 +257,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.zero,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +269,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
                                     height: 40,
                                     decoration: BoxDecoration(
                                       color: AppColors.success.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.zero,
                                     ),
                                     child: const Icon(Icons.trending_up_rounded, color: AppColors.success, size: 22),
                                   ),
@@ -374,7 +374,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
                               AppColors.error.withValues(alpha: 0.03),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.zero,
                           border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
                         ),
                         child: Row(
@@ -384,7 +384,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
                               height: 44,
                               decoration: BoxDecoration(
                                 color: AppColors.error.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.zero,
                               ),
                               child: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.error, size: 22),
                             ),
@@ -440,8 +440,6 @@ class TeacherDashboardScreen extends ConsumerWidget {
                             'المواد مع صور غلاف جذابة تحصل على 3x مشاهدات',
                             'Courses with cover images get 3x more views',
                           ),
-                          gradient: [const Color(0xFFF0EDFF), const Color(0xFFE8E4FF)],
-                          isDark: isDark,
                         ),
                         const SizedBox(width: 12),
                         _TipCard(
@@ -451,8 +449,6 @@ class TeacherDashboardScreen extends ConsumerWidget {
                             'وصف المادة الجيد يساعد الطلاب على اتخاذ قرار الشراء',
                             'Good descriptions help students decide to enroll',
                           ),
-                          gradient: [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
-                          isDark: isDark,
                         ),
                         const SizedBox(width: 12),
                         _TipCard(
@@ -462,8 +458,6 @@ class TeacherDashboardScreen extends ConsumerWidget {
                             'الدروس المرئية أكثر تفاعلاً وتحقق تقييمات أعلى',
                             'Video lessons boost engagement & ratings',
                           ),
-                          gradient: [const Color(0xFFFFF3E0), const Color(0xFFFFE0B2)],
-                          isDark: isDark,
                         ),
                       ],
                     ),
@@ -480,10 +474,10 @@ class TeacherDashboardScreen extends ConsumerWidget {
 
   Widget _heroDivider() {
     return Container(
-      width: 1,
+      width: Arc.borderWidth,
       height: 30,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      color: Colors.white24,
+      margin: const EdgeInsets.symmetric(horizontal: 14),
+      color: Colors.white.withValues(alpha: 0.28),
     );
   }
 }
@@ -502,18 +496,18 @@ class _HeroStat extends StatelessWidget {
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              color: context.arc.onInk,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.white60,
+              color: context.arc.onInkMuted,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -543,42 +537,39 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final arc = context.arc;
+    return ArcadeCard(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 20),
+      padding: const EdgeInsets.all(14),
+      shadowOffset: Arc.pressRestSm,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: arc.wash,
+              border: Border.all(color: arc.line, width: Arc.borderWidth),
             ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              subtitle,
-              style: const TextStyle(fontSize: 11, color: AppColors.inkMuted),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+            child: Icon(icon, color: color, size: 19),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: arc.ink),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 11, color: arc.inkSoft),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -589,49 +580,38 @@ class _TipCard extends StatelessWidget {
   final String emoji;
   final String title;
   final String body;
-  final List<Color> gradient;
-  final bool isDark;
 
   const _TipCard({
     required this.emoji,
     required this.title,
     required this.body,
-    required this.gradient,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final arc = context.arc;
+    // Tips are advisory, so the card sits flat on the page rather than lifting
+    // off it — on this screen the lifted cards are the ones you can tap.
+    return ArcadeCard(
       width: 240,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: isDark
-            ? null
-            : LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        color: isDark ? AppColors.surfaceDark : null,
-        borderRadius: BorderRadius.circular(16),
-        border: isDark ? Border.all(color: AppColors.borderDark, width: 0.5) : null,
-      ),
+      flat: true,
+      fill: arc.wash,
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 24)),
+          Text(emoji, style: const TextStyle(fontSize: 22)),
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: arc.ink),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
           Text(
             body,
-            style: TextStyle(
-              fontSize: 12,
-              color: isDark ? AppColors.inkMuted : AppColors.inkSecondary,
-              height: 1.4,
-            ),
+            style: TextStyle(fontSize: 12, color: arc.inkSoft, height: 1.4),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),

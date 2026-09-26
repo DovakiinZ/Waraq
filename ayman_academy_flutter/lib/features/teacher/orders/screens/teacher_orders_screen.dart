@@ -233,7 +233,7 @@ class _OrderRow extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: sColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.zero,
                 ),
                 child: Text(
                   _statusLabel(order.status, t),
@@ -262,7 +262,7 @@ class _OrderRow extends StatelessWidget {
                         backgroundColor: AppColors.accent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                         ),
                         elevation: 0,
                       ),
@@ -293,7 +293,7 @@ class _OrderRow extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: AppColors.error, width: 1),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                         ),
                         elevation: 0,
                       ),

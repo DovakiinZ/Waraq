@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/loading_shimmer.dart';
@@ -112,8 +113,8 @@ class MyCertificatesScreen extends ConsumerWidget {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: statusColor.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
+                              color: context.arc.wash,
+                              border: Border.all(color: statusColor, width: Arc.borderWidth),
                             ),
                             child: Icon(
                               isIssued ? Icons.verified_rounded : Icons.schedule_rounded,
@@ -146,7 +147,7 @@ class MyCertificatesScreen extends ConsumerWidget {
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
                                         color: statusColor.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.zero,
                                       ),
                                       child: Text(
                                         isIssued ? t('صادرة', 'Issued') : t('قيد المراجعة', 'Pending'),

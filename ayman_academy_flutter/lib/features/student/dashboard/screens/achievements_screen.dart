@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/xp_progress_bar.dart';
@@ -132,7 +133,7 @@ class AchievementsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: unlocked ? AppColors.gold.withValues(alpha: 0.08) : AppColors.border.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.zero,
                           border: Border.all(color: unlocked ? AppColors.gold.withValues(alpha: 0.3) : AppColors.border),
                         ),
                         child: Column(
@@ -144,7 +145,7 @@ class AchievementsScreen extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: unlocked ? AppColors.ink : AppColors.inkMuted,
+                                color: unlocked ? context.arc.ink : AppColors.inkMuted,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -216,7 +217,7 @@ class _StatBadge extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(

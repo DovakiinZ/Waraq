@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/core/utils/date_formatter.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -71,16 +72,22 @@ class TeacherMessagesScreen extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13,
-                              color: c.unreadCount > 0 ? AppColors.ink : AppColors.inkMuted,
+                              color: c.unreadCount > 0 ? context.arc.ink : AppColors.inkMuted,
                               fontWeight: c.unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
                             ),
                           )
                         : null,
                     trailing: c.unreadCount > 0
                         ? Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                            child: Text('${c.unreadCount}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            // Square badge with the accent fill: radius 0
+                            // applies to badges too, and text on the accent is
+                            // always `onAccent`, never white.
+                            decoration: BoxDecoration(
+                              color: AppColors.accentFill,
+                              border: Border.all(color: context.arc.line, width: Arc.borderWidth),
+                            ),
+                            child: Text('${c.unreadCount}', style: const TextStyle(color: AppColors.onAccent, fontSize: 11, fontWeight: FontWeight.w700)),
                           )
                         : null,
                     onTap: () => context.push(

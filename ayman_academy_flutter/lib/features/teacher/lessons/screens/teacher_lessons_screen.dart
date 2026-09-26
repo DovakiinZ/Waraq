@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/models/lesson.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -75,8 +76,11 @@ class TeacherLessonsScreen extends ConsumerWidget {
                       leading: Container(
                         width: 36, height: 36,
                         decoration: BoxDecoration(
-                          color: l.isPublished ? AppColors.success.withValues(alpha: 0.1) : AppColors.inkMuted.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
+                          color: context.arc.wash,
+                          border: Border.all(
+                            color: l.isPublished ? AppColors.success : AppColors.inkMuted,
+                            width: Arc.borderWidth,
+                          ),
                         ),
                         child: Center(
                           child: Text('${index + 1}', style: TextStyle(
@@ -93,7 +97,7 @@ class TeacherLessonsScreen extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
                               color: l.isPublished ? AppColors.success.withValues(alpha: 0.1) : AppColors.inkMuted.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.zero,
                             ),
                             child: Text(
                               l.isPublished ? t('منشور', 'Published') : t('مسودة', 'Draft'),
@@ -107,7 +111,7 @@ class TeacherLessonsScreen extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                               decoration: BoxDecoration(
                                 color: AppColors.gold.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.zero,
                               ),
                               child: Text(t('مدفوع', 'Paid'), style: const TextStyle(fontSize: 10, color: AppColors.gold)),
                             ),

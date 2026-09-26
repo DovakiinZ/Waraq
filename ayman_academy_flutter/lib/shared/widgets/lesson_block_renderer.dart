@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/core/utils/youtube_utils.dart';
 import 'package:ayman_academy_app/shared/models/lesson_block.dart';
@@ -45,6 +46,7 @@ class LessonBlockRenderer extends ConsumerWidget {
           icon: Icons.lightbulb_outline,
           content: content,
           background: AppColors.tipBackground,
+          backgroundDark: AppColors.tipBackgroundDark,
           borderColor: AppColors.tipBorder,
           isRtl: isRtl,
         );
@@ -55,6 +57,7 @@ class LessonBlockRenderer extends ConsumerWidget {
           icon: Icons.warning_amber,
           content: content,
           background: AppColors.warningBackground,
+          backgroundDark: AppColors.warningBackgroundDark,
           borderColor: AppColors.warningBorder,
           isRtl: isRtl,
         );
@@ -65,6 +68,7 @@ class LessonBlockRenderer extends ConsumerWidget {
           icon: Icons.auto_awesome,
           content: content,
           background: AppColors.exampleBackground,
+          backgroundDark: AppColors.exampleBackgroundDark,
           borderColor: AppColors.exampleBorder,
           isRtl: isRtl,
         );
@@ -75,6 +79,7 @@ class LessonBlockRenderer extends ConsumerWidget {
           icon: Icons.edit_note,
           content: content,
           background: AppColors.exerciseBackground,
+          backgroundDark: AppColors.exerciseBackgroundDark,
           borderColor: AppColors.exerciseBorder,
           isRtl: isRtl,
         );
@@ -103,11 +108,26 @@ class LessonBlockRenderer extends ConsumerWidget {
   }
 }
 
+/// A lesson callout: tip, warning, worked example, exercise.
+///
+/// Two colours carry the type — a thick accent bar on the **leading** edge and
+/// the label — while the other three sides take the ordinary 2px arcade border,
+/// so a callout reads as a member of the same family as every other panel.
+///
+/// The accent bar is on the leading edge, so it sits on the right in Arabic and
+/// the left in English: it marks where the eye enters the block.
 class _SideBorderBlock extends StatelessWidget {
   final String label;
   final IconData icon;
   final String content;
+
+  /// Wash for light mode.
   final Color background;
+
+  /// Wash for dark mode. Required: laying the light tint on the dark ground
+  /// turned every callout into a glowing slab.
+  final Color backgroundDark;
+
   final Color borderColor;
   final bool isRtl;
 
@@ -116,22 +136,29 @@ class _SideBorderBlock extends StatelessWidget {
     required this.icon,
     required this.content,
     required this.background,
+    required this.backgroundDark,
     required this.borderColor,
     required this.isRtl,
   });
 
   @override
   Widget build(BuildContext context) {
+    final arc = context.arc;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = BorderSide(color: borderColor, width: 6);
+    final plain = BorderSide(color: arc.line, width: Arc.borderWidth);
+
     return Container(
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(8),
+        color: isDark ? backgroundDark : background,
         border: Border(
-          right: isRtl ? BorderSide(color: borderColor, width: 4) : BorderSide.none,
-          left: isRtl ? BorderSide.none : BorderSide(color: borderColor, width: 4),
+          right: isRtl ? accent : plain,
+          left: isRtl ? plain : accent,
+          top: plain,
+          bottom: plain,
         ),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -139,11 +166,11 @@ class _SideBorderBlock extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: borderColor),
               const SizedBox(width: 6),
-              Text(label, style: TextStyle(color: borderColor, fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(label, style: TextStyle(color: borderColor, fontWeight: FontWeight.w700, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 8),
-          Text(content, style: const TextStyle(fontSize: 14, height: 1.8)),
+          Text(content, style: TextStyle(fontSize: 14, height: 1.8, color: arc.ink)),
         ],
       ),
     );
@@ -162,22 +189,21 @@ class _VideoBlock extends StatelessWidget {
       return Container(
         height: 200,
         decoration: BoxDecoration(
-          color: Colors.black12,
-          borderRadius: BorderRadius.circular(8),
+          color: context.arc.wash,
         ),
         child: const Center(child: Text('Video unavailable')),
       );
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.zero,
       child: InkWell(
         onTap: () => launchUrl(Uri.parse(url!), mode: LaunchMode.externalApplication),
         child: Container(
           height: 200,
           decoration: BoxDecoration(
             color: Colors.black,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
           ),
           child: Stack(
             alignment: Alignment.center,
@@ -193,7 +219,7 @@ class _VideoBlock extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   color: Colors.black45,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.zero,
                 ),
                 padding: const EdgeInsets.all(12),
                 child: const Icon(Icons.play_arrow, color: Colors.white, size: 36),
@@ -215,7 +241,7 @@ class _ImageBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     if (url == null || url!.isEmpty) return const SizedBox.shrink();
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.zero,
       child: CachedNetworkImage(
         imageUrl: url!,
         width: double.infinity,
@@ -226,7 +252,7 @@ class _ImageBlock extends StatelessWidget {
         ),
         errorWidget: (_, _2, ___) => Container(
           height: 150,
-          color: Colors.grey[200],
+          color: context.arc.wash,
           child: const Center(child: Icon(Icons.broken_image, size: 40)),
         ),
       ),
@@ -245,9 +271,10 @@ class _EquationBlock extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.equationBackground,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.equationBorder.withValues(alpha: 0.4)),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.equationBackgroundDark
+            : AppColors.equationBackground,
+        border: Border.all(color: AppColors.equationBorder, width: Arc.borderWidth),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -285,9 +312,10 @@ class _QABlockState extends State<_QABlock> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.qaBackground,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.qaBorder.withValues(alpha: 0.4)),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.qaBackgroundDark
+            : AppColors.qaBackground,
+        border: Border.all(color: AppColors.qaBorder, width: Arc.borderWidth),
       ),
       child: Column(
         children: [
@@ -329,11 +357,10 @@ class _FileBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.arc.line, width: Arc.borderWidth),
       ),
       child: ListTile(
-        leading: const Icon(Icons.attach_file, color: AppColors.primary),
+        leading: Icon(Icons.attach_file, color: context.arc.mid),
         title: Text(title.isNotEmpty ? title : (lang == 'ar' ? 'ملف مرفق' : 'Attached file')),
         trailing: const Icon(Icons.download),
         onTap: url != null ? () => launchUrl(Uri.parse(url!), mode: LaunchMode.externalApplication) : null,
@@ -353,9 +380,8 @@ class _LinkBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
-        color: AppColors.info.withValues(alpha: 0.05),
+        border: Border.all(color: AppColors.info, width: Arc.borderWidth),
+        color: AppColors.info.withValues(alpha: 0.12),
       ),
       child: ListTile(
         leading: const Icon(Icons.link, color: AppColors.info),

@@ -165,7 +165,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                         controller: _titleArController,
                         decoration: InputDecoration(
                           hintText: t('أدخل عنوان المادة', 'Enter subject title'),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                         ),
                         validator: (v) => (v == null || v.isEmpty) ? t('مطلوب', 'Required') : null,
                       ),
@@ -178,7 +178,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           hintText: 'Enter subject title',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -190,7 +190,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                         maxLines: 3,
                         decoration: InputDecoration(
                           hintText: t('وصف المادة...', 'Subject description...'),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -203,7 +203,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           hintText: 'Subject description...',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -216,7 +216,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                         data: (stages) => DropdownButtonFormField<String>(
                           value: _selectedStageId,
                           decoration: InputDecoration(
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                           ),
                           items: stages.map((s) => DropdownMenuItem(
                             value: s.id,
@@ -232,7 +232,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.zero,
                           border: Border.all(color: AppColors.border),
                         ),
                         child: Column(
@@ -261,7 +261,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                                       keyboardType: TextInputType.number,
                                       decoration: InputDecoration(
                                         labelText: t('السعر', 'Price'),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                                       ),
                                     ),
                                   ),
@@ -270,7 +270,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                                     child: DropdownButtonFormField<String>(
                                       value: _currency,
                                       decoration: InputDecoration(
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                                       ),
                                       items: const [
                                         DropdownMenuItem(value: 'SYP', child: Text('SYP')),
@@ -291,7 +291,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                       Container(
                         height: 52,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.zero,
                           gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryLight]),
                         ),
                         child: ElevatedButton.icon(
@@ -306,7 +306,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                           ),
                         ),
                       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/features/student/profile/providers/profile_provider.dart';
@@ -87,7 +88,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Text(
           t('تعديل الاسم', 'Edit Name'),
           style: TextStyle(
@@ -107,11 +108,11 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
             filled: true,
             fillColor: isDark ? AppColors.secondaryDark : AppColors.secondary,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.zero,
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.zero,
               borderSide: const BorderSide(color: AppColors.accent, width: 1),
             ),
           ),
@@ -142,7 +143,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
       context: context,
       backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+        borderRadius: BorderRadius.zero,
       ),
       builder: (ctx) => SafeArea(
         child: Column(
@@ -154,7 +155,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
               height: 4,
               decoration: BoxDecoration(
                 color: isDark ? AppColors.borderDark : AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.zero,
               ),
             ),
             const SizedBox(height: 16),
@@ -263,12 +264,8 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: AppColors.accent,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark ? AppColors.backgroundDark : AppColors.secondary,
-                            width: 2,
-                          ),
+                          color: AppColors.accentFill,
+                          border: Border.all(color: context.arc.line, width: Arc.borderWidth),
                         ),
                         child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14),
                       ),
@@ -312,7 +309,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
             Container(
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.zero,
               ),
               child: Column(
                 children: [
@@ -357,7 +354,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
             Container(
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.zero,
               ),
               child: Column(
                 children: [
@@ -384,7 +381,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: isDark ? AppColors.secondaryDark : AppColors.secondary,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.zero,
                             ),
                             child: Text(
                               lang.languageCode == 'ar' ? 'العربية' : 'English',
@@ -435,11 +432,11 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
             Container(
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.zero,
               ),
               child: InkWell(
                 onTap: () => ref.read(authProvider.notifier).signOut(),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.zero,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Row(

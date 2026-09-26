@@ -318,7 +318,7 @@ Stage colours: kindergarten coral · primary sun · middle sky · secondary gree
 
 **Assets** in `assets/brand/`: `mark.svg`, `mark-on-dark.svg`, `app-icon.{svg,png}` (1024), `icon-foreground.png` (adaptive foreground, mark inside the central safe zone), `icon-monochrome.png` (Android 13+ themed icons), `splash-mark.png`.
 
-**Icon and splash** are configured in `pubspec.yaml` but **not yet generated** — run both once a Flutter toolchain is available:
+**Icon and splash** are configured in `pubspec.yaml` and **generated**. Regenerate after changing the source art:
 ```bash
 dart run flutter_launcher_icons
 dart run flutter_native_splash:create
@@ -326,14 +326,54 @@ dart run flutter_native_splash:create
 
 **Technical names are intentionally unchanged.** The Dart package stays `ayman_academy_app`, the folder stays `ayman_academy_flutter/`, and the Android `applicationId` is untouched — renaming any of them breaks `package:` imports and stops the app updating over installed versions. Only display strings carry the new brand (`android:label`, `MaterialApp(title:)`, UI copy).
 
-**Still outstanding:** 52 hard-coded `Color(0x…)` values across 7 files (worst: `xp_progress_bar.dart` 15, `lesson_editor_screen.dart` 10) still need moving onto the theme, the `lib/brand/widgets/` set (`BrandButton`, `BrandCard`, `LevelChip`, `LogoMark`, `BrandLogo`) is not built yet, and there is **no OneSignal notification small icon** (`ic_stat_onesignal_default`), so Android renders the colored app icon as a white square.
+**Still outstanding:** there is **no OneSignal notification small icon** (`ic_stat_onesignal_default`), so Android renders the coloured app icon as a white square in the status bar.
 
-### Color Palette (legacy, being replaced by the brand tokens above)
-- **Primary**: Deep Navy (`#1E3A5F`)
-- **Accent**: Gold (`#AE944F`)
-- **Background**: Warm Ivory (`#F7F4EF`) / Dark (`#131921`)
-- **Surface**: Off-white (`#FAF8F5`) / Dark (`#1A2332`)
-- See `core/theme/app_colors.dart` for the complete palette.
+### Arcade theme — the app's design language
+
+The app uses the same **green + white arcade** system as the web platform's public surfaces. Three layers, in order:
+
+1. **`lib/brand/arcade.dart`** — the `Arc` `ThemeExtension`. This is the Dart mirror of the `--arc-*` custom properties in the web's `src/index.css`, which is the source of truth for the hex values. Resolve it with **`context.arc`**, never by reaching for the constants, so a widget follows the ambient brightness.
+2. **`lib/core/theme/app_theme.dart`** — one `_build(Arc, Brightness)` function produces both themes, so light and dark cannot drift apart (they used to be two hand-maintained copies). It registers `Arc` in `extensions`.
+3. **`lib/brand/widgets/`** — the primitives. Import the barrel `lib/brand/widgets/arcade.dart` and you get the tokens and every primitive in one line:
+   `ArcadeButton` (+ `.nav`), `ArcadeCard`, `ArcadeChip`, `ArcadeField`, `ArcadeSkeleton`, `ArcadeEmpty`, `PixelDivider`, `LogoMark`, `BrandLogo`.
+   Screen-level chrome: `shared/widgets/arcade_auth_scaffold.dart` (`ArcadeAuthHeader`, `ArcadeAlert`) and `shared/widgets/shells/arcade_drawer.dart` (`ArcadeDrawer`, `ArcadeNavBar`, shared by both shells).
+
+**Rules that are easy to get wrong** — each one is covered by a test in `test/brand/`:
+
+- **`ink` is a TEXT colour, `line` is a BORDER colour, `band` is a deep-green FILL.** They coincide in light mode and diverge in dark. Using `ink` as a background or a border breaks dark mode.
+- **Text on `accent` is always `onAccent`, never white.** Electric green `#22DE7C` is a *light* colour — white on it fails contrast, `onAccent` gives 8.4:1.
+- **Radius is 0 everywhere and borders are 2px** (`Arc.radius`, `Arc.borderWidth`) — cards, buttons, inputs, chips, sheets, dialogs, badges and avatars included.
+- **Depth is `context.arc.hard(n)`**, a hard offset shadow with no blur. Material `elevation` is 0 on every theme field; a blurred Material shadow next to a hard arcade one reads as a bug.
+- **Focus rings and spinners use `mid`, not `accent`** — accent only reaches 1.9:1 on white, under the 3:1 floor for a non-text indicator.
+- **`danger` is the one non-green colour in the system**, because an error rendered in the brand green would not read as an error.
+
+### `AppColors` — the legacy flat palette
+
+`lib/core/theme/app_colors.dart` still exists because ~700 call sites read it from inside `const TextStyle(...)`, where `context.arc` cannot go. Its constants are **repointed onto the arcade palette**, so the whole app moved on-brand in one edit. Two classes of token live there and the difference matters:
+
+- **Paired** (`ink`/`inkDark`, `border`/`borderDark`, `surface`/`surfaceDark`, …) — call sites pick with `isDark ? xDark : x`, so each value is the exact arcade token.
+- **Dual-safe** (`inkMuted`, `accent`, `error`, `success`, `warning`, `info`, `gold`) — read *unguarded* (200 sites for `inkMuted` alone), so each is tuned to clear ~4:1 against **both** the white and the dark ground. They are therefore deliberately **not** the raw arcade hexes: `AppColors.accent` is the readable `mid`-family green, **not** electric `#22DE7C`. For a real fill use `AppColors.accentFill` with `AppColors.onAccent`, or better, an `ArcadeButton` / `ArcadeChip`.
+
+**Prefer `context.arc` in new code.** Only reach for `AppColors` when the call site must stay `const`.
+
+### Tests
+
+`flutter test` runs 180 tests; `flutter analyze` reports no issues. Keep both clean.
+
+| Path | Covers |
+|---|---|
+| `test/support/harness.dart` | Hive setup, `FakeAuthRepository`, `pumpScreen` (light **and** dark), `onlineOverrides` |
+| `test/brand/arcade_tokens_test.dart` | WCAG contrast for every token on both grounds, and the arcade geometry constants |
+| `test/brand/app_theme_test.dart` | `ThemeData` invariants: radius 0, 2px borders, elevation 0, bundled font, weight ≤ 700, no Arabic tracking |
+| `test/brand/arcade_widgets_test.dart` | Every primitive and every interaction, including the press animation |
+| `test/screens/auth_screens_test.dart` | Login, register, reset, admin-web-only: every button, every validator, loading, errors, AR↔EN, RTL↔LTR, dark mode |
+| `test/screens/onboarding_screen_test.dart` | Stage selection, the disabled→enabled Continue, failure handling |
+| `test/screens/shells_test.dart` | `ArcadeDrawer` and `ArcadeNavBar` — the chrome both shells share |
+| `test/widgets/shared_widgets_test.dart` | `SubjectCard`, `StarRating`, `AvatarWidget`, `EmptyState`, `LoadingShimmer`, `StudentLevel` |
+
+**The one trap worth knowing about.** `initTestHive` opens every box with `bytes: Uint8List(0)` — Hive's **in-memory** backend. This is required, not tidiness. A disk-backed box does real file I/O, and a `testWidgets` body runs in a fake-async zone where real I/O futures never complete. `LanguageNotifier.toggle()` fires `box.put(...)` without awaiting it, so on a disk-backed box that write hangs forever while holding Hive's per-box lock, and the *next* box operation queues behind it. The symptom is distinctive: the first test that toggles the language passes, and the one after it times out after ten minutes with no useful stack.
+
+Screens are driven through `pumpScreen`, which supplies the real `AppTheme`, Riverpod and localisations. Auth is stubbed by overriding `authRepositoryProvider` with `FakeAuthRepository`, which records what each form actually submitted (so "the email was trimmed" is an assertion, not an assumption) and can be told to throw or to stall.
 
 ### Key Services
 
@@ -489,6 +529,30 @@ request against the REST API so this cannot recur.
 - [ ] **Retire the `20260207*` migrations** so they cannot run after 100.
 
 ### Phase 1: Polish & Bug Fixes (Current Priority)
+- [x] **Arcade rebrand of the whole app** — `lib/brand/arcade.dart` (the `Arc` theme
+      extension), `lib/brand/widgets/` (the primitives), `AppColors` repointed onto
+      the brand palette, both `ThemeData`s rebuilt from one function. Every
+      hard-coded `Color(0x…)` outside the brand layer is gone (was 93 across 9
+      files), 131 corner radii flattened to 0 across 23 files, and the purple
+      gradients on the login screen, both teacher dashboards and the lesson
+      editor are replaced by the deep-green band.
+- [x] **Test suite** — 180 tests covering the tokens, the theme, every primitive,
+      the auth and onboarding flows, the shell chrome and the shared widgets.
+      Was a single `1 + 1 == 2` placeholder.
+- [x] **`context.canPop()` crash-on-no-router** — register and reset-password
+      called go_router's extension during `build`, which asserts when no
+      `GoRouter` is in scope. Both now use `Navigator`, which reports the same
+      thing for a pushed route and works anywhere.
+- [x] **Bilingual student levels** — `StudentLevel` had Arabic names only, so an
+      English user saw Arabic level labels. Added `nameEn` / `name(lang)` plus
+      `levelNumber` for the `LEVEL 01` chip.
+- [x] **Reset-password did nothing on an empty field** — it returned early
+      instead of validating, so the button read as broken. It now validates.
+- [x] **Invented course ratings** — `SubjectCard` defaulted to `?? 4.5`, showing
+      a rating for courses nobody had reviewed. Stars now appear only at 3+
+      ratings; below that the card reads "جديد" / "NEW".
+- [x] **Lesson callouts in dark mode** — the pale light-mode washes were painted
+      straight onto the dark ground. Each block type now carries both washes.
 - [x] **Android release blockers** — `targetSdk` raised 34 → 36 (Play rejects 34),
       Gradle heap cut from 8G/4G metaspace to 4G/1G (failed to start on normal machines).
 - [x] **Router no longer rebuilt on every auth change** — `routerProvider` watched

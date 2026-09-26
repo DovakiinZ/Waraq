@@ -57,11 +57,11 @@ class StudentTeachersScreen extends ConsumerWidget {
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.zero,
                       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 3))],
                     ),
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.zero,
                       onTap: () => _showTeacherProfile(context, teacher, t, lang),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -86,7 +86,7 @@ class StudentTeachersScreen extends ConsumerWidget {
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: AppColors.primary.withValues(alpha: 0.08),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.zero,
                                         ),
                                         child: Text(tag, style: const TextStyle(fontSize: 10, color: AppColors.primary)),
                                       )).toList(),

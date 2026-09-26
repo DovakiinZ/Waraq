@@ -347,7 +347,7 @@ class _QuizBuilderScreenState extends ConsumerState<QuizBuilderScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.zero,
                           border: Border.all(color: AppColors.border),
                         ),
                         child: Column(
@@ -398,7 +398,7 @@ class _QuizBuilderScreenState extends ConsumerState<QuizBuilderScreen> {
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: AppColors.info.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.zero,
                                         ),
                                         child: Text(
                                           q.type == 'true_false'

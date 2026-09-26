@@ -1,7 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ayman_academy_app/brand/arcade.dart';
 import 'app_colors.dart';
 
+/// The app's `ThemeData`, built on the Waraq **arcade** design language — the
+/// same green + white system the web platform uses on every public surface.
+///
+/// Three rules drive every value below, and breaking any one of them is what
+/// makes a screen stop looking like the rest of the app:
+///
+///  1. **Radius is 0.** [Arc.radius]. No rounded corners anywhere — not on
+///     cards, buttons, inputs, chips, sheets or dialogs.
+///  2. **Borders are 2px, in `line`.** [Arc.borderWidth]. A surface without a
+///     border is not an arcade surface.
+///  3. **Elevation is a hard offset shadow, never a blur.** Material's own
+///     `elevation` is therefore 0 everywhere; depth comes from
+///     `context.arc.hard()`, which widgets apply themselves. A blurred Material
+///     shadow next to a hard arcade one looks like a bug.
+///
+/// The [Arc] extension is registered on both themes, so `context.arc` resolves
+/// to the right brightness anywhere under `MaterialApp`.
 class AppTheme {
   // IBM Plex Sans Arabic, bundled in assets/fonts and declared in pubspec.yaml.
   //
@@ -24,300 +42,374 @@ class AppTheme {
       displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.25, fontFamily: f),
       displaySmall: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, height: 1.3, fontFamily: f),
       headlineLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, height: 1.3, fontFamily: f),
-      headlineMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.4, fontFamily: f),
+      headlineMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, height: 1.4, fontFamily: f),
       bodyLarge: TextStyle(fontSize: 17, fontWeight: FontWeight.w400, height: 1.5, fontFamily: f),
       bodyMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, height: 1.45, fontFamily: f),
       bodySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, height: 1.4, fontFamily: f),
-      labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.4, fontFamily: f),
+      labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, height: 1.4, fontFamily: f),
       labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, height: 1.3, fontFamily: f),
       labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, height: 1.3, fontFamily: f),
     );
   }
 
-  // ═══════════════════════════════════════════
-  //  LIGHT THEME
-  // ═══════════════════════════════════════════
-  static ThemeData get light {
-    final f = _ff;
+  /// Radius 0, everywhere. A single object so no call site can drift.
+  static const _sharp = BorderRadius.zero;
+
+  /// One builder for both brightnesses. Everything that differs between light
+  /// and dark comes out of [arc], so the two themes cannot fall out of step —
+  /// which is exactly what happened when they were two hand-maintained copies.
+  static ThemeData _build(Arc arc, Brightness brightness) {
+    const f = _ff;
+    final isDark = brightness == Brightness.dark;
+
+    // A 2px `line` border with square corners: the arcade surface.
+    RoundedRectangleBorder outlined([Color? c, double w = Arc.borderWidth]) =>
+        RoundedRectangleBorder(
+          borderRadius: _sharp,
+          side: BorderSide(color: c ?? arc.line, width: w),
+        );
+
+    OutlineInputBorder field(Color c, [double w = Arc.borderWidth]) =>
+        OutlineInputBorder(borderRadius: _sharp, borderSide: BorderSide(color: c, width: w));
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
-      colorScheme: ColorScheme.light(
-        primary: AppColors.primary,
-        secondary: AppColors.accent,
-        surface: AppColors.surface,
-        onPrimary: AppColors.primaryForeground,
-        outline: AppColors.border,
-        tertiary: AppColors.accent,
-      ),
+      brightness: brightness,
       fontFamily: f,
-      textTheme: _textTheme.apply(bodyColor: AppColors.ink, displayColor: AppColors.ink),
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: arc.bg,
+      canvasColor: arc.bg,
+      splashFactory: InkRipple.splashFactory,
 
+      // `context.arc` reads this.
+      extensions: <ThemeExtension<dynamic>>[arc],
+
+      colorScheme: ColorScheme(
+        brightness: brightness,
+        // In light mode the deep green carries text, borders and band fills; in
+        // dark mode `mid` is the readable green that plays that role.
+        primary: isDark ? arc.mid : arc.ink,
+        onPrimary: isDark ? arc.onAccent : arc.onInk,
+        // The one fill in the system.
+        secondary: arc.accent,
+        onSecondary: arc.onAccent,
+        tertiary: arc.mid,
+        onTertiary: arc.onInk,
+        surface: arc.surface,
+        onSurface: arc.ink,
+        surfaceContainerHighest: arc.wash,
+        onSurfaceVariant: arc.inkSoft,
+        error: arc.danger,
+        onError: Colors.white,
+        outline: arc.line,
+        outlineVariant: isDark ? AppColors.separatorDark : AppColors.separator,
+        shadow: arc.shadow,
+      ),
+
+      textTheme: _textTheme.apply(bodyColor: arc.ink, displayColor: arc.ink),
+
+      // ── App bar: flat, on the ground, with a 2px rule underneath ──
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.ink,
+        backgroundColor: arc.bg,
+        foregroundColor: arc.ink,
         elevation: 0,
         scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
-        titleTextStyle: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.ink, fontFamily: f),
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarBrightness: Brightness.light,
-          statusBarIconBrightness: Brightness.dark,
+        // The arcade app bar is separated from content by a hard rule, not by a
+        // shadow that appears on scroll.
+        shape: Border(bottom: BorderSide(color: arc.line, width: Arc.borderWidth)),
+        iconTheme: IconThemeData(color: arc.ink, size: 22),
+        actionsIconTheme: IconThemeData(color: arc.ink, size: 22),
+        titleTextStyle: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          color: arc.ink,
+          fontFamily: f,
+        ),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarBrightness: brightness,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
           statusBarColor: Colors.transparent,
         ),
       ),
 
+      // ── Cards: bordered, square, unelevated. Depth is opt-in via hard(). ──
       cardTheme: CardThemeData(
-        color: AppColors.surface,
+        color: arc.surface,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: outlined(),
       ),
 
+      // ── Inputs: surface-filled with a real border, not a tinted well ──
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.inputFill,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.accent, width: 2)),
-        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.error, width: 1)),
-        hintStyle: TextStyle(color: AppColors.inkMuted, fontSize: 15, fontFamily: f),
+        fillColor: arc.surface,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: field(arc.line),
+        enabledBorder: field(arc.line),
+        // Focus thickens and greens the border. The web adds a 3px offset
+        // shadow too; Flutter cannot express that on an InputBorder, so the
+        // weight carries the state instead.
+        focusedBorder: field(arc.mid, 3),
+        disabledBorder: field(arc.inkSoft),
+        errorBorder: field(arc.danger),
+        focusedErrorBorder: field(arc.danger, 3),
+        hintStyle: TextStyle(color: arc.inkSoft, fontSize: 15, fontFamily: f),
+        labelStyle: TextStyle(color: arc.inkSoft, fontSize: 15, fontFamily: f),
+        floatingLabelStyle: TextStyle(color: arc.mid, fontSize: 14, fontFamily: f, fontWeight: FontWeight.w700),
+        errorStyle: TextStyle(color: arc.danger, fontSize: 12, fontFamily: f, fontWeight: FontWeight.w700),
+        prefixIconColor: arc.inkSoft,
+        suffixIconColor: arc.inkSoft,
       ),
 
+      // ── Primary action: electric green fill, deep green label ──
+      //
+      // Note the label is `onAccent`, never white. Electric green is a light
+      // colour; white on it fails contrast.
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.primaryForeground,
+          backgroundColor: arc.accent,
+          foregroundColor: arc.onAccent,
+          disabledBackgroundColor: arc.wash,
+          disabledForegroundColor: arc.inkSoft,
           elevation: 0,
-          minimumSize: const Size(double.infinity, 50),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, fontFamily: f),
+          shadowColor: Colors.transparent,
+          minimumSize: const Size(double.infinity, 52),
+          shape: outlined(),
+          side: BorderSide(color: arc.line, width: Arc.borderWidth),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, fontFamily: f),
         ),
       ),
 
+      // ── Secondary action: surface fill, ink label, same 2px border ──
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          backgroundColor: arc.surface,
+          foregroundColor: arc.ink,
+          disabledForegroundColor: arc.inkSoft,
           elevation: 0,
-          minimumSize: const Size(double.infinity, 50),
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, fontFamily: f),
+          minimumSize: const Size(double.infinity, 52),
+          side: BorderSide(color: arc.line, width: Arc.borderWidth),
+          shape: outlined(),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, fontFamily: f),
         ),
       ),
 
+      // ── Tertiary action: `mid`, the readable green. Not accent (1.9:1). ──
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.accent,
-          textStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, fontFamily: f),
+          foregroundColor: arc.mid,
+          shape: outlined(Colors.transparent),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, fontFamily: f),
         ),
       ),
 
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.background,
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: arc.accent,
+          foregroundColor: arc.onAccent,
+          elevation: 0,
+          minimumSize: const Size(double.infinity, 52),
+          shape: outlined(),
+          side: BorderSide(color: arc.line, width: Arc.borderWidth),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, fontFamily: f),
+        ),
+      ),
+
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(foregroundColor: arc.ink),
+      ),
+
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: arc.accent,
+        foregroundColor: arc.onAccent,
         elevation: 0,
-        height: 56,
-        indicatorColor: Colors.transparent,
+        focusElevation: 0,
+        hoverElevation: 0,
+        highlightElevation: 0,
+        shape: outlined(),
+      ),
+
+      // ── Bottom nav: square green chip behind the selected destination ──
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: arc.surface,
+        elevation: 0,
+        height: 60,
         surfaceTintColor: Colors.transparent,
+        indicatorColor: arc.accent,
+        // Square, like everything else. The default is a pill.
+        indicatorShape: const RoundedRectangleBorder(borderRadius: _sharp),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary, fontFamily: f);
-          }
-          return TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: AppColors.inkMuted, fontFamily: f);
+          final selected = states.contains(WidgetState.selected);
+          return TextStyle(
+            fontSize: 10,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? arc.ink : arc.inkSoft,
+            fontFamily: f,
+          );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
+          // Selected icons sit on the electric-green indicator, so they take
+          // `onAccent` — white or `ink`-in-dark would be unreadable there.
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: AppColors.primary, size: 24);
+            return IconThemeData(color: arc.onAccent, size: 22);
           }
-          return const IconThemeData(color: AppColors.inkMuted, size: 24);
+          return IconThemeData(color: arc.inkSoft, size: 22);
         }),
       ),
 
-      dividerTheme: const DividerThemeData(thickness: 0.5, color: AppColors.border, space: 0),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: arc.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(borderRadius: _sharp),
+      ),
 
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.background,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      dividerTheme: DividerThemeData(
+        thickness: 1,
+        color: isDark ? AppColors.separatorDark : AppColors.separator,
+        space: 0,
+      ),
+
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: arc.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        modalElevation: 0,
+        shape: Border(top: BorderSide(color: arc.line, width: Arc.borderWidth)),
         showDragHandle: true,
-        dragHandleColor: AppColors.border,
+        dragHandleColor: arc.line,
       ),
 
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-
-      chipTheme: ChipThemeData(
-        backgroundColor: AppColors.secondary,
-        selectedColor: AppColors.primary,
-        labelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, fontFamily: f),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      ),
-
-      listTileTheme: const ListTileThemeData(contentPadding: EdgeInsets.symmetric(horizontal: 16), minVerticalPadding: 12),
-
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.primary,
-        contentTextStyle: TextStyle(color: AppColors.primaryForeground, fontSize: 14, fontFamily: f),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        behavior: SnackBarBehavior.floating,
-      ),
-
-      tabBarTheme: TabBarThemeData(
-        labelColor: AppColors.primary,
-        unselectedLabelColor: AppColors.inkMuted,
-        indicatorColor: AppColors.primary,
-        labelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, fontFamily: f),
-        unselectedLabelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, fontFamily: f),
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════
-  //  DARK THEME
-  // ═══════════════════════════════════════════
-  static ThemeData get dark {
-    final f = _ff;
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.dark(
-        primary: AppColors.accentLight,
-        secondary: AppColors.accent,
-        surface: AppColors.surfaceDark,
-        outline: AppColors.borderDark,
-        tertiary: AppColors.accentLight,
-      ),
-      fontFamily: f,
-      textTheme: _textTheme.apply(bodyColor: AppColors.inkDark, displayColor: AppColors.inkDark),
-      scaffoldBackgroundColor: AppColors.backgroundDark,
-
-      appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.backgroundDark,
-        foregroundColor: AppColors.inkDark,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: false,
-        titleTextStyle: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.inkDark, fontFamily: f),
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarBrightness: Brightness.dark,
-          statusBarIconBrightness: Brightness.light,
-          statusBarColor: Colors.transparent,
-        ),
-      ),
-
-      cardTheme: CardThemeData(
-        color: AppColors.surfaceDark,
-        elevation: 0,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.secondaryDark,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.accentLight, width: 2)),
-        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.error, width: 1)),
-        hintStyle: TextStyle(color: AppColors.inkMuted.withValues(alpha: 0.6), fontSize: 15, fontFamily: f),
-      ),
-
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accentLight,
-          foregroundColor: AppColors.primaryForeground,
-          elevation: 0,
-          minimumSize: const Size(double.infinity, 50),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, fontFamily: f),
-        ),
-      ),
-
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.accentLight,
-          elevation: 0,
-          minimumSize: const Size(double.infinity, 50),
-          side: const BorderSide(color: AppColors.accentLight, width: 1.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, fontFamily: f),
-        ),
-      ),
-
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.accentLight,
-          textStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, fontFamily: f),
-        ),
-      ),
-
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.surfaceDark,
-        elevation: 0,
-        height: 56,
-        indicatorColor: Colors.transparent,
+        backgroundColor: arc.surface,
         surfaceTintColor: Colors.transparent,
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.accentLight, fontFamily: f);
-          }
-          return TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: AppColors.inkMuted, fontFamily: f);
-        }),
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: AppColors.accentLight, size: 24);
-          }
-          return const IconThemeData(color: AppColors.inkMuted, size: 24);
-        }),
-      ),
-
-      dividerTheme: const DividerThemeData(thickness: 0.5, color: AppColors.borderDark, space: 0),
-
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.surfaceDark,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-        showDragHandle: true,
-        dragHandleColor: AppColors.borderDark,
-      ),
-
-      dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surfaceDark,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: outlined(),
+        titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: arc.ink, fontFamily: f),
+        contentTextStyle: TextStyle(fontSize: 15, color: arc.ink, height: 1.45, fontFamily: f),
       ),
 
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.secondaryDark,
-        selectedColor: AppColors.accentLight,
-        labelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, fontFamily: f),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        backgroundColor: arc.surface,
+        selectedColor: arc.accent,
+        disabledColor: arc.wash,
+        checkmarkColor: arc.onAccent,
+        secondarySelectedColor: arc.accent,
+        labelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: arc.ink, fontFamily: f),
+        secondaryLabelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: arc.onAccent, fontFamily: f),
+        shape: outlined(),
+        side: BorderSide(color: arc.line, width: Arc.borderWidth),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        showCheckmark: false,
+        elevation: 0,
+        pressElevation: 0,
       ),
 
-      listTileTheme: const ListTileThemeData(contentPadding: EdgeInsets.symmetric(horizontal: 16), minVerticalPadding: 12),
+      listTileTheme: ListTileThemeData(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        minVerticalPadding: 12,
+        iconColor: arc.ink,
+        textColor: arc.ink,
+        shape: const RoundedRectangleBorder(borderRadius: _sharp),
+        selectedColor: arc.onAccent,
+        selectedTileColor: arc.accent,
+      ),
 
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.secondaryDark,
-        contentTextStyle: TextStyle(color: AppColors.inkDark, fontSize: 14, fontFamily: f),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        backgroundColor: arc.band,
+        contentTextStyle: TextStyle(color: AppColors.onBand, fontSize: 14, fontWeight: FontWeight.w500, fontFamily: f),
+        actionTextColor: arc.accent,
+        elevation: 0,
+        shape: outlined(arc.accent),
         behavior: SnackBarBehavior.floating,
+        insetPadding: const EdgeInsets.all(16),
       ),
 
       tabBarTheme: TabBarThemeData(
-        labelColor: AppColors.accentLight,
-        unselectedLabelColor: AppColors.inkMuted,
-        indicatorColor: AppColors.accentLight,
-        labelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, fontFamily: f),
-        unselectedLabelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, fontFamily: f),
+        labelColor: arc.ink,
+        unselectedLabelColor: arc.inkSoft,
+        indicatorColor: arc.mid,
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: isDark ? AppColors.separatorDark : AppColors.separator,
+        labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, fontFamily: f),
+        unselectedLabelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, fontFamily: f),
+        overlayColor: WidgetStatePropertyAll(arc.wash),
       ),
+
+      // Spinners take `mid`. Electric green on white is 1.9:1 — a spinner the
+      // user cannot see is worse than no spinner.
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: arc.mid,
+        linearTrackColor: arc.wash,
+        circularTrackColor: Colors.transparent,
+        linearMinHeight: 6,
+      ),
+
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? arc.accent : arc.surface,
+        ),
+        checkColor: WidgetStatePropertyAll(arc.onAccent),
+        side: BorderSide(color: arc.line, width: Arc.borderWidth),
+        shape: const RoundedRectangleBorder(borderRadius: _sharp),
+      ),
+
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? arc.mid : arc.line,
+        ),
+      ),
+
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? arc.onAccent : arc.line,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? arc.accent : arc.wash,
+        ),
+        trackOutlineColor: WidgetStatePropertyAll(arc.line),
+        trackOutlineWidth: const WidgetStatePropertyAll(Arc.borderWidth),
+      ),
+
+      sliderTheme: SliderThemeData(
+        activeTrackColor: arc.mid,
+        inactiveTrackColor: arc.wash,
+        thumbColor: arc.accent,
+        overlayColor: arc.accent.withValues(alpha: 0.2),
+      ),
+
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: arc.band,
+          border: Border.all(color: arc.accent, width: Arc.borderWidth),
+          borderRadius: _sharp,
+        ),
+        textStyle: const TextStyle(color: AppColors.onBand, fontSize: 12, fontFamily: f),
+      ),
+
+      popupMenuTheme: PopupMenuThemeData(
+        color: arc.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: outlined(),
+        textStyle: TextStyle(color: arc.ink, fontSize: 15, fontFamily: f),
+      ),
+
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: arc.mid,
+        selectionColor: arc.accent.withValues(alpha: 0.35),
+        selectionHandleColor: arc.mid,
+      ),
+
+      iconTheme: IconThemeData(color: arc.ink, size: 22),
+      primaryIconTheme: IconThemeData(color: arc.ink, size: 22),
     );
   }
+
+  static ThemeData get light => _build(Arc.light, Brightness.light);
+  static ThemeData get dark => _build(Arc.dark, Brightness.dark);
 }

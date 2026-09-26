@@ -68,7 +68,7 @@ class MySubjectsScreen extends ConsumerWidget {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.zero,
                       ),
                     ),
                   ),
@@ -101,7 +101,7 @@ class MySubjectsScreen extends ConsumerWidget {
                             height: 60,
                             decoration: BoxDecoration(
                               color: isDark ? AppColors.secondaryDark : AppColors.secondary,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.zero,
                             ),
                             child: Center(
                               child: Icon(
@@ -142,7 +142,7 @@ class MySubjectsScreen extends ConsumerWidget {
                                   const SizedBox(height: 8),
                                   // Thin progress bar
                                   ClipRRect(
-                                    borderRadius: BorderRadius.circular(2),
+                                    borderRadius: BorderRadius.zero,
                                     child: LinearProgressIndicator(
                                       value: s.progressPercent! / 100,
                                       backgroundColor: isDark ? AppColors.borderDark : AppColors.border,
