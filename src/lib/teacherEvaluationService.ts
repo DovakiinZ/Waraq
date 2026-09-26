@@ -20,7 +20,7 @@ export async function evaluateCourseQuality(subjectId: string): Promise<CourseQu
             .select('user_id, lesson_id, progress_percent, lessons!inner(subject_id)')
             .eq('lessons.subject_id', subjectId),
         (supabase.from('quiz_attempts') as any)
-            .select('student_id, quiz_id, score_percent, passed, created_at, quizzes!inner(lesson_id, lessons!inner(subject_id))')
+            .select('student_id, quiz_id, score_percent, passed, started_at, completed_at, quizzes!inner(lesson_id, lessons!inner(subject_id))')
             .eq('quizzes.lessons.subject_id', subjectId),
     ]);
 

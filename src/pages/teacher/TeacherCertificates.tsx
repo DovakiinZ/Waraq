@@ -205,6 +205,13 @@ function SubjectCertCard({ subject, userId }: { subject: Subject; userId: string
                         </label>
                         <button
                             onClick={() => setExpanded(!expanded)}
+                            aria-expanded={expanded}
+                            aria-label={expanded
+                                ? t('إخفاء الطلاب المؤهلين', 'Hide eligible students')
+                                : t('عرض الطلاب المؤهلين', 'Show eligible students')}
+                            title={expanded
+                                ? t('إخفاء الطلاب المؤهلين', 'Hide eligible students')
+                                : t('عرض الطلاب المؤهلين', 'Show eligible students')}
                             className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground"
                         >
                             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

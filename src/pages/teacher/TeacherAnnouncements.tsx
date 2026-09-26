@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useAutoTranslate } from '@/hooks/useAutoTranslate';
+import { TranslationButton } from '@/components/admin/TranslationButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,13 +22,17 @@ import { Plus, Loader2, Megaphone, Pencil, Trash2, Eye, EyeOff } from 'lucide-re
 
 interface Announcement {
     id: string;
-    title: string;
-    body: string;
+    title_ar: string;
+    title_en: string | null;
+    body_ar: string;
+    body_en: string | null;
     is_active: boolean;
     created_at: string;
     subject_id: string | null;
     subjects?: { title_ar: string; title_en: string } | null;
 }
+
+const emptyForm = { title_ar: '', title_en: '', body_ar: '', body_en: '', subject_id: '', is_active: true };
 
 export default function TeacherAnnouncements() {
     const { t } = useLanguage();
@@ -34,7 +40,19 @@ export default function TeacherAnnouncements() {
     const queryClient = useQueryClient();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<Announcement | null>(null);
-    const [form, setForm] = useState({ title: '', body: '', subject_id: '', is_active: true });
+    const [form, setForm] = useState(emptyForm);
+
+    // Auto-translate AR → EN while typing (silently no-ops if the AI key is unset)
+    const { isTranslating: titleTranslating } = useAutoTranslate(
+        form.title_ar, 'ar', 'en',
+        (text) => setForm(f => ({ ...f, title_en: text })),
+        dialogOpen
+    );
+    const { isTranslating: bodyTranslating } = useAutoTranslate(
+        form.body_ar, 'ar', 'en',
+        (text) => setForm(f => ({ ...f, body_en: text })),
+        dialogOpen
+    );
 
     // Fetch teacher's subjects
     const { data: subjects = [] } = useQuery({
@@ -68,15 +86,17 @@ export default function TeacherAnnouncements() {
 
     const openCreate = () => {
         setEditTarget(null);
-        setForm({ title: '', body: '', subject_id: '', is_active: true });
+        setForm(emptyForm);
         setDialogOpen(true);
     };
 
     const openEdit = (ann: Announcement) => {
         setEditTarget(ann);
         setForm({
-            title: ann.title,
-            body: ann.body,
+            title_ar: ann.title_ar || '',
+            title_en: ann.title_en || '',
+            body_ar: ann.body_ar || '',
+            body_en: ann.body_en || '',
             subject_id: ann.subject_id || '',
             is_active: ann.is_active,
         });
@@ -85,13 +105,15 @@ export default function TeacherAnnouncements() {
 
     const saveMutation = useMutation({
         mutationFn: async () => {
-            if (!form.title.trim() || !form.body.trim()) {
-                throw new Error(t('العنوان والمحتوى مطلوبان', 'Title and body are required'));
+            if (!form.title_ar.trim() || !form.body_ar.trim()) {
+                throw new Error(t('العنوان والمحتوى بالعربية مطلوبان', 'Arabic title and body are required'));
             }
 
             const payload = {
-                title: form.title.trim(),
-                body: form.body.trim(),
+                title_ar: form.title_ar.trim(),
+                title_en: form.title_en.trim() || null,
+                body_ar: form.body_ar.trim(),
+                body_en: form.body_en.trim() || null,
                 subject_id: form.subject_id || null,
                 is_active: form.is_active,
                 teacher_id: user!.id,
@@ -193,7 +215,9 @@ export default function TeacherAnnouncements() {
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="font-semibold text-foreground truncate">{ann.title}</h3>
+                                        <h3 className="font-semibold text-foreground truncate">
+                                            {t(ann.title_ar, ann.title_en || ann.title_ar)}
+                                        </h3>
                                         {ann.is_active ? (
                                             <Badge variant="default" className="text-[10px]">{t('نشط', 'Active')}</Badge>
                                         ) : (
@@ -210,7 +234,9 @@ export default function TeacherAnnouncements() {
                                             </Badge>
                                         )}
                                     </div>
-                                    <p className="text-sm text-muted-foreground line-clamp-2">{ann.body}</p>
+                                    <p className="text-sm text-muted-foreground line-clamp-2">
+                                        {t(ann.body_ar, ann.body_en || ann.body_ar)}
+                                    </p>
                                     <p className="text-xs text-muted-foreground/60 mt-1">
                                         {new Date(ann.created_at).toLocaleDateString()}
                                     </p>
@@ -273,21 +299,62 @@ export default function TeacherAnnouncements() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label>{t('عنوان الإعلان', 'Announcement Title')} <span className="text-destructive">*</span></Label>
+                            <Label>{t('العنوان بالعربية', 'Arabic Title')} <span className="text-destructive">*</span></Label>
                             <Input
-                                value={form.title}
-                                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                                dir="rtl"
+                                value={form.title_ar}
+                                onChange={(e) => setForm({ ...form, title_ar: e.target.value })}
                                 placeholder={t('مثال: إشعار بالاختبار القادم', 'e.g. Upcoming quiz notice')}
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label>{t('محتوى الإعلان', 'Announcement Body')} <span className="text-destructive">*</span></Label>
+                            <div className="flex items-center justify-between">
+                                <Label>{t('العنوان بالإنجليزية', 'English Title')}</Label>
+                                <TranslationButton
+                                    sourceText={form.title_ar}
+                                    sourceLang="ar"
+                                    targetLang="en"
+                                    onTranslated={(text) => setForm(f => ({ ...f, title_en: text }))}
+                                    autoTranslating={titleTranslating}
+                                />
+                            </div>
+                            <Input
+                                dir="ltr"
+                                value={form.title_en}
+                                onChange={(e) => setForm({ ...form, title_en: e.target.value })}
+                                placeholder="e.g. Upcoming quiz notice"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>{t('المحتوى بالعربية', 'Arabic Body')} <span className="text-destructive">*</span></Label>
                             <Textarea
+                                dir="rtl"
                                 rows={4}
-                                value={form.body}
-                                onChange={(e) => setForm({ ...form, body: e.target.value })}
+                                value={form.body_ar}
+                                onChange={(e) => setForm({ ...form, body_ar: e.target.value })}
                                 placeholder={t('اكتب تفاصيل الإعلان هنا...', 'Write announcement details here...')}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label>{t('المحتوى بالإنجليزية', 'English Body')}</Label>
+                                <TranslationButton
+                                    sourceText={form.body_ar}
+                                    sourceLang="ar"
+                                    targetLang="en"
+                                    onTranslated={(text) => setForm(f => ({ ...f, body_en: text }))}
+                                    autoTranslating={bodyTranslating}
+                                />
+                            </div>
+                            <Textarea
+                                dir="ltr"
+                                rows={4}
+                                value={form.body_en}
+                                onChange={(e) => setForm({ ...form, body_en: e.target.value })}
+                                placeholder="Write announcement details here..."
                             />
                         </div>
 

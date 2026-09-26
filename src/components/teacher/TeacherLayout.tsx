@@ -5,7 +5,7 @@ import { LogOut, Sun, Moon, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobileLayout } from '@/hooks/use-mobile';
 import MobileLayout from '@/layouts/MobileLayout';
-import logo from '@/assets/logo.png';
+import { Logo } from '@/components/brand/Logo';
 import { roleNavItems } from '@/config/nav';
 import { useDarkMode } from '@/hooks/useDarkMode';
 
@@ -15,7 +15,7 @@ const navItems = roleNavItems.teacher;
 const PENDING_ALLOWED_PATHS = ['/teacher', '/teacher/profile'];
 
 export default function TeacherLayout() {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { profile, signOut } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
@@ -50,8 +50,9 @@ export default function TeacherLayout() {
                 <aside className="sticky top-0 z-40 h-screen w-64 bg-background border-e border-border">
                     <div className="flex flex-col h-full">
                         <div className="flex items-center h-14 px-4 border-b border-border">
-                            <Link to="/teacher">
-                                <img src={logo} alt="Waraq Academy" className="h-14" />
+                            {/* Logo hard-codes its text colour, so the variant must follow dark mode */}
+                            <Link to="/teacher" aria-label={t('ورق أكاديمي', 'Waraq Academy')}>
+                                <Logo size={32} lang={language} variant={isDark ? 'dark' : 'light'} />
                             </Link>
                         </div>
 

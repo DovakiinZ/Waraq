@@ -26,16 +26,15 @@ function useTeacherDashboardData(userId: string | undefined) {
             const subjectIds = [...new Set(allLessons.map(l => l.subject_id).filter(Boolean))];
             const publishedCount = allLessons.filter(l => l.is_published).length;
 
-            // Students enrolled in teacher's subjects
+            // Students with progress in this teacher's lessons (distinct, not row count)
             let studentCount = 0;
-            if (subjectIds.length > 0) {
-                const { count } = await supabase
+            if (allLessons.length > 0) {
+                const { data: progressRows } = await supabase
                     .from('lesson_progress')
-                    .select('user_id', { count: 'exact', head: false })
+                    .select('user_id')
                     .in('lesson_id', allLessons.map(l => l.id))
                     .not('user_id', 'eq', userId);
-                // unique students approximation
-                studentCount = count || 0;
+                studentCount = new Set((progressRows || []).map(p => p.user_id)).size;
             }
 
             // Certificates issued

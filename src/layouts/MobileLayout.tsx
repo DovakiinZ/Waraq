@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/sheet';
 import { useState } from 'react';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
-import logo from '@/assets/logo.png';
+import { Logo } from '@/components/brand/Logo';
 import {
   type UserRole,
   type NavItem,
@@ -28,7 +28,7 @@ interface MobileLayoutProps {
 }
 
 export default function MobileLayout({ role }: MobileLayoutProps) {
-  const { t, direction } = useLanguage();
+  const { t, direction, language } = useLanguage();
   const { profile, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -55,8 +55,8 @@ export default function MobileLayout({ role }: MobileLayoutProps) {
     <div className="min-h-screen bg-secondary/30 flex flex-col">
       {/* Mobile header */}
       <header className="sticky top-0 z-50 bg-background border-b border-border px-4 h-14 flex items-center justify-between safe-area-top">
-        <Link to={basePath}>
-          <img src={logo} alt="Waraq Academy" className="h-14" />
+        <Link to={basePath} aria-label={t('ورق أكاديمي', 'Waraq Academy')}>
+          <Logo size={30} lang={language} variant={isDark ? 'dark' : 'light'} />
         </Link>
         <div className="flex items-center gap-1">
           <button
@@ -126,8 +126,8 @@ export default function MobileLayout({ role }: MobileLayoutProps) {
 
             {/* Drawer logo */}
             <div className="flex items-center h-14 px-4 border-b border-border">
-              <Link to={basePath} onClick={() => setDrawerOpen(false)}>
-                <img src={logo} alt="Waraq Academy" className="h-14" />
+              <Link to={basePath} onClick={() => setDrawerOpen(false)} aria-label={t('ورق أكاديمي', 'Waraq Academy')}>
+                <Logo size={30} lang={language} variant={isDark ? 'dark' : 'light'} />
               </Link>
             </div>
 

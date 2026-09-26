@@ -118,7 +118,7 @@ export default function TeacherReviews() {
                           {[1, 2, 3, 4, 5].map((s) => (
                             <Star 
                               key={s} 
-                              className={`w-3 h-3 ${s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-border'}`} 
+                              className={`w-3 h-3 ${s <= review.stars ? 'fill-yellow-400 text-yellow-400' : 'text-border'}`}
                             />
                           ))}
                         </div>
@@ -136,9 +136,11 @@ export default function TeacherReviews() {
                   )}
 
                   <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                    <Badge variant="outline" className="text-[10px] font-normal py-0">
-                      {t('الدرس:', 'Lesson:')} {t(review.lesson?.title_ar, review.lesson?.title_en || review.lesson?.title_ar)}
-                    </Badge>
+                    {review.lesson && (
+                      <Badge variant="outline" className="text-[10px] font-normal py-0">
+                        {t('الدرس:', 'Lesson:')} {t(review.lesson.title_ar, review.lesson.title_en || review.lesson.title_ar)}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               ))}
@@ -181,12 +183,14 @@ export default function TeacherReviews() {
                     <p className="text-sm text-foreground/80 italic leading-relaxed">
                       "{remark.comment}"
                     </p>
-                    <div className="mt-2 flex items-center gap-1.5 opacity-60">
-                      <ChevronRight className={`w-3 h-3 ${direction === 'rtl' ? 'rotate-180' : ''}`} />
-                      <span className="text-[10px] font-medium">
-                        {t('المادة:', 'Subject:')} {t(remark.lesson?.title_ar, remark.lesson?.title_en || remark.lesson?.title_ar)}
-                      </span>
-                    </div>
+                    {remark.subject && (
+                      <div className="mt-2 flex items-center gap-1.5 opacity-60">
+                        <ChevronRight className={`w-3 h-3 ${direction === 'rtl' ? 'rotate-180' : ''}`} />
+                        <span className="text-[10px] font-medium">
+                          {t('المادة:', 'Subject:')} {t(remark.subject.title_ar, remark.subject.title_en || remark.subject.title_ar)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

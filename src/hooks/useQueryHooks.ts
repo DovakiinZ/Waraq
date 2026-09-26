@@ -888,6 +888,36 @@ export function useTeacherShowcaseData(teacherId: string | undefined) {
 }
 // ─── Teacher Feedback ────────────────────────────────────
 
+interface FeedbackSubject {
+  id: string;
+  title_ar: string;
+  title_en: string | null;
+}
+
+interface FeedbackLessonRow {
+  id: string;
+  title_ar: string;
+  title_en: string | null;
+  subject: FeedbackSubject | null;
+}
+
+interface RatingRow {
+  id: string;
+  entity_id: string;
+  stars: number;
+  comment: string | null;
+  created_at: string;
+  user?: { full_name: string | null; avatar_url: string | null } | null;
+}
+
+interface CertificateRemarkRow {
+  id: string;
+  student_name: string | null;
+  snapshot_json: { reissue_reason?: string } | null;
+  created_at: string;
+  subject_id: string | null;
+}
+
 export function useTeacherFeedback(teacherId: string | undefined) {
   return useQuery({
     queryKey: ['teacher-feedback', teacherId!],
@@ -910,17 +940,19 @@ export function useTeacherFeedback(teacherId: string | undefined) {
         return {
           stats: { averageRating: 0, totalReviews: 0 },
           reviews: [],
-          subjects: []
+          subjects: [],
+          systemRemarks: []
         };
       }
 
-      // 2. Fetch all ratings for these lessons
+      // 2. Fetch all ratings for these lessons.
+      // `ratings` is polymorphic (entity_type + entity_id) so there is no FK to
+      // `lessons` — the lesson has to be attached client-side, not embedded.
       const { data: ratings, error: ratingsErr } = await supabase
         .from('ratings')
         .select(`
           *,
-          user:profiles(full_name, avatar_url),
-          lesson:lessons(id, title_ar, title_en)
+          user:profiles(full_name, avatar_url)
         `)
         .eq('entity_type', 'lesson')
         .in('entity_id', lessonIds)
@@ -928,24 +960,45 @@ export function useTeacherFeedback(teacherId: string | undefined) {
 
       if (ratingsErr) throw ratingsErr;
 
-      // 3. Fetch certificates to get re-issue remarks (Historical feedback)
-      const { data: certs, error: certErr } = await supabase
-        .from('certificates')
-        .select(`
-          id,
-          student_name,
-          snapshot_json,
-          created_at,
-          lesson:lessons(id, title_ar, title_en)
-        `)
-        .in('lesson_id', lessonIds)
-        .not('snapshot_json', 'is', null)
-        .order('created_at', { ascending: false });
+      const lessonRows = (lessons || []) as FeedbackLessonRow[];
+      const lessonById = new Map(lessonRows.map(l => [l.id, l]));
 
-      if (certErr) throw certErr;
+      // 3. Fetch certificates to get re-issue remarks (Historical feedback).
+      // `certificates` links to a subject, not a lesson.
+      const teacherSubjectIds = [
+        ...new Set(lessonRows.map(l => l.subject?.id).filter(Boolean)),
+      ];
 
-      const allRatings = (ratings || []) as any[];
-      const allCerts = (certs || []) as any[];
+      let certs: CertificateRemarkRow[] = [];
+      if (teacherSubjectIds.length > 0) {
+        const { data: certData, error: certErr } = await supabase
+          .from('certificates')
+          .select(`
+            id,
+            student_name,
+            snapshot_json,
+            created_at,
+            subject_id
+          `)
+          .in('subject_id', teacherSubjectIds as string[])
+          .not('snapshot_json', 'is', null)
+          .order('created_at', { ascending: false });
+
+        if (certErr) throw certErr;
+        certs = (certData || []) as CertificateRemarkRow[];
+      }
+
+      // Attach each rating's lesson from the map built above
+      const allRatings = ((ratings || []) as RatingRow[]).map(r => ({
+        ...r,
+        lesson: lessonById.get(r.entity_id) || null,
+      }));
+      const allCerts = certs;
+
+      const subjectById = new Map<string, FeedbackSubject>();
+      lessonRows.forEach(l => {
+        if (l.subject) subjectById.set(l.subject.id, l.subject);
+      });
 
       // Extract system remarks from certificates (where reissue_reason exists)
       const systemRemarks = allCerts
@@ -956,7 +1009,7 @@ export function useTeacherFeedback(teacherId: string | undefined) {
           student_name: c.student_name,
           comment: c.snapshot_json.reissue_reason,
           created_at: c.created_at,
-          lesson: c.lesson
+          subject: subjectById.get(c.subject_id) || null
         }));
       
       // Calculate Stats

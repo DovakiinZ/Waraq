@@ -103,21 +103,30 @@ const TeacherOrders = () => {
 
       if (updateError) throw updateError;
 
+      // Upsert, not insert: (student_id, subject_id) is unique, so a student who
+      // already has a row for this subject would otherwise hit a 23505 and be left
+      // without access while the toast claimed success.
       const { error: accessError } = await supabase
         .from('student_subjects')
-        .insert({
-          student_id: order.student_id,
-          subject_id: order.subject_id,
-          status: 'active',
-          assigned_by: 'teacher',
-          assigned_reason: `Order #${order.id.slice(0, 8)} - Sham Cash payment confirmed`,
-        });
+        .upsert(
+          {
+            student_id: order.student_id,
+            subject_id: order.subject_id,
+            status: 'active',
+            assigned_by: 'teacher',
+            assigned_reason: `Order #${order.id.slice(0, 8)} - Sham Cash payment confirmed`,
+          },
+          { onConflict: 'student_id,subject_id' }
+        );
 
       if (accessError) {
-        console.error('Failed to grant access:', accessError);
+        toast.warning(
+          t('تم تأكيد الدفع لكن تعذّر تفعيل وصول الطالب', 'Payment confirmed but granting access failed'),
+          { description: accessError.message }
+        );
+      } else {
+        toast.success(t('تم تأكيد الدفع وتفعيل وصول الطالب', 'Payment confirmed and student access granted'));
       }
-
-      toast.success(t('تم تأكيد الدفع وتفعيل وصول الطالب', 'Payment confirmed and student access granted'));
       refetch();
     } catch (err: any) {
       toast.error(t('فشل في تأكيد الدفع', 'Failed to confirm payment'), {
