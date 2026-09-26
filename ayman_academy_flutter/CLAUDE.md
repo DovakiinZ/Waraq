@@ -475,14 +475,12 @@ The **web portal was broken too**, on a *different* set of nonexistent columns
 player never wrote a `quiz_attempts` row at all. Both were rewritten in the same
 pass — see the web CLAUDE.md.
 
-**Grading — `submit_quiz_attempt` RPC (needs applying).**
-`QuizService.submitQuiz` now calls the `submit_quiz_attempt` RPC so the score is
-computed in the database and cannot be forged from the device. While the
-function is absent PostgREST answers `PGRST202`, and the service falls back to
-the previous local grading path — so the app works before and after the
-migration, with no rebuild needed. Apply
-`supabase/migrations/103_submit_quiz_attempt.sql` through the Supabase SQL
-editor (**not** `supabase db push`).
+**Grading — `submit_quiz_attempt` RPC is DEPLOYED (re-probed live 2026-09-26).**
+`QuizService.submitQuiz` calls it, so the score is computed in the database and
+cannot be forged from the device. This entry previously said the migration still
+needed applying — that was stale; the function answers `P0001 Quiz not found` for
+a bogus id, not `PGRST202`. The local-grading fallback for `PGRST202` is therefore
+dead code. Never run `supabase db push` on this project.
 
 **Open — answers are still readable from the API.** `quiz_options.is_correct`
 is sent to the device so the review screen can show the correct answer. Hiding
