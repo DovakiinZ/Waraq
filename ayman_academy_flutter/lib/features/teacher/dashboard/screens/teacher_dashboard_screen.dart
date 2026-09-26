@@ -28,8 +28,17 @@ final _teacherStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
     lessonCount = (lessons as List).length;
 
     try {
-      final enrollments = await supabase.from('student_subjects').select('id').inFilter('subject_id', subjectIds);
-      studentCount = (enrollments as List).length;
+      // Count distinct students, not enrolment rows — one student taking two
+      // of this teacher's subjects is still one student.
+      final enrollments = await supabase
+          .from('student_subjects')
+          .select('student_id')
+          .inFilter('subject_id', subjectIds);
+      studentCount = (enrollments as List)
+          .map((e) => e['student_id'] as String?)
+          .whereType<String>()
+          .toSet()
+          .length;
     } catch (_) {}
 
     try {

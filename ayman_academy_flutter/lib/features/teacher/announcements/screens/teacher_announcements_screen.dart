@@ -39,6 +39,8 @@ class TeacherAnnouncementsScreen extends ConsumerWidget {
     final lang = ref.read(languageProvider).languageCode;
     final titleController = TextEditingController();
     final bodyController = TextEditingController();
+    final titleEnController = TextEditingController();
+    final bodyEnController = TextEditingController();
     String? selectedSubjectId;
 
     showModalBottomSheet(
@@ -79,13 +81,32 @@ class TeacherAnnouncementsScreen extends ConsumerWidget {
 
                 TextField(
                   controller: titleController,
-                  decoration: InputDecoration(labelText: t('العنوان', 'Title')),
+                  textDirection: TextDirection.rtl,
+                  decoration: InputDecoration(labelText: t('العنوان بالعربية', 'Arabic title')),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: bodyController,
                   maxLines: 3,
-                  decoration: InputDecoration(labelText: t('المحتوى', 'Content')),
+                  textDirection: TextDirection.rtl,
+                  decoration: InputDecoration(labelText: t('المحتوى بالعربية', 'Arabic content')),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: titleEnController,
+                  textDirection: TextDirection.ltr,
+                  decoration: InputDecoration(
+                    labelText: t('العنوان بالإنجليزية (اختياري)', 'English title (optional)'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: bodyEnController,
+                  maxLines: 3,
+                  textDirection: TextDirection.ltr,
+                  decoration: InputDecoration(
+                    labelText: t('المحتوى بالإنجليزية (اختياري)', 'English content (optional)'),
+                  ),
                 ),
                 const SizedBox(height: 16),
 
@@ -106,7 +127,9 @@ class TeacherAnnouncementsScreen extends ConsumerWidget {
                         'teacher_id': userId,
                         'subject_id': selectedSubjectId,
                         'title_ar': titleController.text.trim(),
+                        'title_en': titleEnController.text.trim().isNotEmpty ? titleEnController.text.trim() : null,
                         'body_ar': bodyController.text.trim().isNotEmpty ? bodyController.text.trim() : null,
+                        'body_en': bodyEnController.text.trim().isNotEmpty ? bodyEnController.text.trim() : null,
                         'is_active': true,
                       });
                       ref.invalidate(_announcementsProvider);

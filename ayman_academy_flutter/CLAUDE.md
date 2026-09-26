@@ -499,6 +499,32 @@ request against the REST API so this cannot recur.
 - **Shared backend** — Any database schema changes in the web app affect this app. Keep models in `shared/models/` in sync.
 - **Release signing requires a local keystore** — `android/app/build.gradle.kts` reads `android/key.properties` (gitignored) and signs release builds with the real upload key when present; without it, release falls back to the debug key (which the Play Store rejects). See `android/key.properties.example`.
 
+### Teacher-panel parity pass (2026-09-26)
+
+The web teacher panel was smoke-tested against the live database and four schema
+mismatches were fixed there. **The app did not share any of those four** — its
+announcements already write `title_ar`/`body_ar`, its reviews read `stars` with no
+`lessons` embed, its certificates query filters on `subject_id`, and it never touches
+`quiz_attempts.created_at`. All 30 of the app's teacher-side query shapes were replayed
+against the live DB (`.smoke/21-flutter-shapes.mjs` in the repo root) and every one passed.
+
+What the app **did** have wrong, now fixed:
+
+- **Confirming a payment never granted access.** `_confirmPayment` in
+  `teacher_orders_screen.dart` flipped the order to `paid` and stopped there — it never
+  wrote `student_subjects`, so the student paid and still could not open the course. It
+  now **upserts** the enrolment (`onConflict: 'student_id,subject_id'`, because that pair
+  is unique and a repeat purchase would 23505) and reports a failed grant instead of
+  claiming success. Both confirm and reject now also stamp `reviewed_by`.
+- **The dashboard's "طلاب / Students" tile counted enrolment rows**, so one student taking
+  two of the teacher's subjects counted twice. It counts distinct `student_id` now.
+- **The announcement sheet was Arabic-only** while the table and the `Announcement` model
+  are bilingual, so `title_en`/`body_en` were always null and English users saw Arabic.
+  The sheet now has optional English title and content fields.
+
+Note `'reviewed_by': ?userId` — Dart's null-aware element. `if (x != null) 'k': x` trips
+the `use_null_aware_elements` lint on this SDK.
+
 ### Recently fixed (release-readiness pass)
 - Access control now **fails closed** — `checkSubjectAccessProvider` returns `has_access: false` on RPC error/non-Map (previously granted access on failure).
 - **OneSignal** `login(userId)`/`logout()` now wired into `AuthNotifier` (session restore, sign-in, sign-out) so push targets the right user.

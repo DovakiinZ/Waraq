@@ -139,14 +139,42 @@ class _OrderRow extends StatelessWidget {
 
   Future<void> _confirmPayment(BuildContext context) async {
     try {
+      final userId = supabase.auth.currentUser?.id;
       await supabase.from('orders').update({
         'status': 'paid',
         'paid_at': DateTime.now().toIso8601String(),
+        'reviewed_by': ?userId,
       }).eq('id', order.id);
+
+      // Marking the order paid is only half of it — without this the student
+      // pays and still cannot open the course. Upsert, because
+      // (student_id, subject_id) is unique and a repeat purchase would 23505.
+      String? grantError;
+      try {
+        await supabase.from('student_subjects').upsert({
+          'student_id': order.studentId,
+          'subject_id': order.subjectId,
+          'status': 'active',
+          'assigned_by': 'teacher',
+          'assigned_reason':
+              'Order #${order.id.length >= 8 ? order.id.substring(0, 8) : order.id} - Sham Cash payment confirmed',
+        }, onConflict: 'student_id,subject_id');
+      } catch (e) {
+        grantError = '$e';
+      }
+
       ref.invalidate(_teacherOrdersProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t('تم تأكيد الدفع', 'Payment confirmed')), backgroundColor: AppColors.success),
+          grantError == null
+              ? SnackBar(
+                  content: Text(t('تم تأكيد الدفع وتفعيل وصول الطالب',
+                      'Payment confirmed and student access granted')),
+                  backgroundColor: AppColors.success)
+              : SnackBar(
+                  content: Text(t('تم تأكيد الدفع لكن تعذّر تفعيل وصول الطالب',
+                      'Payment confirmed but granting access failed')),
+                  backgroundColor: AppColors.error),
         );
       }
     } catch (e) {
@@ -160,9 +188,11 @@ class _OrderRow extends StatelessWidget {
 
   Future<void> _rejectOrder(BuildContext context) async {
     try {
+      final userId = supabase.auth.currentUser?.id;
       await supabase.from('orders').update({
         'status': 'rejected',
         'teacher_notes': 'Rejected by teacher',
+        'reviewed_by': ?userId,
       }).eq('id', order.id);
       ref.invalidate(_teacherOrdersProvider);
       if (context.mounted) {
