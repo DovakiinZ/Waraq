@@ -800,10 +800,10 @@ export type Database = {
                 Args: { student_uuid: string };
                 Returns: { teacher_id: string; teacher_name: string; subject_title: string }[];
             };
-            check_lesson_access: {
-                Args: { p_user_id: string; p_lesson_id: string };
-                Returns: boolean;
-            };
+            // NOTE: `check_lesson_access` was declared here but DOES NOT EXIST in the
+            // live database (probed 2026-09-29) and was called by no code. Removed so
+            // nothing builds against it. Gate lesson access on `check_subject_access`
+            // (declared below) plus `lessons.is_published` / `is_free_preview` instead.
             request_certificate: {
                 Args: { p_subject_id: string };
                 Returns: Record<string, unknown>;
@@ -830,7 +830,34 @@ export type Database = {
             };
             check_subject_access: {
                 Args: { p_student_id: string; p_subject_id: string };
-                Returns: { has_access: boolean; reason: string; access_type?: string };
+                // Live signature (probed 2026-09-29) is
+                // RETURNS TABLE(has_access boolean, reason text, access_type text),
+                // so supabase-js hands back an ARRAY of rows — not the single object
+                // this used to declare, and not the jsonb that
+                // 046_subject_access_control.sql still says.
+                Returns: { has_access: boolean; reason: string | null; access_type: string | null }[];
+            };
+            /**
+             * Titles-only curriculum for pages shown to people who have not
+             * bought the course (migration 109). Deliberately returns NO
+             * `video_url` and no block content; `preview_video_url` is the
+             * public trailer and is included.
+             */
+            get_public_curriculum: {
+                Args: { p_subject_id: string };
+                Returns: {
+                    id: string;
+                    title_ar: string;
+                    title_en: string | null;
+                    summary_ar: string | null;
+                    summary_en: string | null;
+                    sort_order: number | null;
+                    duration_minutes: number | null;
+                    duration_seconds: number | null;
+                    is_paid: boolean;
+                    is_free_preview: boolean;
+                    preview_video_url: string | null;
+                }[];
             };
             issue_certificate: {
                 Args: { p_student_id: string; p_subject_id: string };

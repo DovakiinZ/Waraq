@@ -164,9 +164,9 @@ export default function StudentSubjects() {
                                         {t(subject.title_ar, subject.title_en || subject.title_ar)}
                                     </h3>
                                     <p className="text-xs text-amber-600 mt-0.5">
-                                        {subject.lock_reason === 'needs_subscription'
+                                        {subject.lock_reason === 'subscription_required'
                                             ? t('يتطلب اشتراك', 'Subscription required')
-                                            : subject.lock_reason === 'needs_invite'
+                                            : subject.lock_reason === 'invite_required'
                                                 ? t('بدعوة فقط', 'Invite only')
                                                 : t('غير متاح', 'Not available')
                                         }

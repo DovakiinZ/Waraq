@@ -80,13 +80,12 @@ export default function CoursePreview() {
                 teacher = t;
             }
 
-            // Lessons (published only, titles + metadata for curriculum)
+            // Curriculum: titles + metadata only, via the public RPC (migration
+            // 109). This page is shown to people who have NOT bought the course,
+            // so it must not be able to fetch `video_url` — the RPC does not
+            // return it. `preview_video_url` is returned; it is the trailer.
             const { data: lessons } = await supabase
-                .from('lessons')
-                .select('id, title_ar, title_en, summary_ar, summary_en, duration_minutes, duration_seconds, is_paid, is_free_preview, is_published, sort_order, video_url, preview_video_url')
-                .eq('subject_id', subjectId!)
-                .eq('is_published', true)
-                .order('sort_order', { ascending: true });
+                .rpc('get_public_curriculum', { p_subject_id: subjectId! });
 
             // Aggregate ratings: lesson ratings for this subject + direct subject ratings
             let avgRating = 0;

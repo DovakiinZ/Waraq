@@ -41,3 +41,6 @@ schema.live.ts
 
 # Local live-DB smoke tests — they sign in with a real account password
 .smoke/
+
+# TypeScript incremental build info (created by `tsc -b`)
+*.tsbuildinfo

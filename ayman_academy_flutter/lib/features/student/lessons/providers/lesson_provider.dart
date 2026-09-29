@@ -7,7 +7,7 @@ import 'package:ayman_academy_app/shared/models/lesson_progress.dart';
 final lessonDetailProvider = FutureProvider.family<Lesson?, String>((ref, lessonId) async {
   final data = await supabase
       .from('lessons')
-      .select('*, lesson_sections(*), lesson_blocks(*)')
+      .select(Lesson.columnsWithContent)
       .eq('id', lessonId)
       .maybeSingle();
   if (data == null) return null;

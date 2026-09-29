@@ -6,6 +6,8 @@ import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/lesson_block_renderer.dart';
 import 'package:ayman_academy_app/shared/widgets/loading_shimmer.dart';
 import 'package:ayman_academy_app/features/student/lessons/providers/lesson_provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 
 class LessonPlayerScreen extends ConsumerStatefulWidget {
   final String lessonId;
@@ -581,6 +583,17 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                 error: (e, _) => Center(child: Text('$e')),
                 data: (blocks) {
                   if (blocks.isEmpty) {
+                    // After migration 109 an unentitled student receives the
+                    // lesson row with ZERO blocks rather than an error, so an
+                    // empty list means "locked" far more often than it means
+                    // "the teacher wrote nothing". A free-preview lesson is the
+                    // exception: empty there really is an authoring gap, and
+                    // showing a purchase CTA for it would be wrong.
+                    final lesson = lessonAsync.valueOrNull;
+                    final locked = lesson != null && !(lesson.isFreePreview);
+                    if (locked) {
+                      return _LessonLocked(subjectId: lesson.subjectId, t: t);
+                    }
                     return Center(
                       child: Text(
                         t('لا يوجد محتوى بعد', 'No content yet'),
@@ -683,6 +696,61 @@ class _BottomAction extends StatelessWidget {
                 fontSize: 11,
                 color: isDark ? AppColors.inkSecondaryDark : AppColors.inkSecondary,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Shown when RLS withheld a lesson's content — i.e. the student has not
+/// bought the course. The web counterpart is
+/// `src/components/shared/LessonLocked.tsx`; keep the copy in step.
+///
+/// Deliberately does not try to explain WHY beyond "not enrolled": the
+/// difference between unpublished, unpurchased and inactive is not the
+/// student's problem, and guessing wrong is worse than a clear next step.
+class _LessonLocked extends StatelessWidget {
+  final String subjectId;
+  final String Function(String, String) t;
+
+  const _LessonLocked({required this.subjectId, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final arc = context.arc;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.lock_outline, size: 48, color: arc.mid),
+            const SizedBox(height: 16),
+            Text(
+              t('هذا الدرس مقفل', 'This lesson is locked'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: arc.ink,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              t(
+                'اشترك في هذه المادة لفتح محتوى الدرس كاملاً.',
+                'Enrol in this course to unlock the full lesson content.',
+              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: arc.inkSoft),
+            ),
+            const SizedBox(height: 24),
+            ArcadeButton(
+              label: t('عرض المادة والاشتراك', 'View course & enrol'),
+              onPressed: () => context.push('/student/subjects/subject/$subjectId'),
             ),
           ],
         ),

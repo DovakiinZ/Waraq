@@ -52,11 +52,16 @@ export default function MySubjects() {
         return stageMap;
     }, [mySubjects]);
 
+    // These are the labels get_discover_subjects actually emits. The previous
+    // set ('needs_subscription', 'needs_invite', 'wrong_stage') matched
+    // nothing the function has ever returned, so every locked card fell
+    // through to the generic "Locked".
     const getLockLabel = (reason: string) => {
         switch (reason) {
-            case 'needs_subscription': return t('يتطلب اشتراك', 'Subscription Required');
-            case 'needs_invite': return t('بدعوة فقط', 'Invite Only');
-            case 'wrong_stage': return t('مرحلة مختلفة', 'Different Stage');
+            case 'subscription_required': return t('يتطلب اشتراك', 'Subscription Required');
+            case 'invite_required': return t('بدعوة فقط', 'Invite Only');
+            case 'org_required': return t('عبر مؤسسة', 'Through an Organisation');
+            case 'not_available': return t('غير متاح لك', 'Not Available');
             default: return t('مقفل', 'Locked');
         }
     };
@@ -165,7 +170,7 @@ export default function MySubjects() {
                                                                 {subject.entitlement_reason === 'assigned' ? t('مخصص', 'Assigned')
                                                                     : subject.entitlement_reason === 'subscription' ? t('اشتراك', 'Sub')
                                                                         : subject.entitlement_reason === 'invite' ? t('دعوة', 'Invite')
-                                                                            : subject.entitlement_reason === 'org' ? t('مؤسسة', 'Org')
+                                                                            : subject.entitlement_reason === 'organization' ? t('مؤسسة', 'Org')
                                                                                 : ''}
                                                             </span>
                                                         )}
@@ -297,23 +302,23 @@ export default function MySubjects() {
 
                                 {/* CTA */}
                                 <div className="mt-4 pt-3 border-t border-border/50">
-                                    {subject.lock_reason === 'needs_subscription' && (
+                                    {subject.lock_reason === 'subscription_required' && (
                                         <Link to="/student/marketplace" className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
                                             <Sparkles className="w-3.5 h-3.5" />
                                             {t('تصفح المتجر', 'Browse Marketplace')}
                                         </Link>
                                     )}
-                                    {subject.lock_reason === 'wrong_stage' && (
+                                    {subject.lock_reason === 'not_available' && (
                                         <span className="text-xs text-muted-foreground">
                                             {t('هذه المادة لمرحلة دراسية أخرى', 'This subject is for a different stage')}
                                         </span>
                                     )}
-                                    {subject.lock_reason === 'needs_invite' && (
+                                    {subject.lock_reason === 'invite_required' && (
                                         <span className="text-xs text-muted-foreground">
                                             {t('تواصل مع المعلم للحصول على دعوة', 'Contact your teacher for an invite')}
                                         </span>
                                     )}
-                                    {subject.lock_reason === 'locked' && (
+                                    {subject.lock_reason === 'org_required' && (
                                         <span className="text-xs text-muted-foreground">
                                             {t('هذه المادة غير متاحة حالياً', 'This subject is not currently available')}
                                         </span>

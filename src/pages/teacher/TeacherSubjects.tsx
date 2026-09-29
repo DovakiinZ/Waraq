@@ -45,6 +45,7 @@ import {
     X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { affectedNoRows, isRlsDenial } from '@/lib/rlsError';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -596,9 +597,35 @@ export default function TeacherSubjects() {
                                                 <button
                                                     onClick={async () => {
                                                         const newVal = !(lesson as any).is_free_preview;
-                                                        await (supabase.from('lessons') as any)
+                                                        // `lessons_teacher_update` (migration 107) keys on
+                                                        // created_by. A row that fails its USING clause is not
+                                                        // visible to the UPDATE at all, so the statement affects
+                                                        // zero rows and returns NO error — `.select('id')` is the
+                                                        // only way to notice. useSubjectDetail already filters
+                                                        // this list to created_by = teacher, so today that cannot
+                                                        // fire; the check is here so that relaxing the filter, or
+                                                        // tightening the policy, surfaces as a message instead of
+                                                        // a success toast over a no-op.
+                                                        const { data, error } = await (supabase.from('lessons') as any)
                                                             .update({ is_free_preview: newVal })
-                                                            .eq('id', lesson.id);
+                                                            .eq('id', lesson.id)
+                                                            .select('id');
+
+                                                        if (error || affectedNoRows(data)) {
+                                                            toast.error(
+                                                                t('تعذّر تعديل هذا الدرس', 'Could not change this lesson'),
+                                                                {
+                                                                    description: (!error || isRlsDenial(error))
+                                                                        ? t(
+                                                                            'يمكنك تعديل الدروس التي أنشأتها بنفسك فقط. هذا الدرس أنشأه حساب آخر.',
+                                                                            'You can only edit lessons you created yourself. This one was created by another account.'
+                                                                        )
+                                                                        : error.message,
+                                                                }
+                                                            );
+                                                            return;
+                                                        }
+
                                                         queryClient.invalidateQueries({ queryKey: ['teacher', user?.id, 'subject-detail'] });
                                                         toast.success(newVal
                                                             ? t('تم تعيين الدرس كمعاينة مجانية', 'Lesson set as free preview')

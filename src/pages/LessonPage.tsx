@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { useLesson } from '@/hooks/useQueryHooks';
 import { LessonBlock, LessonSection } from '@/types/database';
 import { LessonContentRenderer } from '@/components/shared/LessonContentRenderer';
+import { LessonLocked } from '@/components/shared/LessonLocked';
+import { isLessonContentWithheld } from '@/lib/lessonAccess';
 
 // Helper to extract YouTube ID
 const getYoutubeId = (url: string) => {
@@ -172,7 +174,15 @@ const LessonPage = () => {
 
                 <div className={`relative transition-all duration-300 ${!isExpanded ? 'max-h-[300px] overflow-hidden' : ''}`}>
                   {/* Content Renderer (Rich text, images, etc.) */}
-              {(lesson.blocks && lesson.blocks.length > 0) || (lesson.sections && lesson.sections.length > 0) ? (
+              {/* Post-109, an unentitled reader gets the lesson row with no
+                  blocks and no sections rather than an error. Show the paywall
+                  instead of an empty column. */}
+              {isLessonContentWithheld(lesson) ? (
+                  <LessonLocked
+                      subjectId={lesson.subject_id}
+                      subjectTitle={t(lesson.subject?.title_ar, lesson.subject?.title_en)}
+                  />
+              ) : (lesson.blocks && lesson.blocks.length > 0) || (lesson.sections && lesson.sections.length > 0) ? (
                   <LessonContentRenderer lesson={lesson} isPublicPreview={true} />
               ) : (
                   <div>

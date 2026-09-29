@@ -15,6 +15,8 @@ export const queryKeys = {
     bySubject: (subjectId: string) => ['lessons', { subjectId }] as const,
     detail: (id: string) => ['lesson', id] as const,
     blocks: (id: string) => ['lesson', id, 'blocks'] as const,
+    /** AI summary ("الملخص الذكي") — the lesson_summaries row for this lesson. */
+    summary: (id: string) => ['lesson', id, 'summary'] as const,
   },
   student: {
     progress: (userId: string) => ['student', userId, 'progress'] as const,

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
+import 'package:ayman_academy_app/shared/models/lesson.dart';
 import 'package:ayman_academy_app/shared/models/lesson_block.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/lesson_block_renderer.dart';
@@ -41,7 +43,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
   Future<void> _loadLesson() async {
     setState(() => _loading = true);
     try {
-      final data = await supabase.from('lessons').select('*').eq('id', widget.lessonId!).maybeSingle();
+      final data = await supabase.from('lessons').select('${Lesson.columns}, objectives_ar').eq('id', widget.lessonId!).maybeSingle();
       if (data == null) {
         if (mounted) setState(() => _loading = false);
         return;
@@ -107,10 +109,30 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
         Navigator.pop(context, true);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: AppColors.error));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_isRlsDenial(e)
+              ? t('لا يمكنك حفظ درس في هذه المادة. يمكنك التعديل في المواد التي تدرّسها فقط.',
+                  'You cannot save a lesson in this subject. You can only edit subjects you teach.')
+              : '$e'),
+          backgroundColor: AppColors.error,
+        ));
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// A lesson may only live in a subject this teacher owns — enforced by the
+  /// `lessons_teacher_own` / `lessons_teacher_update` RLS policies from
+  /// migration 107. Postgres reports a policy denial as 42501, which reaches
+  /// Flutter as an opaque "new row violates row-level security policy".
+  static bool _isRlsDenial(Object e) {
+    if (e is PostgrestException) {
+      if (e.code == '42501' || e.code == 'PGRST301') return true;
+      return e.message.toLowerCase().contains('row-level security');
+    }
+    return e.toString().toLowerCase().contains('row-level security');
   }
 
   @override
@@ -923,8 +945,20 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
         TextButton(
           onPressed: () async {
             Navigator.pop(ctx);
-            await supabase.from('lessons').delete().eq('id', widget.lessonId!);
-            if (mounted) Navigator.pop(context, true);
+            try {
+              await supabase.from('lessons').delete().eq('id', widget.lessonId!);
+              if (mounted) Navigator.pop(context, true);
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(_isRlsDenial(e)
+                      ? t('لا يمكنك حذف هذا الدرس. يمكنك حذف الدروس التي أنشأتها في موادك فقط.',
+                          'You cannot delete this lesson. You can only delete lessons you created in your own subjects.') as String
+                      : '$e'),
+                  backgroundColor: AppColors.error,
+                ));
+              }
+            }
           },
           child: Text(t('حذف', 'Delete') as String, style: const TextStyle(color: AppColors.error)),
         ),

@@ -53,10 +53,19 @@ export default function TeacherPublicProfile() {
                 setStages((stagesData as Stage[]) || []);
             }
 
-            // 3. Fetch Free Lessons by this teacher
+            // 3. Fetch Free Lessons by this teacher.
+            // Explicit columns, not `select('*')`: this page is served to
+            // logged-out visitors, and the deferred video-column lockdown (see
+            // CLAUDE.md) will make `select('*')` fail here first. The same
+            // change was already forced on this file once, by 104's column
+            // grants on `profiles`.
             const { data: lessonsData } = await supabase
                 .from('lessons')
-                .select('*, subject:subjects(title_ar, title_en)')
+                .select(
+                    'id, title_ar, title_en, summary_ar, summary_en, sort_order, ' +
+                    'duration_minutes, duration_seconds, is_paid, is_free_preview, ' +
+                    'preview_video_url, subject_id, created_at, subject:subjects(title_ar, title_en)'
+                )
                 .eq('created_by', id)
                 .eq('is_published', true)
                 .eq('is_free_preview', true)

@@ -13,6 +13,9 @@ import LessonComments from '@/components/student/LessonComments';
 import RatingWidget from '@/components/student/RatingWidget';
 import CourseContentSidebar from '@/components/student/CourseContentSidebar';
 import { LessonContentRenderer } from '@/components/shared/LessonContentRenderer';
+import LessonSummaryCard from '@/components/student/LessonSummaryCard';
+import { LessonLocked } from '@/components/shared/LessonLocked';
+import { isLessonContentWithheld } from '@/lib/lessonAccess';
 import QuizPlayer from './QuizPlayer';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -284,8 +287,18 @@ export default function LessonPlayer() {
                     <div className="p-4 lg:p-8 max-w-4xl mx-auto w-full">
                         {activeTab === 'overview' && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                {/* AI summary — renders only when an approved one exists */}
+                                <LessonSummaryCard lessonId={lesson.id} />
+
                                 {/* Blocks Content Renderer */}
-                                {(lesson.blocks && lesson.blocks.length > 0) || (lesson.sections && lesson.sections.length > 0) ? (
+                                {isLessonContentWithheld(lesson) ? (
+                                    /* RLS (migration 109) withheld the content — show the
+                                       paywall rather than an empty tab. */
+                                    <LessonLocked
+                                        subjectId={lesson.subject_id}
+                                        subjectTitle={t(lesson.subject?.title_ar, lesson.subject?.title_en)}
+                                    />
+                                ) : (lesson.blocks && lesson.blocks.length > 0) || (lesson.sections && lesson.sections.length > 0) ? (
                                     <LessonContentRenderer lesson={lesson} onBlockSeen={handleBlockSeen} seenBlockIds={seenBlockIds} />
                                 ) : (
                                     /* Legacy Description Fallback */

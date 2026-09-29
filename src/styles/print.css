@@ -1,0 +1,135 @@
+/**
+ * Print styles for the AI summary ("الملخص الذكي").
+ *
+ * Two documents share this file and pick their page box with a body class:
+ *   .print-doc    → /student/lesson/:id/summary  (A4 portrait, a handout)
+ *   .print-slides → /student/lesson/:id/slides   (A4 landscape, one per page)
+ *
+ * `@page` cannot be toggled per element, which is why these are two routes
+ * rather than one route with a view switch.
+ *
+ * NOTE: no html-to-image and no jsPDF here, on purpose. Rasterising the page
+ * would produce an image of Arabic text — unselectable, unsearchable, and
+ * blurry when printed. `window.print()` keeps real text and real fonts.
+ */
+
+/* ── Page boxes ─────────────────────────────────────────────────────────── */
+
+@page {
+  size: A4 portrait;
+  margin: 18mm 16mm;
+}
+
+@media print {
+  body.print-slides {
+    /* Named page so the deck can be landscape while the handout stays
+       portrait. Chrome honours this; a browser that ignores it still prints
+       every slide, just portrait. */
+    page: slidepage;
+  }
+}
+
+@page slidepage {
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+/* ── Screen preview ─────────────────────────────────────────────────────── */
+
+.print-doc {
+  /* Roughly the printable width of A4, so what is on screen matches paper. */
+  max-width: 178mm;
+  margin-inline: auto;
+}
+
+/* ── Print rules ────────────────────────────────────────────────────────── */
+
+@media print {
+  /* Anything chrome-like: toolbars, buttons, nav, the slide controls. */
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    /* Printers default to ~12pt for body text; Arabic needs the extra
+       leading more than Latin does. */
+    font-size: 11pt;
+    line-height: 1.7;
+  }
+
+  .print-doc {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Keep the tinted callouts and the header rule visible on paper. Without
+     this, Chrome drops every background and the document loses its structure. */
+  .print-keep-color {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* A heading must never be the last thing on a page. */
+  h1, h2, h3, h4 {
+    break-after: avoid-page;
+    break-inside: avoid-page;
+    page-break-after: avoid;
+  }
+
+  /* Never split a key point, a slide card or a callout across two pages. */
+  .print-block,
+  li,
+  blockquote,
+  figure,
+  table {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  img {
+    max-width: 100% !important;
+    break-inside: avoid-page;
+  }
+
+  /* Print the destination of every link — a URL is useless on paper
+     otherwise. Skipped for in-page anchors and for links whose text is
+     already the URL. */
+  .print-doc a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #444;
+    word-break: break-all;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  /* One slide per sheet. */
+  .print-slide {
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid-page;
+    /* Fill the sheet so a 4-bullet slide does not float in a corner. */
+    min-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .print-slide:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}

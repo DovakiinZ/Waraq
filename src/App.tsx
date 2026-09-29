@@ -7,7 +7,7 @@ import { queryClient, queryPersister, PERSIST_MAX_AGE, CACHE_BUSTER } from "@/li
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { AdminRoute, TeacherRoute, StudentRoute } from "@/components/auth/RoleRoutes";
+import { AdminRoute, TeacherRoute, StudentRoute, ProtectedRoute } from "@/components/auth/RoleRoutes";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 // Public pages
@@ -73,6 +73,8 @@ import MyCertificates from "./pages/student/MyCertificates";
 import StudentMarketplace from "./pages/student/StudentMarketplace";
 import StudentCheckout from "./pages/student/StudentCheckout";
 import CoursePreview from "./pages/student/CoursePreview";
+import LessonSummaryPrint from "./pages/student/LessonSummaryPrint";
+import LessonSlides from "./pages/student/LessonSlides";
 
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -223,6 +225,28 @@ const App = () => (
                     <Route path="certificates" element={<TeacherCertificates />} />
                     <Route path="profile" element={<TeacherProfile />} />
                   </Route>
+
+                  {/* AI summary ("الملخص الذكي") — print and slide views.
+                      Top-level ON PURPOSE: nesting them under the /student
+                      layout route would wrap them in StudentLayout, whose
+                      sidebar and bottom nav would end up on the printed page.
+                      React Router ranks these above /student/lesson/:id
+                      because the final segment is static.
+
+                      Guarded by ProtectedRoute, not StudentRoute: teachers and
+                      super_admins need these to preview a draft before
+                      approving it. RLS still decides what each role receives —
+                      a student gets an approved row only. */}
+                  <Route path="/student/lesson/:id/summary" element={
+                    <ProtectedRoute allowedRoles={['student', 'teacher', 'super_admin']}>
+                      <LessonSummaryPrint />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/student/lesson/:id/slides" element={
+                    <ProtectedRoute allowedRoles={['student', 'teacher', 'super_admin']}>
+                      <LessonSlides />
+                    </ProtectedRoute>
+                  } />
 
                   {/* Student Routes */}
                   <Route path="/student" element={

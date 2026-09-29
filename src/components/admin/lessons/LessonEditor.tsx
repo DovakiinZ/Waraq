@@ -24,7 +24,8 @@ import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { LessonDraftManager, LessonDraft } from '@/lib/draftManager';
 import { useIsMobileLayout } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { List, Settings as SettingsIcon } from 'lucide-react';
+import { List, Settings as SettingsIcon, Sparkles } from 'lucide-react';
+import LessonSummaryPanel from './LessonSummaryPanel';
 
 // Save status type
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error';
@@ -54,6 +55,7 @@ export default function LessonEditor() {
     const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
     const [isOutlineOpen, setIsOutlineOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isSummaryOpen, setIsSummaryOpen] = useState(false);
     const isMobile = useIsMobileLayout();
 
     // Auto-save timers
@@ -573,6 +575,43 @@ export default function LessonEditor() {
                                 </SheetContent>
                             </Sheet>
                         </div>
+
+                        {/* AI summary ("الملخص الذكي"). A Sheet, matching the
+                            Outline and Settings panels rather than inventing a
+                            third pattern. Unsaved block edits are flushed first
+                            so the generator reads the lesson as it now stands. */}
+                        <Sheet
+                            open={isSummaryOpen}
+                            onOpenChange={async (open) => {
+                                if (open) await flushPendingUpdates();
+                                setIsSummaryOpen(open);
+                            }}
+                        >
+                            <SheetTrigger asChild>
+                                <Button size="sm" variant="outline" className="gap-1.5 h-9 md:h-8">
+                                    <Sparkles className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                                    <span className="hidden md:inline">{t('الملخص الذكي', 'AI summary')}</span>
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent
+                                side={direction === 'rtl' ? 'left' : 'right'}
+                                className="w-full sm:max-w-2xl p-0 flex flex-col"
+                            >
+                                <SheetHeader className="p-4 border-b shrink-0">
+                                    <SheetTitle className="text-sm font-semibold">
+                                        {t('الملخص الذكي', 'AI summary')}
+                                    </SheetTitle>
+                                </SheetHeader>
+                                <div className="flex-1 overflow-y-auto p-4">
+                                    <LessonSummaryPanel
+                                        lessonId={lesson.id}
+                                        lesson={lesson}
+                                        sections={sections}
+                                        blocks={blocks}
+                                    />
+                                </div>
+                            </SheetContent>
+                        </Sheet>
 
                         <Button
                             size="sm"

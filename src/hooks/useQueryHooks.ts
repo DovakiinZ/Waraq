@@ -106,22 +106,35 @@ export function useLessons(subjectId: string | undefined, userId: string | undef
 
       if (subjectError || !subjectData) throw subjectError || new Error('Subject not found');
 
-      // Fetch lessons
-      let lessonsQuery = supabase
-        .from('lessons')
-        .select('*')
-        .eq('subject_id', subjectId!);
-
-      // If not userId provided (guest), only show published
+      // Two paths on purpose.
+      //
+      // Guests go through get_public_curriculum (migration 109): titles and
+      // metadata only, no video_url, no bodies. A logged-out visitor has no
+      // business fetching lesson video URLs from a course they have not bought.
+      //
+      // Signed-in users keep the table read, but with an EXPLICIT column list
+      // rather than `select('*')`. When the deferred video-column lockdown
+      // lands (see CLAUDE.md), `select('*')` starts failing outright — listing
+      // columns now means this query keeps working then.
+      let lessons: any[];
       if (!userId) {
-        lessonsQuery = lessonsQuery.eq('is_published', true);
+        const { data, error } = await supabase
+          .rpc('get_public_curriculum', { p_subject_id: subjectId! });
+        if (error) throw error;
+        lessons = (data || []) as any[];
+      } else {
+        const { data, error } = await supabase
+          .from('lessons')
+          .select(
+            'id, subject_id, title_ar, title_en, summary_ar, summary_en, sort_order, ' +
+            'duration_minutes, duration_seconds, is_paid, is_free_preview, is_published, ' +
+            'preview_video_url, video_url, cover_image_url, created_by'
+          )
+          .eq('subject_id', subjectId!)
+          .order('sort_order', { ascending: true });
+        if (error) throw error;
+        lessons = (data || []) as any[];
       }
-
-      const { data: lessonsData, error: lessonsError } = await lessonsQuery
-        .order('sort_order', { ascending: true });
-
-      if (lessonsError) throw lessonsError;
-      const lessons = (lessonsData || []) as any[];
 
       // Fetch user progress if logged in
       let progressMap: Record<string, any> = {};

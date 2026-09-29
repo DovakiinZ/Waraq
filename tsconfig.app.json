@@ -23,8 +23,12 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["./supabase/functions/_shared/*"]
     }
   },
-  "include": ["src"]
+  // lessonSummaryCore.ts is the single source of the AI-summary content hash,
+  // imported by both the browser bundle and the ai-assist edge function. Only
+  // that one file is pulled in — the rest of _shared/ is Deno-only.
+  "include": ["src", "supabase/functions/_shared/lessonSummaryCore.ts"]
 }

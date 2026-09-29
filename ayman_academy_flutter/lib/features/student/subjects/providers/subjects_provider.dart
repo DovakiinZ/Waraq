@@ -99,7 +99,7 @@ final subjectDetailProvider = FutureProvider.family<Subject?, String>((ref, subj
 final subjectLessonsProvider = FutureProvider.family<List<Lesson>, String>((ref, subjectId) async {
   final data = await supabase
       .from('lessons')
-      .select('*')
+      .select(Lesson.columns)
       .eq('subject_id', subjectId)
       .eq('is_published', true)
       .order('sort_order');

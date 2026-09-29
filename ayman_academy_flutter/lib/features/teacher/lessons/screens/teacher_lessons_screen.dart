@@ -12,7 +12,7 @@ import 'package:ayman_academy_app/features/teacher/quizzes/screens/quiz_builder_
 final teacherLessonsProvider = FutureProvider.family<List<Lesson>, String>((ref, subjectId) async {
   final data = await supabase
       .from('lessons')
-      .select('*')
+      .select(Lesson.columns)
       .eq('subject_id', subjectId)
       .order('sort_order');
   return (data as List).map((e) => Lesson.fromJson(e as Map<String, dynamic>)).toList();

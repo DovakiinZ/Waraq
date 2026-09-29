@@ -8,7 +8,18 @@
  *   supabase secrets set GROQ_API_KEY=gsk_...
  */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  buildLessonSource,
+  buildSummarySystemPrompt,
+  buildSummaryUserPrompt,
+  sourceHash,
+  SUMMARY_JSON_SCHEMA,
+  validateSummaryPayload,
+  type HashableBlock,
+  type HashableSection,
+  type SummaryPayload,
+} from "../_shared/lessonSummaryCore.ts";
 
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
@@ -34,6 +45,11 @@ const VALID_ACTIONS = [
   "translate_ar_en",
   "translate_en_ar",
   "translate",
+  // The AI summary feature ("الملخص الذكي"). Unlike every action above, this
+  // one takes no `content`: it reads the lesson from the database itself, so
+  // the summary and its source_hash are provably derived from the real lesson
+  // and not from whatever a client chose to send.
+  "generate_lesson_summary",
 ] as const;
 
 type AIAction = (typeof VALID_ACTIONS)[number];
@@ -41,6 +57,8 @@ type AIAction = (typeof VALID_ACTIONS)[number];
 interface RequestBody {
   action: AIAction;
   content: string;
+  /** Required by `generate_lesson_summary`, ignored by every other action. */
+  lessonId?: string;
   language?: "ar" | "en";
   targetLanguage?: "ar" | "en";
   subject?: string;
@@ -179,10 +197,30 @@ function jsonResponse(body: Record<string, unknown>, status = 200): Response {
 
 // ─── Auth Verification ───────────────────────────────────────────────────────
 
-async function verifyAuth(req: Request): Promise<{ user: any | null; error: string | null }> {
+/**
+ * Verify the caller is signed in AND holds a content-authoring role.
+ *
+ * Previously this only proved "someone is logged in", which meant any student
+ * session could spend the platform's Groq quota on any action. Every caller in
+ * both clients is an admin or teacher surface — 14 web call sites under
+ * pages/admin, pages/teacher and the shared editor components, plus the
+ * Flutter teacher lesson editor — so gating on role breaks nothing.
+ *
+ * Returns the authed client too: the summary action reuses it so that reads
+ * run as the CALLER and RLS applies as a second line of defence.
+ */
+async function verifyAuth(
+  req: Request,
+): Promise<{
+  user: User | null;
+  role: string | null;
+  client: SupabaseClient | null;
+  error: string | null;
+  status: number;
+}> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
-    return { user: null, error: "Missing authorization header" };
+    return { user: null, role: null, client: null, error: "Missing authorization header", status: 401 };
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -191,10 +229,320 @@ async function verifyAuth(req: Request): Promise<{ user: any | null; error: stri
 
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) {
-    return { user: null, error: "Invalid or expired session. Please log in again." };
+    return {
+      user: null,
+      role: null,
+      client: null,
+      error: "Invalid or expired session. Please log in again.",
+      status: 401,
+    };
   }
 
-  return { user, error: null };
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("ai-assist: profile lookup failed:", profileError.message);
+    return {
+      user: null,
+      role: null,
+      client: null,
+      error: "Could not verify your account permissions. Please try again.",
+      status: 403,
+    };
+  }
+
+  const role = (profile as { role?: string } | null)?.role ?? null;
+  if (role !== "teacher" && role !== "super_admin") {
+    return {
+      user: null,
+      role,
+      client: null,
+      error: "AI tools are available to teachers and administrators only.",
+      status: 403,
+    };
+  }
+
+  return { user, role, client: supabase, error: null, status: 200 };
+}
+
+// ─── AI summary: lesson fetch + generation ───────────────────────────────────
+
+/** Groq caps for the summary action. One call per language. */
+const SUMMARY_MAX_COMPLETION_TOKENS = 4000;
+
+/**
+ * Load a lesson's content as the caller.
+ *
+ * Reading through the caller's client rather than the service role means RLS
+ * still applies, and the explicit ownership check below is the primary gate.
+ */
+/** The lesson columns the generator reads, plus its embedded subject/stage. */
+interface LessonForSummary {
+  id: string;
+  subject_id: string | null;
+  title_ar: string | null;
+  title_en: string | null;
+  objectives_ar: string | null;
+  objectives_en: string | null;
+  created_by: string | null;
+  subject: {
+    id: string;
+    title_ar: string | null;
+    title_en: string | null;
+    teacher_id: string | null;
+    stage: { title_ar: string | null; title_en: string | null } | null;
+  } | null;
+}
+
+async function loadLessonForSummary(client: SupabaseClient, lessonId: string) {
+  const { data: lesson, error } = await client
+    .from("lessons")
+    .select(
+      "id, subject_id, title_ar, title_en, objectives_ar, objectives_en, created_by, " +
+        "subject:subjects(id, title_ar, title_en, teacher_id, stage:stages(title_ar, title_en))",
+    )
+    .eq("id", lessonId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Could not load the lesson: ${error.message}`);
+  if (!lesson) throw new Error("LESSON_NOT_FOUND");
+
+  const [sectionsRes, blocksRes] = await Promise.all([
+    client
+      .from("lesson_sections")
+      .select("id, title_ar, title_en, sort_order")
+      .eq("lesson_id", lessonId),
+    client
+      .from("lesson_blocks")
+      .select("id, section_id, type, title_ar, title_en, content_ar, content_en, url, sort_order, is_published")
+      .eq("lesson_id", lessonId),
+  ]);
+
+  if (sectionsRes.error) throw new Error(`Could not load lesson sections: ${sectionsRes.error.message}`);
+  if (blocksRes.error) throw new Error(`Could not load lesson blocks: ${blocksRes.error.message}`);
+
+  return {
+    lesson: lesson as unknown as LessonForSummary,
+    sections: (sectionsRes.data ?? []) as HashableSection[],
+    blocks: (blocksRes.data ?? []) as HashableBlock[],
+  };
+}
+
+/**
+ * One Groq call for one language.
+ *
+ * Deliberately NOT one call for both. `openai/gpt-oss-20b` is a reasoning
+ * model and its hidden reasoning is widely reported to be billed against the
+ * completion budget on Groq — which shows up as an empty or mid-sentence
+ * response rather than an error. Groq's own docs do not state this either way,
+ * so the design assumes the worst: two smaller generations at
+ * reasoning_effort "low", each with its own budget.
+ *
+ * `reasoning_format: "hidden"` is required — Groq returns 400 for "raw"
+ * combined with JSON mode.
+ */
+async function generateSummaryForLanguage(
+  canonicalText: string,
+  language: "ar" | "en",
+  stage: string | null,
+  subject: string | null,
+): Promise<SummaryPayload> {
+  const response = await fetch(GROQ_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${GROQ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        { role: "system", content: buildSummarySystemPrompt({ language, stage, subject }) },
+        { role: "user", content: buildSummaryUserPrompt(canonicalText, { language, stage, subject }) },
+      ],
+      temperature: 0.3,
+      max_completion_tokens: SUMMARY_MAX_COMPLETION_TOKENS,
+      reasoning_effort: "low",
+      reasoning_format: "hidden",
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "lesson_summary",
+          strict: true,
+          schema: SUMMARY_JSON_SCHEMA,
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    const errMsg = errData?.error?.message || `AI model returned status ${response.status}`;
+    console.error(`Groq API error (${language}):`, errMsg);
+    throw new Error(errMsg);
+  }
+
+  const data = await response.json();
+  const choice = data?.choices?.[0];
+  const finishReason = choice?.finish_reason;
+
+  // A reasoning model that exhausts its budget returns finish_reason "length"
+  // with truncated or empty content. Say so plainly instead of letting the
+  // shape check report confusing nonsense.
+  if (finishReason === "length") {
+    throw new Error("SUMMARY_TRUNCATED");
+  }
+
+  const text = choice?.message?.content?.trim();
+  if (!text) {
+    throw new Error("SUMMARY_EMPTY");
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("SUMMARY_MALFORMED");
+  }
+
+  const problem = validateSummaryPayload(parsed);
+  if (problem) {
+    console.error(`Summary shape rejected (${language}): ${problem}`);
+    throw new Error("SUMMARY_MALFORMED");
+  }
+
+  return parsed as SummaryPayload;
+}
+
+/** The `generate_lesson_summary` action. */
+async function handleGenerateLessonSummary(
+  client: SupabaseClient,
+  userId: string,
+  role: string,
+  lessonId: string | undefined,
+): Promise<Response> {
+  if (!lessonId || typeof lessonId !== "string") {
+    return jsonResponse({ success: false, error: "Missing required field: lessonId" });
+  }
+
+  let loaded;
+  try {
+    loaded = await loadLessonForSummary(client, lessonId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not load the lesson";
+    if (message === "LESSON_NOT_FOUND") {
+      return jsonResponse({ success: false, code: "LESSON_NOT_FOUND", error: "Lesson not found." }, 404);
+    }
+    return jsonResponse({ success: false, error: message });
+  }
+
+  const { lesson, sections, blocks } = loaded;
+  const subject = lesson.subject ?? null;
+
+  // Ownership. Mirrors can_edit_lesson_summary() in migration 108 and the
+  // lessons_teacher_update policy in 107: the lesson's creator, or the teacher
+  // who owns its subject, or a super_admin.
+  const isOwner =
+    role === "super_admin" ||
+    lesson.created_by === userId ||
+    subject?.teacher_id === userId;
+
+  if (!isOwner) {
+    return jsonResponse(
+      {
+        success: false,
+        code: "NOT_LESSON_OWNER",
+        error: "You can only generate a summary for a lesson in a subject you teach.",
+      },
+      403,
+    );
+  }
+
+  const canonicalText = buildLessonSource({
+    lesson: {
+      title_ar: lesson.title_ar,
+      title_en: lesson.title_en,
+      objectives_ar: lesson.objectives_ar,
+      objectives_en: lesson.objectives_en,
+    },
+    sections,
+    blocks,
+  });
+
+  // A lesson with nothing but media blocks produces a near-empty source. The
+  // model would happily invent a lesson from the title alone — refuse instead.
+  if (canonicalText.replace(/^(LESSON_TITLE_(AR|EN):.*)$/gm, "").trim().length < 120) {
+    return jsonResponse({
+      success: false,
+      code: "LESSON_TOO_SHORT",
+      error: "This lesson does not have enough written content to summarise yet.",
+    });
+  }
+
+  const stage = subject?.stage
+    ? (subject.stage.title_ar || subject.stage.title_en || null)
+    : null;
+  const subjectTitle = subject ? (subject.title_ar || subject.title_en || null) : null;
+
+  let ar: SummaryPayload;
+  let en: SummaryPayload;
+  try {
+    // Sequential, not Promise.all: two concurrent completions against the same
+    // Groq key invite a 429, and one failing mid-flight would leave the other
+    // burning quota for a result that gets thrown away.
+    ar = await generateSummaryForLanguage(canonicalText, "ar", stage, subjectTitle);
+    en = await generateSummaryForLanguage(canonicalText, "en", stage, subjectTitle);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Generation failed";
+    const known = ["SUMMARY_TRUNCATED", "SUMMARY_EMPTY", "SUMMARY_MALFORMED"];
+    if (known.includes(message)) {
+      return jsonResponse({ success: false, code: message, error: message });
+    }
+    return jsonResponse({ success: false, code: "AI_ERROR", error: message });
+  }
+
+  const hash = await sourceHash(canonicalText);
+
+  // Always status 'draft'. A generated summary is NEVER auto-approved — a
+  // teacher has to read it first. Regenerating an approved summary sends it
+  // back to draft on purpose: the previously approved text no longer exists.
+  const row = {
+    lesson_id: lessonId,
+    summary_ar: ar.summary,
+    key_points_ar: ar.key_points,
+    slides_ar: ar.slides,
+    summary_en: en.summary,
+    key_points_en: en.key_points,
+    slides_en: en.slides,
+    status: "draft",
+    source_hash: hash,
+    model: MODEL,
+    generated_at: new Date().toISOString(),
+    generated_by: userId,
+    reviewed_by: null,
+    reviewed_at: null,
+    review_note: null,
+  };
+
+  const { data: saved, error: saveError } = await client
+    .from("lesson_summaries")
+    .upsert(row, { onConflict: "lesson_id" })
+    .select()
+    .single();
+
+  if (saveError) {
+    console.error("Failed to save lesson summary:", saveError.message);
+    return jsonResponse({
+      success: false,
+      code: "SAVE_FAILED",
+      error: `The summary was generated but could not be saved: ${saveError.message}`,
+    });
+  }
+
+  return jsonResponse({ success: true, result: saved, action: "generate_lesson_summary", model: MODEL });
 }
 
 // ─── Main Handler ────────────────────────────────────────────────────────────
@@ -210,10 +558,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ success: false, error: "Method not allowed" }, 405);
   }
 
-  // Verify the user is logged in
-  const { user, error: authError } = await verifyAuth(req);
+  // Verify the user is logged in AND is a teacher or super_admin.
+  const { user, role, client, error: authError, status: authStatus } = await verifyAuth(req);
   if (authError || !user) {
-    return jsonResponse({ success: false, error: authError || "Unauthorized" }, 401);
+    return jsonResponse({ success: false, error: authError || "Unauthorized" }, authStatus || 401);
   }
 
   // Check Groq API key is configured
@@ -229,12 +577,8 @@ Deno.serve(async (req) => {
     const body: RequestBody = await req.json();
     const { action, content } = body;
 
-    // Validate required fields
-    if (!action || !content?.trim()) {
-      return jsonResponse({
-        success: false,
-        error: "Missing required fields: action and content",
-      });
+    if (!action) {
+      return jsonResponse({ success: false, error: "Missing required field: action" });
     }
 
     // Validate action
@@ -242,6 +586,20 @@ Deno.serve(async (req) => {
       return jsonResponse({
         success: false,
         error: `Invalid action: ${action}`,
+      });
+    }
+
+    // The summary action reads its input from the database, so it takes a
+    // lessonId instead of `content` and is handled entirely on its own path.
+    if (action === "generate_lesson_summary") {
+      return await handleGenerateLessonSummary(client, user.id, role!, body.lessonId);
+    }
+
+    // Every other action operates on client-supplied text.
+    if (!content?.trim()) {
+      return jsonResponse({
+        success: false,
+        error: "Missing required fields: action and content",
       });
     }
 

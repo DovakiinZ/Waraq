@@ -41,6 +41,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Pencil, Trash2, FileText, Search, RefreshCw, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
+import { affectedNoRows, isRlsDenial } from '@/lib/rlsError';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ interface LessonWithSubject {
 
 export default function TeacherLessons() {
     const { t } = useLanguage();
-    const { user } = useAuth();
+    const { user, isSuperAdmin } = useAuth();
     const navigate = useNavigate();
 
     const [lessons, setLessons] = useState<LessonWithSubject[]>([]);
@@ -87,16 +88,24 @@ export default function TeacherLessons() {
         setLoading(true);
 
         try {
+            // Only subjects this teacher owns may receive a lesson — anything else
+            // is rejected by RLS, so it must not be offered in the picker.
+            // super_admin keeps the full list.
+            let subjectsQuery = supabase
+                .from('subjects')
+                .select('id, title_ar, title_en')
+                .order('title_ar');
+            if (!isSuperAdmin) {
+                subjectsQuery = subjectsQuery.eq('teacher_id', user.id);
+            }
+
             const [lessonsRes, subjectsRes] = await Promise.all([
                 supabase
                     .from('lessons')
                     .select('*, subject:subjects(id, title_ar, title_en)')
                     .eq('created_by', user.id)
                     .order('created_at', { ascending: false }),
-                supabase
-                    .from('subjects')
-                    .select('id, title_ar, title_en')
-                    .order('title_ar'),
+                subjectsQuery,
             ]);
 
             setLessons((lessonsRes.data as LessonWithSubject[]) || []);
@@ -156,8 +165,20 @@ export default function TeacherLessons() {
                 navigate(`/teacher/lessons/${data.id}`);
             }
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Unknown error';
-            toast.error(t('فشل في إنشاء الدرس', 'Failed to create lesson'), { description: message });
+            if (isRlsDenial(err)) {
+                toast.error(
+                    t('لا يمكنك إضافة درس إلى هذه المادة', 'You cannot add a lesson to this subject'),
+                    {
+                        description: t(
+                            'يمكنك إنشاء الدروس في المواد التي تدرّسها فقط. إذا كان يجب أن تكون هذه المادة لك، تواصل مع الإدارة.',
+                            'You can only create lessons in subjects you teach. If this subject should be yours, contact an administrator.'
+                        ),
+                    }
+                );
+            } else {
+                const message = err instanceof Error ? err.message : 'Unknown error';
+                toast.error(t('فشل في إنشاء الدرس', 'Failed to create lesson'), { description: message });
+            }
         } finally {
             setSubmitting(false);
         }
@@ -168,12 +189,30 @@ export default function TeacherLessons() {
         setSubmitting(true);
 
         try {
-            const { error } = await supabase.from('lessons').delete().eq('id', deleteTarget.id);
+            // `.select('id')`: a DELETE refused by lessons_teacher_delete's
+            // USING clause removes zero rows and returns NO error, so without
+            // this the toast would claim success over a no-op.
+            const { data, error } = await supabase
+                .from('lessons')
+                .delete()
+                .eq('id', deleteTarget.id)
+                .select('id');
             if (error) throw error;
+            if (affectedNoRows(data)) throw { code: '42501' };
             toast.success(t('تم حذف الدرس', 'Lesson deleted'));
             fetchData();
         } catch (err) {
-            toast.error(t('فشل في حذف الدرس', 'Failed to delete lesson'));
+            if (isRlsDenial(err)) {
+                toast.error(t('لا يمكنك حذف هذا الدرس', 'You cannot delete this lesson'), {
+                    description: t(
+                        'يمكنك حذف الدروس التي أنشأتها في موادك فقط.',
+                        'You can only delete lessons you created in your own subjects.'
+                    ),
+                });
+            } else {
+                const message = err instanceof Error ? err.message : 'Unknown error';
+                toast.error(t('فشل في حذف الدرس', 'Failed to delete lesson'), { description: message });
+            }
         } finally {
             setDeleteTarget(null);
             setSubmitting(false);
