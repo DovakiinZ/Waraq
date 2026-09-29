@@ -18,6 +18,7 @@ import SubjectDetail from "./pages/SubjectDetail";
 import Subjects from "./pages/Subjects";
 import LessonPage from "./pages/LessonPage";
 import Plans from "./pages/Plans";
+import Download from "./pages/Download";
 import Account from "./pages/Account";
 import LandingPreview from "./pages/LandingPreview";
 import Landing from "./pages/Landing";
@@ -148,6 +149,7 @@ const App = () => (
                   <Route path="/subjects" element={<Subjects />} />
                   <Route path="/lesson/:lessonId" element={<LessonPage />} />
                   <Route path="/plans" element={<Plans />} />
+                  <Route path="/download" element={<Download />} />
                   <Route path="/account" element={<Account />} />
                   <Route path="/t/:id" element={<TeacherProfilePublic />} />
                   <Route path="/teachers" element={<Instructors />} />

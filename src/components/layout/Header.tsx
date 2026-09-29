@@ -23,6 +23,7 @@ const Header = () => {
     { path: '/stages', label: { ar: 'المراحل', en: 'Stages' } },
     { path: '/teachers', label: { ar: 'المعلّمون', en: 'Teachers' } },
     { path: '/plans', label: { ar: 'الخطط', en: 'Plans' } },
+    { path: '/download', label: { ar: 'تحميل', en: 'Download' } },
   ];
 
   const isActive = (path: string) => location.pathname === path;

@@ -1,4 +1,7 @@
 export const queryKeys = {
+  app: {
+    androidReleases: ['app', 'android-releases'] as const,
+  },
   stages: {
     all: ['stages'] as const,
     detail: (id: string) => ['stages', id] as const,

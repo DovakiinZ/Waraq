@@ -24,6 +24,7 @@ const Footer = () => {
       head: { ar: 'المنصة', en: 'Platform' },
       links: [
         { path: '/teachers', label: { ar: 'المعلّمون', en: 'Teachers' } },
+        { path: '/download', label: { ar: 'تطبيق الأندرويد', en: 'Android app' } },
         { path: '/apply/teacher', label: { ar: 'انضم كمعلّم', en: 'Teach with us' } },
         { path: '/login', label: { ar: 'تسجيل الدخول', en: 'Log in' } },
       ],

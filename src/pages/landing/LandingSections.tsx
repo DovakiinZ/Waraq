@@ -16,8 +16,9 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLandingData } from './useLandingData';
+import { formatBytes, useAndroidRelease } from '@/hooks/useAndroidRelease';
 import { Reveal } from './useReveal';
-import { ArrowLeft, ArrowRight, Award, Check, Gamepad2, Languages, Smartphone } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Award, Check, Download, Gamepad2, Languages, Smartphone } from 'lucide-react';
 import { A, hard, PIXEL_STRIP } from '@/components/arcade/theme';
 import heroImage from '@/assets/hero-library.jpg';
 
@@ -34,6 +35,7 @@ const GRAD = A.grad;
 export default function LandingSections() {
   const { language, t } = useLanguage();
   const { stages, teachers, subjects, loading } = useLandingData();
+  const { latest: appRelease } = useAndroidRelease();
 
   const tt = (o: any, base: string) =>
     language === 'ar' ? o?.[`${base}_ar`] : o?.[`${base}_en`] || o?.[`${base}_ar`];
@@ -596,6 +598,44 @@ export default function LandingSections() {
               </ul>
             </Reveal>
           </div>
+        </div>
+      </section>
+
+      {/* ── Android app. Version and size come live from GitHub Releases. ── */}
+      <section style={{ borderTop: `2px solid ${C.line}` }}>
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-5 py-12 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <Reveal className="flex items-center gap-5">
+            <span
+              className="flex h-14 w-14 shrink-0 items-center justify-center border-2"
+              style={{ background: C.band, color: C.accent, borderColor: C.line, boxShadow: hard(4) }}
+            >
+              <Smartphone className="h-7 w-7" />
+            </span>
+            <span>
+              <span className="block text-[22px] font-black sm:text-[26px]">
+                {t('حمّل تطبيق ورق للأندرويد', 'Get the Waraq Android app')}
+              </span>
+              <span className="mt-1 block text-[14px] font-semibold" style={{ color: C.inkSoft }}>
+                {appRelease ? (
+                  <>
+                    {t('آخر إصدار', 'Latest')} <span dir="ltr">v{appRelease.version ?? appRelease.tag}</span>
+                    {' · '}
+                    <span dir="ltr">{formatBytes(appRelease.apkBytes)}</span>
+                  </>
+                ) : (
+                  t('دروسك واختباراتك في جيبك.', 'Your lessons and quizzes in your pocket.')
+                )}
+              </span>
+            </span>
+          </Reveal>
+          <Link
+            to="/download"
+            className="arc-focus arc-press inline-flex items-center justify-center gap-2 whitespace-nowrap border-2 px-7 py-3.5 text-[15px] font-black"
+            style={{ background: C.accent, color: C.onAccent, borderColor: C.line }}
+          >
+            <Download className="h-4 w-4" />
+            {t('تحميل', 'Download')}
+          </Link>
         </div>
       </section>
 

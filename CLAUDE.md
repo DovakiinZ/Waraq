@@ -362,7 +362,7 @@ const form = useForm<FormData>({
 - [ ] Translation service (Edge Function ready, needs GROQ_API_KEY in Supabase secrets)
 - [ ] Payment processing (DB schema exists, no UI or integration)
 - [ ] Real-time messaging (no Supabase Realtime)
-- [ ] Email notifications
+- [~] Email via Resend (code + functions deployed; needs Resend login, verified domain, secrets, hook, migration 106 — see Known Issues)
 - [ ] Push notifications
 - [ ] Analytics dashboard (recharts installed, no visualizations)
 - [ ] Parent dashboard (route exists, minimal UI)
@@ -397,6 +397,20 @@ const form = useForm<FormData>({
   - **`messages` has no DELETE policy** — a sender cannot remove their own message from the client. Fine today (no delete UI), but any "delete message" feature needs a policy first.
   - Reusable suite in **`.smoke/`** (untracked): `node .smoke/10-teacher-smoke.mjs` signs in and exercises all 72 teacher queries/mutations against the live DB, cleaning up after itself. `03-columns.mjs` re-probes the live schema — **use it instead of `schema.json`, which is stale** (it predates `orders`, the shamcash columns and the subject pricing columns). `21-flutter-shapes.mjs` does the same for the Flutter app's 30 teacher-side query shapes (all passing).
   - **The Flutter app shared none of these four defects** but had its own: confirming a payment never wrote `student_subjects`, so the student paid and got no access. Fixed in `ayman_academy_flutter/lib/features/teacher/orders/screens/teacher_orders_screen.dart`; see that project's CLAUDE.md. **When a teacher-side data bug is found on one client, check the other** — they diverge more than they look.
+- **Email runs on Resend (added 2026-09-27)** — nothing here calls Resend from the browser.
+  - **Auth emails** (signup verify, password reset, invite, magic link, email change, reauth) go through the Supabase **Send Email Hook** → `supabase/functions/send-auth-email`. Clients are unchanged: web `AuthContext` and Flutter `auth_repository.dart` still call supabase-js/dart. The hook verifies a Standard Webhooks signature (`SEND_EMAIL_HOOK_SECRET`). If the function errors, the originating `signUp`/`resetPasswordForEmail` call fails with its message.
+  - **Notifications** come from **Postgres triggers** (migration `106_email_notifications.sql`) → `pg_net` → `supabase/functions/notify`: new order → teacher; order paid/rejected → student; announcement → enrolled students (one email each, never a shared To:); message → receiver (only the first unread one per sender, so bursts send once); certificate issued → student; teacher application received → applicant + super_admins; decision → applicant; teacher invite → invitee with `/invite/:token`. Triggering from the DB means **both clients notify with no client code**, and a failed send never rolls back the write.
+  - The trigger's secret lives in **Vault** as `notify_webhook_secret` and must equal the function secret `NOTIFY_WEBHOOK_SECRET`. With no Vault secret the triggers are silent no-ops.
+  - Shared template/sender in `supabase/functions/_shared/email.ts`: every email is bilingual (AR block then EN), arcade look repeated in hex (email clients ignore CSS vars — keep in sync with `index.css`). Function secrets: `RESEND_API_KEY`, `EMAIL_FROM` (verified Resend domain), `SITE_URL`.
+  - **Deploy from the repo root with `--workdir`**: `supabase functions deploy <name> --no-verify-jwt --use-api --workdir "$PWD"`. A stray `Desktop/supabase/config.toml` outside the repo makes the CLI resolve the wrong root otherwise ("Entrypoint path does not exist").
+  - Resend CLI (`npm i -g resend-cli`, command `resend`) is installed on the dev machine: `resend domains list`, `resend emails list`, `resend logs` for debugging deliveries.
+  - **State on 2026-09-27:** both functions deployed; migration 106 **applied** (9 `trg_email_*` triggers, inert); Supabase secrets set: `SEND_EMAIL_HOOK_SECRET`, `RESEND_API_KEY` (Resend key `waraq-supabase-sending`, sending-only), `NOTIFY_WEBHOOK_SECRET`, `SITE_URL=https://aymanacademy.com`. Send Email hook created in the dashboard (HTTPS → `send-auth-email`) but **left disabled**. Signed test calls delivered signup, recovery and invite emails to `delivered@resend.dev`; a forged signature gets 401.
+  - **Go-live checklist (waiting on the Waraq domain):**
+    1. `resend domains create --name mail.<waraq-domain>` → add the printed DNS records → `resend domains verify <id>` until `verified`.
+    2. `supabase secrets set "EMAIL_FROM=Waraq Academy <no-reply@mail.<waraq-domain>>"` (+ update `SITE_URL` if the web origin changes). Until then the sender is `onboarding@resend.dev`, which Resend only delivers to the account owner.
+    3. Arm the triggers: generate a new random secret, `supabase secrets set NOTIFY_WEBHOOK_SECRET=<s>` and run `select vault.create_secret('<s>', 'notify_webhook_secret');` (use `vault.update_secret` if it exists).
+    4. Dashboard → Auth → Hooks → enable the Send Email hook; Auth → Providers → Email → enable **Confirm email**.
+    5. Optionally rescope the Resend key to the domain: `resend api-keys create --permission sending_access --domain-id <id>`, reset `RESEND_API_KEY`, delete the old key.
 - **`GROQ_API_KEY` is set in Supabase but rejected** — the `ai-assist` edge function is deployed and routes actions correctly (`VALID_ACTIONS` matches `aiService.ts`), but every call returns `{"success":false,"error":"Invalid API Key"}`. So every AI-assist and AR→EN translate button fails at runtime. `TranslationButton` does toast the failure; `useAutoTranslate` fails silently by design.
 - **The pre-rebrand `src/assets/logo.png` is still used by the admin, student and parent shells** plus `AccessDenied`, `AcceptInvite`, `ResetPassword` and `LandingIndex`. The teacher shell and `MobileLayout` now render `<Logo>` from `@/components/brand/Logo` instead — note it hard-codes its text colour, so `variant` must follow dark mode (`variant={isDark ? 'dark' : 'light'}`).
 
@@ -404,22 +418,36 @@ const form = useForm<FormData>({
 
 ## Android Release Policy
 
-**Every update ships an APK, and old versions are never removed.**
+**Every update ships an APK, and old versions are never removed.** Publishing the GitHub release is also what updates the website: the `/download` page (تحميل) reads GitHub Releases live, so no website deploy is needed.
 
-1. Bump `version:` in `ayman_academy_flutter/pubspec.yaml` (e.g. `1.0.2+102`) — a new `versionCode` is what lets the new APK install over the old one.
-2. Build with the dart-defines:
+### How to release a new Android version
+
+1. **Bump the version** in `ayman_academy_flutter/pubspec.yaml`, e.g. `1.1.0+110` → `1.2.0+120`. The `+N` build number (Android `versionCode`) must increase, or the new APK will not install over the old one.
+2. **Build** from `ayman_academy_flutter/`:
    ```bash
    flutter build apk --release      --dart-define=SUPABASE_URL=<url>      --dart-define=SUPABASE_ANON_KEY=<key>      --dart-define=WEB_APP_URL=https://aymanacademy.com      --dart-define=ONESIGNAL_APP_ID=<id>   # omit and push is disabled
    ```
-3. Publish a **new** GitHub release tagged `vX.Y.Z-android` with the APK attached as `ayman-academy-vX.Y.Z.apk`:
+3. **Verify the binary contains the change**: unzip `lib/arm64-v8a/libapp.so` from `build/app/outputs/flutter-apk/app-release.apk` and grep for a string the change introduced. A build that overlapped a `git checkout` cannot be trusted otherwise.
+4. **Rename the file** to `waraq-academy-vX.Y.Z.apk`. The asset's *file name* is what GitHub serves and where `/download` reads the version; the `#label` suffix on `gh release create` only changes the display text, it does not rename the file.
    ```bash
-   gh release create vX.Y.Z-android --target main --latest      --title "Ayman Academy — Android vX.Y.Z"      --notes-file notes.md "<path>/app-release.apk#Ayman Academy vX.Y.Z (Android APK)"
+   cp build/app/outputs/flutter-apk/app-release.apk waraq-academy-vX.Y.Z.apk
    ```
-4. **Never delete or overwrite a previous release or its APK.** Each published version stays downloadable at its own permanent URL so anyone can re-download an earlier build. Only the `Latest` marker moves.
-5. The newest build is always at `https://github.com/DovakiinZ/ayman-academy-portal/releases/latest`; a specific version is at `/releases/tag/vX.Y.Z-android`.
-6. Before publishing, verify the binary really contains the change — unzip `lib/arm64-v8a/libapp.so` from the APK and grep for a string the change introduced. A build that overlapped a `git checkout` cannot be trusted otherwise.
+5. **Publish a NEW release** tagged `vX.Y.Z-android`:
+   ```bash
+   gh release create vX.Y.Z-android --repo DovakiinZ/Waraq --target main --latest      --title "Waraq Academy — Android vX.Y.Z"      --notes-file notes.md      "waraq-academy-vX.Y.Z.apk#Waraq Academy vX.Y.Z (Android APK)"
+   ```
+   - `notes.md` becomes "What's new" on `/download`, shown as plain text. Write it for students, in Arabic and English.
+   - A test build gets `--prerelease` instead of `--latest`. It is listed under previous versions but never becomes the main download button.
+6. **Check the site**: open `/download` (or the landing page's app band). It should show the new version and size within 5 minutes, which is the query's stale time.
+7. **Never delete or overwrite a previous release or its APK.** Every version stays downloadable at its own permanent URL and is listed on `/download` under previous versions.
 
-Published so far: `v1.0.0-android`, `v1.0.1-android`, `v1.0.2-android`, `v1.0.3-android`.
+### How `/download` stays in sync
+
+`src/pages/Download.tsx` + `src/hooks/useAndroidRelease.ts` call the GitHub API for `DovakiinZ/Waraq` (renamed from `ayman-academy-portal`; GitHub redirects the old name). The **newest non-draft, non-prerelease release that has an `.apk` asset** is the main download; tag names and the `Latest` marker are ignored because they have been inconsistent (`v1.0.3-android` vs `design/arcade-green-v1`). If the API fails, the button falls back to `https://github.com/DovakiinZ/Waraq/releases/latest`. Linked from the Header (تحميل), the Footer ("Android app") and a band on the landing page. If the repo is renamed again, update `GITHUB_REPO` in the hook.
+
+The only rules a release must follow for the page to work: **the APK is attached as a `.apk` file** and **its file name contains `vX.Y.Z`**.
+
+Published so far: `v1.0.0-android` (prerelease), `v1.0.1-android`, `v1.0.2-android`, `v1.0.3-android`, `design/arcade-green-v1` (v1.1.0, `waraq-academy-v1.1.0.apk`).
 
 ---
 
@@ -460,7 +488,7 @@ Published so far: `v1.0.0-android`, `v1.0.1-android`, `v1.0.2-android`, `v1.0.3-
 
 ### Phase 4: Communication & Engagement
 - [ ] **Real-time messaging** — Supabase Realtime for instant messages.
-- [ ] **Email notifications** — Welcome, enrollment confirmation, lesson reminders.
+- [~] **Email notifications** — Resend-backed auth emails + event notifications built (`send-auth-email`, `notify`, migration 106). Pending: go-live setup. Lesson reminders not built.
 - [ ] **Announcement delivery** — Push teacher announcements to enrolled students.
 - [ ] **Analytics dashboard** — Student progress analytics for teachers, platform analytics for admin.
 
