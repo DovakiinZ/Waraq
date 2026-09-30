@@ -96,7 +96,7 @@ Passed at build time via `--dart-define`:
 flutter run \
   --dart-define=SUPABASE_URL=<your-url> \
   --dart-define=SUPABASE_ANON_KEY=<your-key> \
-  --dart-define=WEB_APP_URL=https://aymanacademy.com \
+  --dart-define=WEB_APP_URL=https://www.waraq.academy \
   --dart-define=ONESIGNAL_APP_ID=<your-id>
 ```
 Defined in `lib/core/env.dart` using `String.fromEnvironment()`.

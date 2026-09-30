@@ -7,7 +7,7 @@
  * ── Secrets (supabase secrets set …) ────────────────────────────────────────
  *   RESEND_API_KEY   re_… — a "sending access" key, created with
  *                    `resend api-keys create --name supabase --permission sending_access`
- *   EMAIL_FROM       e.g. `Waraq Academy <no-reply@mail.aymanacademy.com>`.
+ *   EMAIL_FROM       e.g. `Waraq Academy <no-reply@mail.waraq.academy>`.
  *                    The domain must be verified in Resend (`resend domains list`).
  *   SITE_URL         Public web origin used in every link. Defaults below.
  *
@@ -24,7 +24,7 @@
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const EMAIL_FROM =
   Deno.env.get("EMAIL_FROM") ?? "Waraq Academy <onboarding@resend.dev>";
-export const SITE_URL = (Deno.env.get("SITE_URL") ?? "https://aymanacademy.com")
+export const SITE_URL = (Deno.env.get("SITE_URL") ?? "https://www.waraq.academy")
   .replace(/\/+$/, "");
 
 const C = {
