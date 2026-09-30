@@ -42,6 +42,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Pencil, Trash2, FileText, Search, RefreshCw, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { affectedNoRows, isRlsDenial } from '@/lib/rlsError';
+import { cn } from '@/lib/utils';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -63,12 +64,41 @@ interface LessonWithSubject {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
+/**
+ * The AI summary state of one lesson, at a glance.
+ *
+ * A dash is deliberate rather than an empty cell: "no summary yet" is a real
+ * state a teacher acts on, and an empty cell reads as a rendering bug.
+ */
+function SummaryCell({ status, t }: { status?: string; t: (ar: string, en: string) => string }) {
+    if (!status) {
+        return <span className="text-xs text-muted-foreground">{t('— لا يوجد', '— none')}</span>;
+    }
+    const map: Record<string, { label: string; className: string }> = {
+        draft: { label: t('مسودة', 'Draft'), className: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-950/40 dark:text-yellow-200' },
+        pending_review: { label: t('قيد المراجعة', 'In review'), className: 'bg-blue-100 text-blue-900 dark:bg-blue-950/40 dark:text-blue-200' },
+        approved: { label: t('معتمد', 'Approved'), className: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200' },
+        rejected: { label: t('مرفوض', 'Rejected'), className: 'bg-red-100 text-red-900 dark:bg-red-950/40 dark:text-red-200' },
+    };
+    const cfg = map[status];
+    if (!cfg) return <span className="text-xs text-muted-foreground">{status}</span>;
+    return <Badge variant="secondary" className={cn('font-medium', cfg.className)}>{cfg.label}</Badge>;
+}
+
 export default function TeacherLessons() {
     const { t } = useLanguage();
     const { user, isSuperAdmin } = useAuth();
     const navigate = useNavigate();
 
     const [lessons, setLessons] = useState<LessonWithSubject[]>([]);
+    /**
+     * lesson_id -> AI summary status.
+     *
+     * Without this the AI summary is invisible from here: a teacher had to
+     * open each lesson's editor and spot a toolbar button to learn whether a
+     * summary even existed. With 30 lessons that is 30 round trips.
+     */
+    const [summaryStatus, setSummaryStatus] = useState<Record<string, string>>({});
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -108,8 +138,24 @@ export default function TeacherLessons() {
                 subjectsQuery,
             ]);
 
-            setLessons((lessonsRes.data as LessonWithSubject[]) || []);
+            const lessonRows = (lessonsRes.data as LessonWithSubject[]) || [];
+            setLessons(lessonRows);
             setSubjects((subjectsRes.data as Subject[]) || []);
+
+            // One extra query for the whole page, not one per row.
+            if (lessonRows.length) {
+                const { data: summaries } = await supabase
+                    .from('lesson_summaries')
+                    .select('lesson_id, status')
+                    .in('lesson_id', lessonRows.map(l => l.id));
+                const map: Record<string, string> = {};
+                for (const row of (summaries || []) as { lesson_id: string; status: string }[]) {
+                    map[row.lesson_id] = row.status;
+                }
+                setSummaryStatus(map);
+            } else {
+                setSummaryStatus({});
+            }
         } catch (err) {
             toast.error(t('فشل في تحميل الدروس', 'Failed to load lessons'));
         } finally {
@@ -286,6 +332,7 @@ export default function TeacherLessons() {
                                 <TableHead>{t('عنوان الدرس', 'Lesson Title')}</TableHead>
                                 <TableHead>{t('المادة', 'Subject')}</TableHead>
                                 <TableHead>{t('الحالة', 'Status')}</TableHead>
+                                <TableHead>{t('الملخص الذكي', 'AI summary')}</TableHead>
                                 <TableHead className="w-[120px]">{t('الإجراءات', 'Actions')}</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -307,6 +354,9 @@ export default function TeacherLessons() {
                                         <Badge variant={lesson.is_published ? 'default' : 'secondary'}>
                                             {lesson.is_published ? t('منشور', 'Published') : t('مسودة', 'Draft')}
                                         </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <SummaryCell status={summaryStatus[lesson.id]} t={t} />
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-1">

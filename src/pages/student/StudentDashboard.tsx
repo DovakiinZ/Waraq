@@ -86,6 +86,15 @@ export default function StudentDashboard() {
             })
             .filter(s => s.totalLessons > 0);
 
+        // A student can complete a lesson inside a course they do NOT own —
+        // free-preview lessons are open by design. Counting only enrolled
+        // subjects therefore produced "0 subjects / 1 completed lesson", which
+        // reads as a bug. Count every subject the student has actually touched.
+        const engagedSubjectIds = new Set<string>([
+            ...spList.map((s: any) => s.subject?.id).filter(Boolean),
+            ...progressItems.map((p: any) => p.lesson?.subject_id).filter(Boolean),
+        ]);
+
         const completedCount = progressItems.filter((p: any) => p.completed_at).length;
         const inProgressCount = progressItems.filter((p: any) => !p.completed_at && p.progress_percent > 0).length;
 
@@ -96,7 +105,7 @@ export default function StudentDashboard() {
             stats: {
                 completed: completedCount,
                 inProgress: inProgressCount,
-                totalSubjects: spList.length,
+                totalSubjects: engagedSubjectIds.size,
             },
         };
     }, [allProgress, allSubjects]);

@@ -106,7 +106,13 @@ class SubjectCard extends StatelessWidget {
   Widget _price(BuildContext context) {
     final arc = context.arc;
 
-    if (subject.isPaid != true) {
+    // Three states, not two. `isPaid == null` means the row came from an RPC
+    // that does not return the column — NOT that the course is free. Saying
+    // "FREE" on a 100,000 SYP course is the worst thing this card can do, so
+    // an unknown price shows no badge at all.
+    if (subject.isPaid == null) return const SizedBox.shrink();
+
+    if (subject.isPaid == false) {
       // Free is the strongest thing a card can say, so it gets the one fill.
       return ArcadeChip(label: _isAr ? 'مجاني' : 'FREE', filled: true);
     }

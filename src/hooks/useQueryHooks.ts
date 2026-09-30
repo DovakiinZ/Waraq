@@ -181,6 +181,7 @@ export function useLesson(lessonId: string | undefined) {
         .select(`
           *,
           subject:subjects(*, stage:stages(*)),
+          teacher:profiles!created_by(full_name),
           sections:lesson_sections(*),
           blocks:lesson_blocks(*)
         `)

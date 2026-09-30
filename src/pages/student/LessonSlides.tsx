@@ -45,6 +45,7 @@ export default function LessonSlides() {
     const payload = useMemo(() => payloadFromRow(summary, displayLang), [summary, displayLang]);
     const slides = payload.slides;
     const dir = displayLang === 'ar' ? 'rtl' : 'ltr';
+    const teacherName = (lesson as { teacher?: { full_name?: string } } | null)?.teacher?.full_name ?? '';
 
     // `body.print-slides` selects the landscape @page box.
     useEffect(() => {
@@ -248,12 +249,23 @@ export default function LessonSlides() {
             <div ref={deckRef} className="hidden print:block" dir={dir} lang={displayLang}>
                 {slides.map((slide, i) => (
                     <article key={i} className="print-slide">
+                        {/* Printed slides get handed around on their own, so each
+                            sheet carries the brand, the lesson and the teacher —
+                            not just a slide number. */}
+                        <div className="flex items-center justify-between mb-3 print-keep-color">
+                            <div className="flex items-center gap-2">
+                                <img src="/brand/mark.svg" alt="" aria-hidden="true" className="h-6 w-6" />
+                                <span className="text-sm font-bold">{t('ورق أكاديمي', 'Waraq Academy')}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                                {t(`${i + 1} من ${slides.length}`, `${i + 1} of ${slides.length}`)}
+                            </span>
+                        </div>
                         <p className="text-xs text-muted-foreground mb-2">
                             {displayLang === 'ar'
                                 ? lesson?.title_ar
                                 : (lesson?.title_en || lesson?.title_ar)}
-                            {' · '}
-                            {t(`${i + 1} من ${slides.length}`, `${i + 1} of ${slides.length}`)}
+                            {teacherName ? ` · ${teacherName}` : ''}
                         </p>
                         <h2 className="text-3xl font-bold mb-8 leading-tight">{slide.title}</h2>
                         <ul className="space-y-4">

@@ -1,28 +1,4 @@
-import {
-  LayoutDashboard,
-  BookOpen,
-  MessageSquare,
-  User,
-  Users,
-  GraduationCap,
-  BookMarked,
-  FileText,
-  Settings,
-  ClipboardList,
-  Type,
-  CreditCard,
-  Mail,
-  Building2,
-  Ticket,
-  Award,
-  Megaphone,
-  Star,
-  ShoppingCart,
-  Receipt,
-  Store,
-  UserPlus,
-  type LucideIcon,
-} from 'lucide-react';
+import { LayoutDashboard, BookOpen, MessageSquare, User, Users, GraduationCap, BookMarked, FileText, Settings, ClipboardList, Type, CreditCard, Mail, Building2, Ticket, Award, Megaphone, Star, ShoppingCart, Receipt, Store, UserPlus, type LucideIcon, HelpCircle } from 'lucide-react';
 
 export interface NavItem {
   path: string;
@@ -53,6 +29,7 @@ const studentNav: NavItem[] = [
   { path: '/student/certificates', icon: Award, label: { ar: 'شهاداتي', en: 'My Certificates' } },
   { path: '/student/messages', icon: MessageSquare, label: { ar: 'الرسائل', en: 'Messages' } },
   { path: '/student/profile', icon: User, label: { ar: 'ملفي الشخصي', en: 'My Profile' } },
+  { path: '/guide', icon: HelpCircle, label: { ar: 'دليل الاستخدام', en: 'How to use' } },
 ];
 
 const teacherNav: NavItem[] = [
@@ -66,6 +43,7 @@ const teacherNav: NavItem[] = [
   { path: '/teacher/certificates', icon: Award, label: { ar: 'الشهادات', en: 'Certificates' } },
   { path: '/teacher/messages', icon: MessageSquare, label: { ar: 'الرسائل', en: 'Messages' } },
   { path: '/teacher/profile', icon: User, label: { ar: 'ملفي الشخصي', en: 'My Profile' } },
+  { path: '/guide', icon: HelpCircle, label: { ar: 'دليل الاستخدام', en: 'How to use' } },
 ];
 
 const adminNav: NavItem[] = [

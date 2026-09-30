@@ -98,7 +98,7 @@ const LessonPage = () => {
 
           <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-stretch">
              {/* Left (Meta Information) */}
-             <div className="lg:w-1/3 flex flex-col justify-center space-y-6 order-2 lg:order-1">
+             <div className={`${youtubeId ? 'lg:w-1/3' : 'w-full'} flex flex-col justify-center space-y-6 order-2 lg:order-1`}>
                <div>
                   <div className="flex items-center gap-2 mb-3 text-sm text-slate-400">
                     <span>{t(lesson.subject?.stage?.title_ar, lesson.subject?.stage?.title_en)}</span>
@@ -134,28 +134,28 @@ const LessonPage = () => {
                )}
              </div>
 
-             {/* Right (Video) */}
-             <div className="lg:w-2/3 w-full order-1 lg:order-2">
-               <div className="rounded-xl overflow-hidden shadow-2xl bg-black aspect-video relative border border-slate-800">
-                 {youtubeId ? (
-                     <iframe
-                         width="100%"
-                         height="100%"
-                         src={`https://www.youtube.com/embed/${youtubeId}?enablejsapi=1`}
-                         title="Video player"
-                         frameBorder="0"
-                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                         allowFullScreen
-                         className="w-full h-full"
-                     ></iframe>
-                 ) : (
-                   <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 p-8">
-                       <Lock className="w-12 h-12 mb-4 opacity-30" />
-                       <p className="text-sm font-medium">{t('الفيديو غير متاح للمعاينة', 'Video not available for preview')}</p>
-                   </div>
-                 )}
+             {/* Right (Video) — rendered ONLY when there is a video.
+                 A lesson with no video used to show a black box with a padlock,
+                 which told a visitor the content was withheld when in fact the
+                 teacher simply had not attached one. That is a bad first
+                 impression on a public page, so the whole column is dropped
+                 and the text side takes the full width instead. */}
+             {youtubeId && (
+               <div className="lg:w-2/3 w-full order-1 lg:order-2">
+                 <div className="rounded-xl overflow-hidden shadow-2xl bg-black aspect-video relative border border-slate-800">
+                   <iframe
+                       width="100%"
+                       height="100%"
+                       src={`https://www.youtube.com/embed/${youtubeId}?enablejsapi=1`}
+                       title="Video player"
+                       frameBorder="0"
+                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                       allowFullScreen
+                       className="w-full h-full"
+                   ></iframe>
+                 </div>
                </div>
-             </div>
+             )}
           </div>
         </div>
       </section>

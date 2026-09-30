@@ -5,7 +5,7 @@ import { LogOut, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobileLayout } from '@/hooks/use-mobile';
 import MobileLayout from '@/layouts/MobileLayout';
-import logo from '@/assets/logo.png';
+import { Logo } from '@/components/brand/Logo';
 import { roleNavItems } from '@/config/nav';
 import { useDarkMode } from '@/hooks/useDarkMode';
 
@@ -40,8 +40,11 @@ export default function StudentLayout() {
                 <aside className="sticky top-0 z-40 h-screen w-64 bg-background border-e border-border">
                     <div className="flex flex-col h-full">
                         <div className="flex items-center h-14 px-4 border-b border-border">
-                            <Link to="/student">
-                                <img src={logo} alt="Waraq Academy" className="h-14" />
+                            <Link to="/student" aria-label="Waraq Academy">
+                                {/* The brand mark, not the pre-rebrand PNG. Logo
+                                    hard-codes its text colour, so `variant` has to
+                                    follow dark mode or the wordmark disappears. */}
+                                <Logo size={30} variant={isDark ? 'dark' : 'light'} />
                             </Link>
                         </div>
 

@@ -16,6 +16,7 @@ import { LessonContentRenderer } from '@/components/shared/LessonContentRenderer
 import LessonSummaryCard from '@/components/student/LessonSummaryCard';
 import { LessonLocked } from '@/components/shared/LessonLocked';
 import { isLessonContentWithheld } from '@/lib/lessonAccess';
+import { computeProgress } from '@/lib/progressModel';
 import QuizPlayer from './QuizPlayer';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -59,9 +60,38 @@ export default function LessonPlayer() {
     // Smart scroll-based progress tracking
     const [seenBlockIds, setSeenBlockIds] = useState<Set<string>>(new Set());
     const [scrollProgress, setScrollProgress] = useState(0);
+    // Wall-clock seconds on this lesson. The progress model caps the reported
+    // percentage by this, so scrolling to the bottom instantly no longer
+    // completes a lesson. Reset per lesson, not per mount of a tab.
+    const openedAtRef = useRef<number>(Date.now());
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    useEffect(() => {
+        openedAtRef.current = Date.now();
+        setElapsedSeconds(0);
+        const id = setInterval(
+            () => setElapsedSeconds(Math.floor((Date.now() - openedAtRef.current) / 1000)),
+            5000,
+        );
+        return () => clearInterval(id);
+    }, [lesson?.id]);
 
     // Use the custom hook for progress
     const { progress, updateProgress, isCompleted } = useLessonProgress(lesson?.id || '');
+
+    // The time cap can release while the student sits still, so recompute on
+    // each tick rather than only when a new block scrolls into view.
+    useEffect(() => {
+        if (!lesson) return;
+        const publishedBlocks = lesson.blocks?.filter(b => b.is_published !== false) ?? [];
+        if (publishedBlocks.length === 0) return;
+        const { percent } = computeProgress({
+            blocks: publishedBlocks,
+            seenIds: seenBlockIds,
+            elapsedSeconds,
+            durationMinutes: lesson.duration_minutes,
+        });
+        setScrollProgress(prev => Math.max(prev, percent));
+    }, [elapsedSeconds, seenBlockIds, lesson]);
 
     // Sync scroll progress to database (debounced)
     const progressSyncRef = useRef<NodeJS.Timeout | null>(null);
@@ -86,14 +116,18 @@ export default function LessonPlayer() {
             const next = new Set(prev);
             next.add(blockId);
 
-            // Calculate scroll progress based on blocks seen
+            // Weighted by how much there is to read, and capped by how long the
+            // student has actually been here. See lib/progressModel.ts.
             if (lesson) {
                 const publishedBlocks = lesson.blocks.filter(b => b.is_published !== false);
-                const totalBlocks = publishedBlocks.length;
-                if (totalBlocks > 0) {
-                    const percent = Math.round((next.size / totalBlocks) * 100);
-                    setScrollProgress(percent);
-                }
+                const { percent } = computeProgress({
+                    blocks: publishedBlocks,
+                    seenIds: next,
+                    elapsedSeconds: Math.floor((Date.now() - openedAtRef.current) / 1000),
+                    durationMinutes: lesson.duration_minutes,
+                });
+                // Monotonic: scrolling back up must never lower the bar.
+                setScrollProgress(prevPercent => Math.max(prevPercent, percent));
             }
             return next;
         });

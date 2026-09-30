@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, Trash2, GripVertical, Check, Globe, FileText } from 'lucide-react';
+import { Loader2, Plus, Trash2, GripVertical, Check, Globe, FileText, Video } from 'lucide-react';
 
 import QuizManagement from './QuizManagement';
 
@@ -82,6 +82,21 @@ export default function LessonSettings({ lesson, onUpdate }: LessonSettingsProps
                         onChange={e => handleLessonChange('video_url', e.target.value)}
                         placeholder="https://youtube.com/..."
                     />
+                    {/* The public lesson page used to show a padlock over a black
+                        box when this was empty, which told visitors the video was
+                        withheld rather than absent. That box is gone now, so the
+                        teacher is the one who needs to know. */}
+                    {!localLesson.video_url && (
+                        <p className="text-xs text-muted-foreground flex items-start gap-1.5 pt-1">
+                            <Video className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                            <span>
+                                {t(
+                                    'لا يوجد فيديو لهذا الدرس. أضف رابط يوتيوب ليظهر مشغّل الفيديو للطلاب والزوار — بدونه يعرض الدرس النص فقط.',
+                                    'This lesson has no video. Add a YouTube link to show a player to students and visitors — without one the lesson shows text only.'
+                                )}
+                            </span>
+                        </p>
+                    )}
                 </div>
                 <div className="space-y-2">
                     <Label>{t('ترتيب الدرس', 'Order Index')}</Label>

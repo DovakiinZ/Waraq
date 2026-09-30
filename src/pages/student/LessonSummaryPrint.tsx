@@ -129,6 +129,14 @@ export default function LessonSummaryPrint() {
                     deliberately NO student name, id or progress: the sheet is
                     a study handout, not a record about a child. */}
                 <header className="print-block border-b-2 border-foreground pb-4 mb-6 print-keep-color">
+                    {/* Brand mark + wordmark. This sheet leaves the platform —
+                        it gets printed, photographed and shared — so it has to
+                        carry the academy on it. `print-keep-color` stops Chrome
+                        dropping the mark's fill when printing. */}
+                    <div className="flex items-center gap-2 mb-3 print-keep-color">
+                        <img src="/brand/mark.svg" alt="" aria-hidden="true" className="h-8 w-8" />
+                        <span className="font-bold text-base">{t('ورق أكاديمي', 'Waraq Academy')}</span>
+                    </div>
                     <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
                         {t('الملخص الذكي', 'AI summary')}
                     </p>

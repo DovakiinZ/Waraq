@@ -38,7 +38,9 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import logo from '@/assets/logo.png';
+// The certificate is a printed document carrying the brand, so it uses the
+// Waraq mark from public/brand, not the pre-rebrand PNG.
+const logo = '/brand/mark.svg';
 
 export default function MyCertificates() {
     const { t } = useLanguage();
