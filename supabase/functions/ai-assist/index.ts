@@ -1,11 +1,23 @@
 /**
  * Supabase Edge Function: ai-assist
  *
- * Routes all AI actions through Groq (openai/gpt-oss-20b).
- * Deployed with --no-verify-jwt but verifies auth manually inside.
+ * Routes all AI actions through a provider that speaks the OpenAI
+ * chat-completions shape. Default: Google Gemini via its OpenAI-compatibility
+ * layer. Groq is kept working and is one secret away.
  *
- * Secrets required:
- *   supabase secrets set GROQ_API_KEY=gsk_...
+ * Deployed with --no-verify-jwt but verifies auth manually inside, and
+ * requires the teacher or super_admin role on every action.
+ *
+ * Secrets:
+ *   supabase secrets set GEMINI_API_KEY=...        (default provider)
+ *   supabase secrets set AI_PROVIDER=groq          (optional, to switch back)
+ *   supabase secrets set GROQ_API_KEY=gsk_...      (only if AI_PROVIDER=groq)
+ *   supabase secrets set AI_MODEL=<id>             (optional model override)
+ *
+ * ⚠ FREE-TIER PRIVACY: on Gemini's free tier, Google states that prompt and
+ * response content IS used to improve their products
+ * (https://ai.google.dev/gemini-api/docs/pricing). Lesson text and generated
+ * summaries leave the platform under those terms. A paid tier is the fix.
  */
 
 import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2";
@@ -21,9 +33,152 @@ import {
   type SummaryPayload,
 } from "../_shared/lessonSummaryCore.ts";
 
+// ─── Provider selection ──────────────────────────────────────────────────────
+//
+// Both providers speak the OpenAI chat-completions shape, so the only
+// differences are the base URL, the key, the default model, and a couple of
+// vendor-only parameters. Switch with one secret:
+//
+//   supabase secrets set AI_PROVIDER=gemini        (default if unset)
+//   supabase secrets set AI_PROVIDER=groq
+//   supabase secrets set AI_MODEL=<id>             (optional override)
+//
+// Gemini via its OpenAI-compatibility layer:
+//   https://ai.google.dev/gemini-api/docs/openai
+//   base URL   https://generativelanguage.googleapis.com/v1beta/openai/
+//   model      gemini-3.8-flash — newest stable Flash, on the free tier.
+//              DO NOT fall back to gemini-2.5-flash: probed 2026-09-30, it
+//              returns 404 "no longer available to new users".
+//
+// Verified against the live endpoint on 2026-09-30, not assumed:
+//   • response_format json_schema with strict:true IS accepted and returns
+//     schema-conforming JSON. (The native structured-output docs describe a
+//     Gemini-specific response_format instead; the compat layer takes the
+//     OpenAI form.)
+//   • reasoning_effort IS accepted — the compat layer maps it onto Gemini's
+//     thinking_level.
+//   • reasoning_format is GROQ-ONLY. Sending it to Gemini returns
+//     400 INVALID_ARGUMENT 'Unknown name "reasoning_format"'. It is therefore
+//     gated behind the provider flag below.
+//   • The free tier returns transient 503 UNAVAILABLE ("high demand") often
+//     enough that a single attempt is unreliable — roughly one call in three
+//     during probing. Hence callGroqCompatible() retries.
+//
+// THINKING TOKENS: https://ai.google.dev/gemini-api/docs/thinking says
+// "max_output_tokens ... sets the maximum number of tokens a response can
+// generate, including thought tokens", and thinking cannot be disabled on
+// Flash. Measured: the same prompt costs total_tokens 95 at default thinking
+// versus 7 with reasoning_effort "low", while completion_tokens stays 1 — so
+// thinking is invisible in completion_tokens but real in the budget. Every
+// call therefore sets reasoning_effort "low" and a generous
+// max_completion_tokens, and checks finish_reason === "length".
+
+type AIProvider = "groq" | "gemini";
+
+const AI_PROVIDER: AIProvider =
+  (Deno.env.get("AI_PROVIDER")?.trim().toLowerCase() as AIProvider) || "gemini";
+
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "openai/gpt-oss-20b";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+
+interface ProviderConfig {
+  name: AIProvider;
+  url: string;
+  apiKey: string | undefined;
+  keyEnvName: string;
+  model: string;
+  /** Groq rejects JSON mode combined with reasoning_format "raw"; Gemini
+   *  rejects reasoning_format outright. Only Groq gets it. */
+  sendReasoningFormat: boolean;
+}
+
+const PROVIDERS: Record<AIProvider, ProviderConfig> = {
+  groq: {
+    name: "groq",
+    url: "https://api.groq.com/openai/v1/chat/completions",
+    apiKey: GROQ_API_KEY,
+    keyEnvName: "GROQ_API_KEY",
+    model: "openai/gpt-oss-20b",
+    sendReasoningFormat: true,
+  },
+  gemini: {
+    name: "gemini",
+    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    apiKey: GEMINI_API_KEY,
+    keyEnvName: "GEMINI_API_KEY",
+    model: "gemini-3.8-flash",
+    sendReasoningFormat: false,
+  },
+};
+
+const PROVIDER: ProviderConfig = PROVIDERS[AI_PROVIDER] ?? PROVIDERS.gemini;
+const MODEL = Deno.env.get("AI_MODEL")?.trim() || PROVIDER.model;
+
+/** The subset of the OpenAI chat-completions response both providers return. */
+interface ChatCompletion {
+  choices?: Array<{
+    finish_reason?: string;
+    message?: { content?: string };
+  }>;
+  usage?: Record<string, number>;
+}
+
+/**
+ * One chat-completions call, with retry on the transient failures the Gemini
+ * free tier produces (503 UNAVAILABLE, 429 rate limit). Returns the parsed
+ * body, or throws with a human-readable message.
+ *
+ * Deliberately NOT retried: 400/401/403/404. Those are configuration errors
+ * and retrying only delays the report.
+ */
+async function callChatCompletions(
+  body: Record<string, unknown>,
+  { retries = 3, deadline }: { retries?: number; deadline?: number } = {},
+): Promise<ChatCompletion> {
+  let lastMessage = "AI request failed";
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    // An edge function has a hard wall clock. Retrying past it turns a
+    // reportable "service busy" into an opaque non-2xx from the platform,
+    // which is what happened on the first Gemini deploy: 151s, then nothing.
+    if (deadline && Date.now() > deadline) {
+      throw new Error("AI_DEADLINE");
+    }
+    const response = await fetch(PROVIDER.url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${PROVIDER.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ model: MODEL, ...body }),
+    });
+
+    if (response.ok) return await response.json();
+
+    // Gemini returns a bare array containing the error object; Groq an object.
+    const raw = await response.json().catch(() => ({}));
+    const err = Array.isArray(raw) ? raw[0]?.error : raw?.error;
+    lastMessage = err?.message || `AI model returned status ${response.status}`;
+    if (response.status === 429) {
+      const retryIn = /retry in ([\d.]+)s/i.exec(lastMessage)?.[1];
+      lastMessage = `AI_RATE_LIMIT:${retryIn ? Math.ceil(Number(retryIn)) : 60}`;
+    }
+
+    // Retry 503 ("high demand") but NOT 429. A Gemini free-tier 429 tells you
+    // to retry in ~35s, which is longer than an edge function can afford to
+    // wait — and each doomed retry spends another request from the very quota
+    // that is exhausted. Fail fast and let the user retry.
+    const transient = response.status === 503;
+    if (!transient || attempt === retries) {
+      console.error(`${PROVIDER.name} error (attempt ${attempt}): ${lastMessage}`);
+      throw new Error(lastMessage);
+    }
+    console.warn(`${PROVIDER.name} transient ${response.status}, retry ${attempt}/${retries - 1}`);
+    await new Promise((r) => setTimeout(r, 700 * attempt));
+  }
+
+  throw new Error(lastMessage);
+}
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -272,7 +427,10 @@ async function verifyAuth(
 // ─── AI summary: lesson fetch + generation ───────────────────────────────────
 
 /** Groq caps for the summary action. One call per language. */
-const SUMMARY_MAX_COMPLETION_TOKENS = 4000;
+// Covers the schema output comfortably. Kept modest on purpose: on Gemini
+// this budget also covers invisible thinking tokens, and a larger ceiling
+// mostly buys latency, which is the scarce resource inside an edge function.
+const SUMMARY_MAX_COMPLETION_TOKENS = 1800;
 
 /**
  * Load a lesson's content as the caller.
@@ -350,42 +508,30 @@ async function generateSummaryForLanguage(
   language: "ar" | "en",
   stage: string | null,
   subject: string | null,
+  deadline: number,
 ): Promise<SummaryPayload> {
-  const response = await fetch(GROQ_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${GROQ_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: "system", content: buildSummarySystemPrompt({ language, stage, subject }) },
-        { role: "user", content: buildSummaryUserPrompt(canonicalText, { language, stage, subject }) },
-      ],
-      temperature: 0.3,
-      max_completion_tokens: SUMMARY_MAX_COMPLETION_TOKENS,
-      reasoning_effort: "low",
-      reasoning_format: "hidden",
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "lesson_summary",
-          strict: true,
-          schema: SUMMARY_JSON_SCHEMA,
-        },
+  const data = await callChatCompletions({
+    messages: [
+      { role: "system", content: buildSummarySystemPrompt({ language, stage, subject }) },
+      { role: "user", content: buildSummaryUserPrompt(canonicalText, { language, stage, subject }) },
+    ],
+    temperature: 0.3,
+    max_completion_tokens: SUMMARY_MAX_COMPLETION_TOKENS,
+    // Maps to Gemini's thinking_level; native on Groq. Keeps invisible
+    // thinking tokens from eating the completion budget on both.
+    reasoning_effort: "low",
+    // Groq only — Gemini 400s on an unknown field.
+    ...(PROVIDER.sendReasoningFormat ? { reasoning_format: "hidden" } : {}),
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "lesson_summary",
+        strict: true,
+        schema: SUMMARY_JSON_SCHEMA,
       },
-    }),
-  });
+    },
+  }, { deadline });
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    const errMsg = errData?.error?.message || `AI model returned status ${response.status}`;
-    console.error(`Groq API error (${language}):`, errMsg);
-    throw new Error(errMsg);
-  }
-
-  const data = await response.json();
   const choice = data?.choices?.[0];
   const finishReason = choice?.finish_reason;
 
@@ -489,15 +635,34 @@ async function handleGenerateLessonSummary(
 
   let ar: SummaryPayload;
   let en: SummaryPayload;
+  // SEQUENTIAL, with a shared deadline. This went back and forth, so the
+  // reasoning is worth keeping:
+  //   • Sequential + 3 retries each overran the edge function wall clock
+  //     (measured 151s, then an opaque platform non-2xx).
+  //   • Parallel halved the wall clock but reliably tripped Gemini's free-tier
+  //     429 — while a small "say OK" call against the same key at the same
+  //     moment succeeded. Two concurrent calls each RESERVING
+  //     max_completion_tokens is the trigger, so the binding free-tier limit
+  //     here behaves like tokens-per-minute, not requests-per-minute.
+  //   • Sequential is affordable again now that 429s are not retried and the
+  //     deadline aborts cleanly: 2 calls x ~15-40s fits inside the budget.
+  // If you raise SUMMARY_MAX_COMPLETION_TOKENS or go parallel, expect 429s on
+  // the free tier.
+  const deadline = Date.now() + 100_000;
   try {
-    // Sequential, not Promise.all: two concurrent completions against the same
-    // Groq key invite a 429, and one failing mid-flight would leave the other
-    // burning quota for a result that gets thrown away.
-    ar = await generateSummaryForLanguage(canonicalText, "ar", stage, subjectTitle);
-    en = await generateSummaryForLanguage(canonicalText, "en", stage, subjectTitle);
+    ar = await generateSummaryForLanguage(canonicalText, "ar", stage, subjectTitle, deadline);
+    en = await generateSummaryForLanguage(canonicalText, "en", stage, subjectTitle, deadline);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Generation failed";
-    const known = ["SUMMARY_TRUNCATED", "SUMMARY_EMPTY", "SUMMARY_MALFORMED"];
+    const known = ["SUMMARY_TRUNCATED", "SUMMARY_EMPTY", "SUMMARY_MALFORMED", "AI_DEADLINE"];
+    if (message.startsWith("AI_RATE_LIMIT:")) {
+      return jsonResponse({
+        success: false,
+        code: "AI_RATE_LIMIT",
+        retryAfterSeconds: Number(message.split(":")[1]) || 60,
+        error: message,
+      });
+    }
     if (known.includes(message)) {
       return jsonResponse({ success: false, code: message, error: message });
     }
@@ -565,11 +730,11 @@ Deno.serve(async (req) => {
   }
 
   // Check Groq API key is configured
-  if (!GROQ_API_KEY) {
-    console.error("GROQ_API_KEY is not set in Supabase secrets");
+  if (!PROVIDER.apiKey) {
+    console.error(`${PROVIDER.keyEnvName} is not set in Supabase secrets (AI_PROVIDER=${PROVIDER.name})`);
     return jsonResponse({
       success: false,
-      error: "AI service is not configured. Please set GROQ_API_KEY in Supabase secrets.",
+      error: `AI service is not configured. Please set ${PROVIDER.keyEnvName} in Supabase secrets.`,
     });
   }
 
@@ -609,33 +774,35 @@ Deno.serve(async (req) => {
     const maxTokens = getMaxTokens(action);
 
     // Call Groq
-    const groqResponse = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
+    let data: ChatCompletion;
+    try {
+      data = await callChatCompletions({
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
         temperature,
-        max_tokens: maxTokens,
-      }),
-    });
-
-    if (!groqResponse.ok) {
-      const errData = await groqResponse.json().catch(() => ({}));
-      const errMsg =
-        errData?.error?.message ||
-        `AI model returned status ${groqResponse.status}`;
-      console.error("Groq API error:", errMsg);
-      return jsonResponse({ success: false, error: errMsg });
+        // `max_completion_tokens` is the OpenAI-current name and is what the
+        // Gemini compat layer expects; Groq accepts it too. On Gemini this
+        // budget also covers invisible thinking tokens, so reasoning_effort
+        // "low" keeps short actions like translation from being truncated.
+        max_completion_tokens: maxTokens,
+        reasoning_effort: "low",
+        ...(PROVIDER.sendReasoningFormat ? { reasoning_format: "hidden" } : {}),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "AI request failed";
+      return jsonResponse({ success: false, error: message });
     }
 
-    const data = await groqResponse.json();
+    const finishReason = data?.choices?.[0]?.finish_reason;
+    if (finishReason === "length") {
+      return jsonResponse({
+        success: false,
+        error: "The response was cut off before it finished. Try shorter content.",
+      });
+    }
+
     const resultText = data?.choices?.[0]?.message?.content?.trim();
 
     if (!resultText) {

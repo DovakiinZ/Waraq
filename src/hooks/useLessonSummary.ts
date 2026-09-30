@@ -59,6 +59,16 @@ export function summaryErrorMessage(code: string | undefined, raw: string | unde
                 ar: 'لم يُرجع النموذج ملخصاً صالحاً. حاول مرة أخرى.',
                 en: 'The AI model did not return a usable summary. Please try again.',
             };
+        case 'AI_RATE_LIMIT':
+            return {
+                ar: 'تم تجاوز حد الاستخدام المجاني للذكاء الاصطناعي. انتظر دقيقة ثم حاول مرة أخرى.',
+                en: 'The AI free-tier rate limit was reached. Wait about a minute and try again.',
+            };
+        case 'AI_DEADLINE':
+            return {
+                ar: 'خدمة الذكاء الاصطناعي مشغولة حالياً ولم يكتمل الملخص في الوقت المتاح. حاول مرة أخرى بعد قليل.',
+                en: 'The AI service is busy and the summary did not finish in time. Please try again in a moment.',
+            };
         case 'SAVE_FAILED':
             return {
                 ar: 'تم إنشاء الملخص لكن تعذّر حفظه. حاول مرة أخرى.',
