@@ -89,7 +89,7 @@ export default function TeacherDashboard() {
     const ChevronIcon = direction === 'rtl' ? ChevronLeft : ChevronRight;
 
     const statCards = [
-        { label: { ar: 'موادي', en: 'My Subjects' }, value: stats?.subjects || 0, icon: BookMarked, color: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950' },
+        { label: { ar: 'موادي', en: 'My Subjects' }, value: stats?.subjects || 0, icon: BookMarked, color: 'text-brand-green bg-brand-mint/40 dark:text-brand-mint dark:bg-brand-green/20' },
         { label: { ar: 'طلابي', en: 'My Students' }, value: stats?.students || 0, icon: Users, color: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950' },
         { label: { ar: 'دروس منشورة', en: 'Published' }, value: stats?.publishedLessons || 0, icon: Video, color: 'text-violet-600 bg-violet-50 dark:text-violet-400 dark:bg-violet-950' },
         { label: { ar: 'شهادات صادرة', en: 'Certs Issued' }, value: stats?.certsIssued || 0, icon: Award, color: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950' },

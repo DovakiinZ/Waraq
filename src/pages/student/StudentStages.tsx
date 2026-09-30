@@ -41,7 +41,7 @@ export default function StudentStages() {
     const getStageColor = (index: number) => {
         const colors = [
             'from-emerald-500 to-teal-600',
-            'from-blue-500 to-indigo-600',
+            'from-brand-sky to-brand-green',
             'from-purple-500 to-pink-600',
         ];
         return colors[index % colors.length];

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useIsMobileLayout } from '@/hooks/use-mobile';
 import MobileLayout from '@/layouts/MobileLayout';
 import { Logo } from '@/components/brand/Logo';
+import { CartButton } from '@/components/shared/CartButton';
 import { roleNavItems } from '@/config/nav';
 import { useDarkMode } from '@/hooks/useDarkMode';
 
@@ -73,12 +74,15 @@ export default function StudentLayout() {
                                     <p className="text-sm font-medium text-foreground truncate">{profile?.full_name || profile?.email}</p>
                                     <p className="text-xs text-muted-foreground">{t('طالب', 'Student')}</p>
                                 </div>
-                                <button
-                                    onClick={toggleDarkMode}
-                                    className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-secondary flex-shrink-0"
-                                >
-                                    {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                                </button>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                    <CartButton />
+                                    <button
+                                        onClick={toggleDarkMode}
+                                        className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-secondary"
+                                    >
+                                        {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                                    </button>
+                                </div>
                             </div>
                             <Button
                                 variant="ghost"

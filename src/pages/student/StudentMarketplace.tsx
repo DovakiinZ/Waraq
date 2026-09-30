@@ -8,6 +8,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/hooks/useCart';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import { STALE_TIMES } from '@/lib/queryConfig';
@@ -32,24 +33,9 @@ import {
 
 type Tab = 'browse' | 'orders';
 
-const CART_STORAGE_KEY = 'ayman-academy-cart';
-
-function loadCart(): string[] {
-    try {
-        const raw = localStorage.getItem(CART_STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch {
-        return [];
-    }
-}
-
-function saveCart(items: string[]) {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-}
-
 // Gradient placeholders when no cover image
 const GRADIENTS = [
-    'from-violet-600/80 to-indigo-900/80',
+    'from-brand-green/80 to-brand-deep/80',
     'from-emerald-600/80 to-teal-900/80',
     'from-amber-600/80 to-orange-900/80',
     'from-rose-600/80 to-pink-900/80',
@@ -61,26 +47,22 @@ export default function StudentMarketplace() {
     const { t, language, direction } = useLanguage();
     const { profile } = useAuth();
     const navigate = useNavigate();
+    // 'browse' is also where the floating cart bar lives, which is where the
+    // header cart button sends people.
     const [activeTab, setActiveTab] = useState<Tab>('browse');
-    const [cart, setCart] = useState<string[]>(loadCart);
     const [searchQuery, setSearchQuery] = useState('');
     const [stageFilter, setStageFilter] = useState<string>('all');
 
-    useEffect(() => { saveCart(cart); }, [cart]);
+    // The cart lives in CartContext now, so it survives leaving this page,
+    // signing in, and a reload — and the header button can show its count.
+    const { items: cart, add, remove, has: isInCart, clear: clearCart } = useCart();
 
-    // ── Cart actions ─────────────────────────────
     const addToCart = useCallback((subjectId: string) => {
-        setCart(prev => prev.includes(subjectId) ? prev : [...prev, subjectId]);
+        add(subjectId);
         toast.success(t('تمت الإضافة للسلة', 'Added to cart'));
-    }, [t]);
+    }, [add, t]);
 
-    const removeFromCart = useCallback((subjectId: string) => {
-        setCart(prev => prev.filter(id => id !== subjectId));
-    }, []);
-
-    const isInCart = useCallback((subjectId: string) => cart.includes(subjectId), [cart]);
-
-    const clearCart = useCallback(() => { setCart([]); }, []);
+    const removeFromCart = useCallback((subjectId: string) => remove(subjectId), [remove]);
 
     // ── Helpers ──────────────────────────────────
     const formatPrice = useCallback((amount?: number | null, currency?: string | null) => {

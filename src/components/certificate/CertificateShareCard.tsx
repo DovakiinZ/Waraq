@@ -47,7 +47,7 @@ export default function CertificateShareCard({ certificate, verifyUrl, onImageGe
                 style={{
                     width: 1200,
                     height: 630,
-                    background: 'linear-gradient(135deg, #1e3a5f 0%, #0d2137 50%, #1a365d 100%)',
+                    background: 'linear-gradient(135deg, #0B3B2C 0%, #072419 50%, #1E6B52 100%)',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',

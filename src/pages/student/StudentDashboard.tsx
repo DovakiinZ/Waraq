@@ -225,14 +225,14 @@ export default function StudentDashboard() {
                     <p className="text-xs text-muted-foreground">{t('دروس مكتملة', 'Completed')}</p>
                 </div>
                 <div className="bg-background border border-border rounded-xl p-4 text-center">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 mx-auto flex items-center justify-center mb-2">
+                    <div className="w-10 h-10 rounded-full bg-brand-mint/40 text-brand-green dark:bg-brand-green/20 dark:text-brand-mint mx-auto flex items-center justify-center mb-2">
                         <TrendingUp className="w-5 h-5" />
                     </div>
                     <p className="text-2xl font-bold text-foreground">{stats.inProgress}</p>
                     <p className="text-xs text-muted-foreground">{t('قيد التقدم', 'In Progress')}</p>
                 </div>
                 <div className="bg-background border border-border rounded-xl p-4 text-center">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 mx-auto flex items-center justify-center mb-2">
+                    <div className="w-10 h-10 rounded-full bg-brand-green/15 text-brand-deep dark:bg-brand-green/25 dark:text-brand-mint mx-auto flex items-center justify-center mb-2">
                         <BookMarked className="w-5 h-5" />
                     </div>
                     <p className="text-2xl font-bold text-foreground">{stats.totalSubjects}</p>

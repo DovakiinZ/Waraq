@@ -441,7 +441,7 @@ function CertificateCard({
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 ms-2">
                         {isLivePreview && (
-                            <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-600 dark:text-blue-400">
+                            <Badge variant="outline" className="text-[10px] border-brand-green text-brand-green dark:border-brand-mint dark:text-brand-mint">
                                 {t('حيّ', 'Live')}
                             </Badge>
                         )}

@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { CartButton } from '@/components/shared/CartButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Menu, X, LogIn, LayoutDashboard, LogOut, Sun, Moon } from 'lucide-react';
 import { useDarkMode } from '@/hooks/useDarkMode';
@@ -23,7 +24,8 @@ const Header = () => {
     { path: '/stages', label: { ar: 'المراحل', en: 'Stages' } },
     { path: '/teachers', label: { ar: 'المعلّمون', en: 'Teachers' } },
     { path: '/plans', label: { ar: 'الخطط', en: 'Plans' } },
-    { path: '/download', label: { ar: 'تحميل', en: 'Download' } },
+    { path: '/guide', label: { ar: 'الدليل', en: 'Guide' } },
+  { path: '/download', label: { ar: 'تحميل', en: 'Download' } },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -105,6 +107,11 @@ const Header = () => {
             >
               {language === 'ar' ? 'EN' : 'ع'}
             </button>
+
+            {/* Cart. Shown to guests too: their cart lives in the browser and
+                survives signing up, so filling one before registering is a
+                real flow rather than a dead end. */}
+            <CartButton square style={iconButtonStyle} />
 
             {/* Auth, desktop */}
             <div className="hidden md:block">

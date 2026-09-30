@@ -18,7 +18,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useLandingData } from './useLandingData';
 import { formatBytes, useAndroidRelease } from '@/hooks/useAndroidRelease';
 import { Reveal } from './useReveal';
-import { ArrowLeft, ArrowRight, Award, Check, Download, Gamepad2, Languages, Smartphone } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Award, Check, Download, Gamepad2, Languages, Smartphone, BookOpen } from 'lucide-react';
 import { A, hard, PIXEL_STRIP } from '@/components/arcade/theme';
 import heroImage from '@/assets/hero-library.jpg';
 
@@ -635,6 +635,41 @@ export default function LandingSections() {
           >
             <Download className="h-4 w-4" />
             {t('تحميل', 'Download')}
+          </Link>
+        </div>
+      </section>
+
+      {/* ── How it works. Mirrors the download band's shape so the page
+             keeps its rhythm, and points at the full guide rather than
+             trying to teach the whole product inline. ──────────────── */}
+      <section style={{ borderTop: `2px solid ${C.line}` }}>
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-5 py-12 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <Reveal className="flex items-center gap-5">
+            <span
+              className="flex h-14 w-14 shrink-0 items-center justify-center border-2"
+              style={{ background: C.band, color: C.accent, borderColor: C.line, boxShadow: hard(4) }}
+            >
+              <BookOpen className="h-7 w-7" />
+            </span>
+            <span>
+              <span className="block text-[22px] font-black sm:text-[26px]">
+                {t('كيف تبدأ؟', 'New here?')}
+              </span>
+              <span className="mt-1 block text-[14px] font-semibold" style={{ color: C.inkSoft }}>
+                {t(
+                  'دليل قصير للطالب وللمعلّم — خطوة بخطوة، من أول درس حتى الشهادة.',
+                  'A short guide for students and teachers — step by step, from first lesson to certificate.'
+                )}
+              </span>
+            </span>
+          </Reveal>
+          <Link
+            to="/guide"
+            className="arc-focus arc-press inline-flex items-center justify-center gap-2 whitespace-nowrap border-2 px-7 py-3.5 text-[15px] font-black"
+            style={{ background: C.accent, color: C.onAccent, borderColor: C.line }}
+          >
+            <BookOpen className="h-4 w-4" />
+            {t('دليل الاستخدام', 'Read the guide')}
           </Link>
         </div>
       </section>

@@ -34,20 +34,20 @@ export default function StudentCoachWidget() {
     if (!report) return null;
 
     return (
-        <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl border border-indigo-200/50 p-5 space-y-4">
+        <div className="bg-gradient-to-br from-brand-mint/30 via-brand-paper to-brand-mint/20 dark:from-brand-green/20 dark:via-brand-deep/30 dark:to-brand-green/15 rounded-xl border border-brand-mint/60 p-5 space-y-4">
             {/* Header */}
             <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                    <Brain className="w-4 h-4 text-indigo-600" />
+                <div className="w-8 h-8 bg-brand-mint/40 rounded-lg flex items-center justify-center">
+                    <Brain className="w-4 h-4 text-brand-green" />
                 </div>
-                <h3 className="text-sm font-bold text-indigo-900">
+                <h3 className="text-sm font-bold text-brand-deep">
                     {t('اقتراحات لتحسين مستواك', 'Tips to Improve')}
                 </h3>
             </div>
 
             {/* Motivational Message */}
             <div className="bg-secondary/50 rounded-lg p-3 border border-border">
-                <p className="text-sm text-indigo-800 font-medium">{report.motivationalMessage}</p>
+                <p className="text-sm text-brand-deep font-medium">{report.motivationalMessage}</p>
             </div>
 
             {/* Strengths & Weaknesses */}
@@ -79,7 +79,7 @@ export default function StudentCoachWidget() {
             {/* Suggested Lessons */}
             {report.suggestedLessons.length > 0 && (
                 <div className="space-y-2">
-                    <div className="flex items-center gap-1 text-xs font-medium text-indigo-700">
+                    <div className="flex items-center gap-1 text-xs font-medium text-brand-green">
                         <Lightbulb className="w-3 h-3" />
                         {t('دروس مقترحة', 'Suggested Lessons')}
                     </div>

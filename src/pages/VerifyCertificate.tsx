@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import type { Certificate } from '@/types/database';
 import { Loader2, CheckCircle, XCircle, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import logo from '@/assets/logo.png';
+import { Logo } from '@/components/brand/Logo';
 
 export default function VerifyCertificate() {
     const { code } = useParams<{ code: string }>();
@@ -64,7 +64,7 @@ export default function VerifyCertificate() {
             <header className="bg-white border-b border-border shadow-sm">
                 <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
                     <Link to="/" className="flex items-center gap-2">
-                        <img src={logo} alt="Waraq Academy" className="h-10" />
+                        <Logo size={30} />
                     </Link>
                     <div className="flex items-center gap-2 text-primary">
                         <ShieldCheck className="w-5 h-5" />

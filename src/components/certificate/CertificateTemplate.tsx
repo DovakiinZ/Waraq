@@ -25,7 +25,7 @@ const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplateProps>
     qrDataUrl,
     signerName = 'أ. أيمن',
     signerRole = 'مدير الأكاديمية',
-    logoUrl,
+    logoUrl = '/brand/mark.svg',
 }, ref) => {
     const verifyUrl = `${window.location.origin}/verify/${verificationCode}`;
 
@@ -52,7 +52,7 @@ const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplateProps>
             <div style={{
                 position: 'absolute',
                 inset: '8mm',
-                border: '3px solid #1e3a5f',
+                border: '3px solid #0B3B2C',
                 borderRadius: '4px',
                 pointerEvents: 'none',
             }} />
@@ -72,10 +72,10 @@ const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplateProps>
                     height: '35mm',
                     ...(corner.includes('top') ? { top: '12mm' } : { bottom: '12mm' }),
                     ...(corner.includes('right') ? { right: '12mm' } : { left: '12mm' }),
-                    borderTop: corner.includes('top') ? '2px solid #1e3a5f' : 'none',
-                    borderBottom: corner.includes('bottom') ? '2px solid #1e3a5f' : 'none',
-                    borderRight: corner.includes('right') ? '2px solid #1e3a5f' : 'none',
-                    borderLeft: corner.includes('left') ? '2px solid #1e3a5f' : 'none',
+                    borderTop: corner.includes('top') ? '2px solid #0B3B2C' : 'none',
+                    borderBottom: corner.includes('bottom') ? '2px solid #0B3B2C' : 'none',
+                    borderRight: corner.includes('right') ? '2px solid #0B3B2C' : 'none',
+                    borderLeft: corner.includes('left') ? '2px solid #0B3B2C' : 'none',
                     borderRadius: '2px',
                     opacity: 0.6,
                 }} />
@@ -112,7 +112,7 @@ const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplateProps>
                 {/* Academy Name */}
                 <div style={{
                     fontSize: '14pt',
-                    color: '#1e3a5f',
+                    color: '#0B3B2C',
                     fontWeight: 600,
                     letterSpacing: '2px',
                 }}>
@@ -123,7 +123,7 @@ const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplateProps>
                 <div style={{
                     fontSize: '32pt',
                     fontWeight: 700,
-                    color: '#1e3a5f',
+                    color: '#0B3B2C',
                     lineHeight: 1.2,
                 }}>
                     شهادة إتمام
@@ -142,7 +142,7 @@ const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplateProps>
                 <div style={{
                     fontSize: '28pt',
                     fontWeight: 700,
-                    color: '#1e3a5f',
+                    color: '#0B3B2C',
                     borderBottom: '2px solid #3b82f6',
                     paddingBottom: '3mm',
                     paddingLeft: '15mm',

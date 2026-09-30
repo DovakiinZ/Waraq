@@ -237,7 +237,7 @@ const TeacherOrders = () => {
       </div>
 
       {/* Info box */}
-      <div className="mb-6 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+      <div className="mb-6 flex items-start gap-3 rounded-lg border border-brand-mint bg-brand-mint/25 p-4 text-sm text-brand-deep dark:border-brand-green dark:bg-brand-green/15 dark:text-brand-mint">
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
         <p>
           {t(

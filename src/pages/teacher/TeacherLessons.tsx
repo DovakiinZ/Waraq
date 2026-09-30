@@ -76,7 +76,7 @@ function SummaryCell({ status, t }: { status?: string; t: (ar: string, en: strin
     }
     const map: Record<string, { label: string; className: string }> = {
         draft: { label: t('مسودة', 'Draft'), className: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-950/40 dark:text-yellow-200' },
-        pending_review: { label: t('قيد المراجعة', 'In review'), className: 'bg-blue-100 text-blue-900 dark:bg-blue-950/40 dark:text-blue-200' },
+        pending_review: { label: t('قيد المراجعة', 'In review'), className: 'bg-brand-sun/20 text-brand-deep dark:bg-brand-sun/25 dark:text-brand-sun' },
         approved: { label: t('معتمد', 'Approved'), className: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200' },
         rejected: { label: t('مرفوض', 'Rejected'), className: 'bg-red-100 text-red-900 dark:bg-red-950/40 dark:text-red-200' },
     };

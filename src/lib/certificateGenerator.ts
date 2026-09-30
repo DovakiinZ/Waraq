@@ -23,7 +23,7 @@ export async function generateQRDataUrl(url: string): Promise<string> {
         width: 200,
         margin: 1,
         color: {
-            dark: '#1e3a5f',
+            dark: '#0B3B2C',
             light: '#ffffff',
         },
         errorCorrectionLevel: 'M',

@@ -120,6 +120,11 @@ function TrackedBlock({ block, onSeen, isSeen }: { block: LessonBlock; onSeen?: 
     );
 }
 
+// Callout colours come from the brand palette, not Tailwind's stock hues.
+// They stay SIX distinguishable identities on purpose — flattening every
+// callout to green would make a tip look exactly like an example, which is
+// the one thing the colour is carrying. Mapping: tip=sky, warning=sun,
+// example=green, exercise=coral, equation=deep/mint, Q&A=mint.
 function BlockDisplay({ block }: { block: LessonBlock }) {
     const { t } = useLanguage();
 
@@ -132,8 +137,8 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
             );
         case 'tip':
             return (
-                <div className="bg-blue-50 dark:bg-blue-950/30 border-s-4 border-blue-500 p-4 rounded-e-md">
-                    <div className="flex items-center gap-2 mb-1 text-blue-600 font-semibold text-sm">
+                <div className="bg-brand-sky/10 dark:bg-brand-sky/15 border-s-4 border-brand-sky p-4 rounded-e-md">
+                    <div className="flex items-center gap-2 mb-1 text-brand-sky font-semibold text-sm">
                         <Lightbulb className="w-4 h-4" />
                         {t('نصيحة', 'Tip')}
                     </div>
@@ -142,8 +147,8 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
             );
         case 'warning':
             return (
-                <div className="bg-yellow-50 dark:bg-yellow-950/30 border-s-4 border-yellow-500 p-4 rounded-e-md">
-                    <div className="flex items-center gap-2 mb-1 text-yellow-600 font-semibold text-sm">
+                <div className="bg-brand-sun/15 dark:bg-brand-sun/20 border-s-4 border-brand-sun p-4 rounded-e-md">
+                    <div className="flex items-center gap-2 mb-1 text-brand-sun font-semibold text-sm">
                         <AlertTriangle className="w-4 h-4" />
                         {t('تنبيه', 'Warning')}
                     </div>
@@ -152,8 +157,8 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
             );
         case 'example':
             return (
-                <div className="bg-emerald-50 dark:bg-emerald-950/30 border-s-4 border-emerald-500 p-4 rounded-e-md">
-                    <div className="flex items-center gap-2 mb-1 text-emerald-600 font-semibold text-sm">
+                <div className="bg-brand-green/10 dark:bg-brand-green/20 border-s-4 border-brand-green p-4 rounded-e-md">
+                    <div className="flex items-center gap-2 mb-1 text-brand-green dark:text-brand-mint font-semibold text-sm">
                         <FileText className="w-4 h-4" />
                         {t('مثال', 'Example')}
                     </div>
@@ -162,8 +167,8 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
             );
         case 'exercise':
             return (
-                <div className="bg-orange-50 dark:bg-orange-950/30 border-s-4 border-orange-500 p-4 rounded-e-md">
-                    <div className="flex items-center gap-2 mb-1 text-orange-600 font-semibold text-sm">
+                <div className="bg-brand-coral/10 dark:bg-brand-coral/20 border-s-4 border-brand-coral p-4 rounded-e-md">
+                    <div className="flex items-center gap-2 mb-1 text-brand-coral font-semibold text-sm">
                         <FileText className="w-4 h-4" />
                         {t('تمرين', 'Exercise')}
                     </div>
@@ -172,7 +177,7 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
             );
         case 'equation':
             return (
-                <div className="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
+                <div className="bg-brand-paper dark:bg-brand-deep/40 border border-brand-mint dark:border-brand-green rounded-lg p-4">
                     {(block.title_ar || block.title_en) && (
                         <p className="text-xs text-muted-foreground mb-2">{t(block.title_ar || '', block.title_en || '')}</p>
                     )}
@@ -183,13 +188,13 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
             );
         case 'qa':
             return (
-                <div className="bg-pink-50 dark:bg-pink-950/20 border border-pink-200 dark:border-pink-800 rounded-lg p-4 space-y-2">
+                <div className="bg-brand-mint/20 dark:bg-brand-green/15 border border-brand-mint dark:border-brand-green rounded-lg p-4 space-y-2">
                     <div className="flex items-start gap-2">
-                        <span className="text-pink-500 font-bold text-sm mt-0.5">Q:</span>
+                        <span className="text-brand-green dark:text-brand-mint font-bold text-sm mt-0.5">Q:</span>
                         <p className="text-sm font-medium">{t(block.title_ar || '', block.title_en || '')}</p>
                     </div>
                     <div className="flex items-start gap-2">
-                        <span className="text-emerald-500 font-bold text-sm mt-0.5">A:</span>
+                        <span className="text-brand-deep dark:text-brand-paper font-bold text-sm mt-0.5">A:</span>
                         <p className="text-sm whitespace-pre-wrap">{t(block.content_ar || '', block.content_en || block.content_ar || '')}</p>
                     </div>
                 </div>
@@ -217,7 +222,7 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
             return (
                 <a href={block.url || '#'} target="_blank" rel="noopener noreferrer" className="block p-4 bg-secondary/20 rounded-lg flex items-center gap-3 hover:bg-secondary/40 transition-colors">
                     <VideoIcon className="w-6 h-6 text-primary" />
-                    <span className="text-blue-500 underline">{block.url}</span>
+                    <span className="text-brand-green dark:text-brand-mint underline">{block.url}</span>
                 </a>
             );
         case 'image':

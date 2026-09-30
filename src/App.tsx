@@ -7,6 +7,7 @@ import { queryClient, queryPersister, PERSIST_MAX_AGE, CACHE_BUSTER } from "@/li
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { CartProvider } from "@/contexts/CartContext";
 import { AdminRoute, TeacherRoute, StudentRoute, ProtectedRoute } from "@/components/auth/RoleRoutes";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
@@ -122,6 +123,7 @@ const App = () => (
       <AuthProvider>
         <SettingsProvider>
           <LanguageProvider>
+            <CartProvider>
             <TemplateProvider>
               <TooltipProvider>
                 <Toaster />
@@ -278,6 +280,7 @@ const App = () => (
                 </Routes>
               </TooltipProvider>
             </TemplateProvider>
+            </CartProvider>
           </LanguageProvider>
         </SettingsProvider>
       </AuthProvider>
