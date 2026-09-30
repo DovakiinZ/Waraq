@@ -6,6 +6,7 @@ import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/lesson_block_renderer.dart';
 import 'package:ayman_academy_app/shared/widgets/loading_shimmer.dart';
 import 'package:ayman_academy_app/features/student/lessons/providers/lesson_provider.dart';
+import 'package:ayman_academy_app/features/student/lessons/widgets/lesson_summary_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 
@@ -601,12 +602,18 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                       ),
                     );
                   }
+                  // The AI summary sits above the lesson body, as on the web.
+                  // It renders nothing unless an APPROVED summary came back,
+                  // so index 0 is simply empty for most lessons.
                   return ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
-                    itemCount: blocks.length,
+                    itemCount: blocks.length + 1,
                     itemBuilder: (context, index) {
-                      return LessonBlockRenderer(block: blocks[index]);
+                      if (index == 0) {
+                        return LessonSummaryCard(lessonId: widget.lessonId);
+                      }
+                      return LessonBlockRenderer(block: blocks[index - 1]);
                     },
                   );
                 },

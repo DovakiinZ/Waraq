@@ -356,9 +356,41 @@ The app uses the same **green + white arcade** system as the web platform's publ
 
 **Prefer `context.arc` in new code.** Only reach for `AppColors` when the call site must stay `const`.
 
+### AI summary — "الملخص الذكي" (student side, added 2026-09-30)
+
+Students see the teacher-approved AI summary of a lesson. The web is the fuller
+surface; the app ships the **viewing** half.
+
+- `shared/models/lesson_summary.dart` — mirrors `lesson_summaries` (migration 108).
+  It holds the one piece of real logic: **English falls back to Arabic**, because
+  English is optional when a teacher approves. `isRtlFor(lang)` exists because the
+  direction must follow the **content**, not the UI language — an English UI
+  showing an Arabic-only summary still has to lay out RTL. Covered by
+  `test/models/lesson_summary_test.dart`.
+- `lessonSummaryProvider` in `student/lessons/providers/lesson_provider.dart` —
+  returns null rather than throwing, so a missing summary never stops the lesson
+  rendering. **RLS decides what comes back**: a student only ever receives an
+  `approved` row, and only for a lesson they may open. The card re-checks
+  `isApproved` anyway so a teacher browsing the student view does not meet their
+  own draft there.
+- `student/lessons/widgets/lesson_summary_card.dart` — renders above the lesson
+  blocks, as index 0 of the existing `ListView.builder`. Returns
+  `SizedBox.shrink()` when there is nothing approved, which is most lessons.
+- `student/lessons/screens/lesson_slides_screen.dart` — route
+  `/student/subjects/lesson/:lessonId/slides`, nested under the lesson route so
+  it inherits the student guard. Swipe via `PageView`, arrows, a live-region
+  counter. **The chevrons swap with the layout direction, not the UI language.**
+
+**Not shipped in the app: the printable handout.** The web has
+`/student/lesson/:id/summary` with a print stylesheet; the phone equivalent would
+be a PDF, and `pdf_service.dart` **loads no Arabic font** (no `pw.Font.ttf`
+anywhere), so any Arabic it renders today is wrong. Fixing that is a prerequisite,
+and it is a pre-existing certificate bug, not a summary one. Bundled faces are in
+`assets/fonts/IBMPlexSansArabic-*.ttf`.
+
 ### Tests
 
-`flutter test` runs 180 tests; `flutter analyze` reports no issues. Keep both clean.
+`flutter test` runs 188 tests; `flutter analyze` reports no issues. Keep both clean.
 
 | Path | Covers |
 |---|---|
@@ -370,6 +402,7 @@ The app uses the same **green + white arcade** system as the web platform's publ
 | `test/screens/onboarding_screen_test.dart` | Stage selection, the disabled→enabled Continue, failure handling |
 | `test/screens/shells_test.dart` | `ArcadeDrawer` and `ArcadeNavBar` — the chrome both shells share |
 | `test/widgets/shared_widgets_test.dart` | `SubjectCard`, `StarRating`, `AvatarWidget`, `EmptyState`, `LoadingShimmer`, `StudentLevel` |
+| `test/models/lesson_summary_test.dart` | AI summary language fallback, RTL-follows-content, paragraph splitting, approval states |
 
 **The one trap worth knowing about.** `initTestHive` opens every box with `bytes: Uint8List(0)` — Hive's **in-memory** backend. This is required, not tidiness. A disk-backed box does real file I/O, and a `testWidgets` body runs in a fake-async zone where real I/O futures never complete. `LanguageNotifier.toggle()` fires `box.put(...)` without awaiting it, so on a disk-backed box that write hangs forever while holding Hive's per-box lock, and the *next* box operation queues behind it. The symptom is distinctive: the first test that toggles the language passes, and the one after it times out after ten minutes with no useful stack.
 

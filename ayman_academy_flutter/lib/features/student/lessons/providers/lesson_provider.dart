@@ -3,6 +3,7 @@ import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/shared/models/lesson.dart';
 import 'package:ayman_academy_app/shared/models/lesson_block.dart';
 import 'package:ayman_academy_app/shared/models/lesson_progress.dart';
+import 'package:ayman_academy_app/shared/models/lesson_summary.dart';
 
 final lessonDetailProvider = FutureProvider.family<Lesson?, String>((ref, lessonId) async {
   final data = await supabase
@@ -12,6 +13,30 @@ final lessonDetailProvider = FutureProvider.family<Lesson?, String>((ref, lesson
       .maybeSingle();
   if (data == null) return null;
   return Lesson.fromJson(data);
+});
+
+/// The AI summary ("الملخص الذكي") for a lesson, or null.
+///
+/// RLS decides what comes back: a student receives an APPROVED row only, and
+/// only for a lesson they may open (migration 109's
+/// `can_read_lesson_content`). A teacher receives their own drafts too, which
+/// is why the card checks `isApproved` before rendering — a teacher browsing
+/// the student view should not see their own unapproved draft there.
+///
+/// Returns null rather than throwing when the table is unreachable: a missing
+/// summary must never stop the lesson itself from rendering.
+final lessonSummaryProvider = FutureProvider.family<LessonSummary?, String>((ref, lessonId) async {
+  try {
+    final data = await supabase
+        .from('lesson_summaries')
+        .select('*')
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
+    if (data == null) return null;
+    return LessonSummary.fromJson(data);
+  } catch (_) {
+    return null;
+  }
 });
 
 final lessonBlocksProvider = FutureProvider.family<List<LessonBlock>, String>((ref, lessonId) async {

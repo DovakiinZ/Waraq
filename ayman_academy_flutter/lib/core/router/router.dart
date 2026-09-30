@@ -14,6 +14,7 @@ import 'package:ayman_academy_app/features/student/subjects/screens/my_subjects_
 import 'package:ayman_academy_app/features/student/subjects/screens/subject_detail_screen.dart';
 import 'package:ayman_academy_app/features/student/subjects/screens/discover_screen.dart';
 import 'package:ayman_academy_app/features/student/lessons/screens/lesson_player_screen.dart';
+import 'package:ayman_academy_app/features/student/lessons/screens/lesson_slides_screen.dart';
 import 'package:ayman_academy_app/features/student/quiz/screens/quiz_screen.dart';
 import 'package:ayman_academy_app/features/student/certificates/screens/my_certificates_screen.dart';
 import 'package:ayman_academy_app/features/student/certificates/screens/certificate_detail_screen.dart';
@@ -125,6 +126,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                       builder: (_, state) => LessonPlayerScreen(
                         lessonId: state.pathParameters['lessonId']!,
                       ),
+                      routes: [
+                        // AI summary slide view. Nested so it inherits the
+                        // student guard on the parent branch.
+                        GoRoute(
+                          path: 'slides',
+                          builder: (_, state) => LessonSlidesScreen(
+                            lessonId: state.pathParameters['lessonId']!,
+                          ),
+                        ),
+                      ],
                     ),
                     GoRoute(
                       path: 'quiz/:quizId',
