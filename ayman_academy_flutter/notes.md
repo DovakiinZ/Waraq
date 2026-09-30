@@ -1,29 +1,35 @@
-## الملخص الذكي — جديد في هذا الإصدار
+## تتبّع تقدّم أذكى
 
-صار بإمكانك قراءة **ملخص ذكي** لكل درس، يكتبه الذكاء الاصطناعي من محتوى الدرس نفسه ويعتمده معلّمك قبل أن يظهر لك.
+شريط التقدّم في الدرس صار يحسب **ما قرأته فعلاً** و**الوقت الذي قضيته** — لا مجرد التمرير للأسفل.
 
-- **الملخص داخل الدرس** — أهم النقاط وخلاصة مختصرة تظهر فوق محتوى الدرس مباشرة.
-- **عرض الشرائح** — اقرأ الملخص على شكل شرائح، اسحب بإصبعك للتنقل بينها. مناسب للمراجعة السريعة قبل الاختبار.
-- لن يظهر لك أي ملخص قبل أن يراجعه معلّمك ويعتمده.
+- قبل: كان يكفي سحب الشريط إلى نهاية الدرس ليُحتسب الدرس «مكتملاً» دون قراءة شيء.
+- وأيضاً: كان التقدّم **ينقص** إذا رجعت للأعلى لإعادة قراءة فقرة. لم يعد يحدث ذلك — تقدّمك لا يتراجع.
+- والدروس القصيرة التي تظهر في شاشة واحدة كانت تبقى عند ٪٠ ولا تكتمل أبداً. صارت تُحتسب كما ينبغي.
 
-### تحسينات أخرى
+## دليل الاستخدام داخل التطبيق
 
-- تحسينات في الأمان: صار محتوى الدروس محمياً بشكل أدق، ولا يظهر إلا لمن له حق الوصول إليه.
-- عند فتح درس لا تملك اشتراكاً فيه، تظهر لك الآن رسالة واضحة مع رابط للاشتراك، بدل صفحة فارغة.
-- إصلاح رسائل الخطأ في لوحة المعلم: صارت تشرح سبب المشكلة بالعربية والإنجليزية بدل رسالة عامة.
+أضفنا **دليل الاستخدام** في القائمة الجانبية: خطوات قصيرة للطالب وللمعلّم، من أول درس حتى الشهادة.
+
+## للمعلّم
+
+- تظهر الآن حالة **الملخص الذكي** بجانب كل درس في قائمة دروسك (مسودة / معتمد / مرفوض)، فتعرف أي الدروس ما زال ينقصها ملخّص دون فتحها واحداً واحداً.
+- تصحيح: كانت بعض المواد المدفوعة تظهر للطلاب بعلامة «مجاني». صارت تعرض سعرها الصحيح.
 
 ---
 
-## AI Summary — new in this release
+## Smarter progress tracking
 
-Every lesson can now have an **AI summary**, written from the lesson's own content and approved by your teacher before you see it.
+The lesson progress bar now counts **what you actually read** and **the time you spent** — not just scrolling to the bottom.
 
-- **Summary inside the lesson** — key points and a short overview, right above the lesson content.
-- **Slide view** — read the summary as slides and swipe between them. Good for a quick review before a test.
-- Nothing appears until your teacher has reviewed and approved it.
+- Before: flinging the scrollbar to the end of a lesson marked it “complete” without reading anything.
+- Also: progress went **down** if you scrolled back up to re-read a paragraph. That no longer happens — your progress never falls.
+- And short lessons that fit on one screen were stuck at 0% and could never be completed. They now count properly.
 
-### Other improvements
+## In-app guide
 
-- Security: lesson content is now properly protected and only shown to students who have access.
-- Opening a lesson you are not enrolled in now shows a clear message with a link to enrol, instead of a blank page.
-- Teacher panel error messages now explain what went wrong, in both Arabic and English.
+A **How to use** entry in the side menu: short steps for students and for teachers, from first lesson to certificate.
+
+## For teachers
+
+- Each lesson in your list now shows its **AI summary** state (draft / approved / rejected), so you can see which lessons still need one without opening them.
+- Fix: some paid courses were showing students a “Free” label. They now show their real price.

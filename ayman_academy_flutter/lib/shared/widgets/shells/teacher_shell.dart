@@ -52,6 +52,11 @@ class TeacherShell extends ConsumerWidget {
               onTap: () => push(Routes.teacherCertificates),
             ),
             ArcadeDrawerItem(
+              icon: Icons.help_outline_rounded,
+              label: t('دليل الاستخدام', 'How to use'),
+              onTap: () => context.push(Routes.guide),
+            ),
+            ArcadeDrawerItem(
               icon: Icons.logout_rounded,
               label: t('تسجيل الخروج', 'Sign Out'),
               onTap: () => ref.read(authProvider.notifier).signOut(),

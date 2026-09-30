@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/lesson_block_renderer.dart';
+import 'package:ayman_academy_app/shared/models/lesson_block.dart';
+import 'package:ayman_academy_app/shared/services/progress_model.dart';
 import 'package:ayman_academy_app/shared/widgets/loading_shimmer.dart';
 import 'package:ayman_academy_app/features/student/lessons/providers/lesson_provider.dart';
 import 'package:ayman_academy_app/features/student/lessons/widgets/lesson_summary_card.dart';
@@ -21,15 +23,36 @@ class LessonPlayerScreen extends ConsumerStatefulWidget {
 
 class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
   final ScrollController _scrollController = ScrollController();
+
+  /// Highest percentage reached. Monotonic ON PURPOSE: the old model recomputed
+  /// from scroll position, so scrolling back up to re-read something LOWERED
+  /// the student's recorded progress and `_saveProgress` wrote the lower value.
   double _scrollProgress = 0.0;
+
+  /// Blocks the viewport has actually dwelled on. Replaces scroll pixels, which
+  /// measured how far the finger moved rather than how much was read.
+  final Set<String> _seenBlockIds = {};
+
+  /// Blocks currently laid out, so progress can be weighted by content.
+  List<LessonBlock> _blocksForProgress = const [];
+
+  /// When the lesson opened. The model caps the percentage by this, so
+  /// flinging to the bottom no longer completes a lesson.
+  DateTime _openedAt = DateTime.now();
+
   Timer? _progressTimer;
   bool _completed = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
-    _progressTimer = Timer.periodic(const Duration(seconds: 30), (_) => _saveProgress());
+    _openedAt = DateTime.now();
+    // Every 10s rather than 30s: the time gate releases gradually, so the bar
+    // needs to move while the student is reading, not in 30-second jumps.
+    _progressTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _recompute();
+      _saveProgress();
+    });
   }
 
   @override
@@ -40,16 +63,29 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
     super.dispose();
   }
 
-  void _onScroll() {
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final current = _scrollController.position.pixels;
-    if (maxScroll > 0) {
-      setState(() => _scrollProgress = (current / maxScroll * 100).clamp(0, 100));
+  /// A block scrolled into view. Called by the renderer's visibility hook.
+  void _markSeen(String blockId) {
+    if (_seenBlockIds.contains(blockId)) return;
+    _seenBlockIds.add(blockId);
+    _recompute();
+  }
+
+  void _recompute() {
+    if (_blocksForProgress.isEmpty) return;
+    final percent = LessonProgressModel.compute(
+      blocks: _blocksForProgress,
+      seenIds: _seenBlockIds,
+      elapsedSeconds: DateTime.now().difference(_openedAt).inSeconds,
+      durationMinutes: ref.read(lessonDetailProvider(widget.lessonId)).valueOrNull?.durationMinutes,
+    ).toDouble();
+    if (percent > _scrollProgress && mounted) {
+      setState(() => _scrollProgress = percent);
     }
   }
 
   Future<void> _saveProgress() async {
     final percent = _scrollProgress.round();
+    if (percent <= 0) return;
     await LessonProgressService.saveProgress(
       lessonId: widget.lessonId,
       progressPercent: percent,
@@ -605,6 +641,10 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                   // The AI summary sits above the lesson body, as on the web.
                   // It renders nothing unless an APPROVED summary came back,
                   // so index 0 is simply empty for most lessons.
+                  // Hand the block list to the progress model once per build
+                  // rather than storing it in the provider — it is view state.
+                  _blocksForProgress = blocks;
+
                   return ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
@@ -613,7 +653,15 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                       if (index == 0) {
                         return LessonSummaryCard(lessonId: widget.lessonId);
                       }
-                      return LessonBlockRenderer(block: blocks[index - 1]);
+                      final block = blocks[index - 1];
+                      // ListView.builder only builds what is near the viewport,
+                      // so "was built" is a good proxy for "was scrolled to" —
+                      // and unlike scroll pixels it is tied to actual content.
+                      // Deferred so it never calls setState mid-build.
+                      WidgetsBinding.instance.addPostFrameCallback(
+                        (_) => _markSeen(block.id),
+                      );
+                      return LessonBlockRenderer(block: block);
                     },
                   );
                 },

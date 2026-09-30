@@ -23,4 +23,7 @@ abstract class Routes {
   static const teacherProfile = '/teacher/profile';
   static const teacherCertificates = '/teacher/certificates';
   static const teacherOrders = '/teacher/orders';
+
+  /// Shared by both roles — the screen picks its tab from the signed-in role.
+  static const guide = '/guide';
 }

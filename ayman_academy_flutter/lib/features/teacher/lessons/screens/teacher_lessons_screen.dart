@@ -9,6 +9,30 @@ import 'package:ayman_academy_app/shared/widgets/loading_shimmer.dart';
 import 'package:ayman_academy_app/features/teacher/lessons/screens/lesson_editor_screen.dart';
 import 'package:ayman_academy_app/features/teacher/quizzes/screens/quiz_builder_screen.dart';
 
+/// lesson_id -> AI summary status, for every lesson in one subject.
+///
+/// Without this the AI summary is invisible from the lesson list: a teacher
+/// had to open each lesson to learn whether one existed. One query for the
+/// whole screen, not one per row.
+final teacherSummaryStatusProvider =
+    FutureProvider.family<Map<String, String>, String>((ref, subjectId) async {
+  final lessons = await supabase.from('lessons').select('id').eq('subject_id', subjectId);
+  final ids = (lessons as List).map((l) => l['id'] as String).toList();
+  if (ids.isEmpty) return {};
+  try {
+    final rows = await supabase
+        .from('lesson_summaries')
+        .select('lesson_id, status')
+        .inFilter('lesson_id', ids);
+    return {
+      for (final r in (rows as List)) r['lesson_id'] as String: r['status'] as String,
+    };
+  } catch (_) {
+    // A missing summary must never stop the lesson list rendering.
+    return {};
+  }
+});
+
 final teacherLessonsProvider = FutureProvider.family<List<Lesson>, String>((ref, subjectId) async {
   final data = await supabase
       .from('lessons')
@@ -28,6 +52,7 @@ class TeacherLessonsScreen extends ConsumerWidget {
     final t = ref.read(languageProvider.notifier).t;
     final lang = ref.watch(languageProvider).languageCode;
     final lessonsAsync = ref.watch(teacherLessonsProvider(subjectId));
+    final summaryStatus = ref.watch(teacherSummaryStatusProvider(subjectId)).valueOrNull ?? const {};
 
     return Directionality(
       textDirection: lang == 'ar' ? TextDirection.rtl : TextDirection.ltr,
@@ -121,6 +146,36 @@ class TeacherLessonsScreen extends ConsumerWidget {
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text('${l.durationMinutes} ${t("د", "min")}', style: const TextStyle(fontSize: 10, color: AppColors.inkMuted)),
+                            ),
+                          ],
+                          // AI summary state. Only drawn when one exists —
+                          // "no summary" is the common case and a chip on
+                          // every row would be noise.
+                          if (summaryStatus[l.id] != null) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: (summaryStatus[l.id] == 'approved'
+                                        ? AppColors.success
+                                        : AppColors.inkMuted)
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              child: Text(
+                                summaryStatus[l.id] == 'approved'
+                                    ? t('ملخص معتمد', 'Summary ✓')
+                                    : summaryStatus[l.id] == 'rejected'
+                                        ? t('ملخص مرفوض', 'Summary ✗')
+                                        : t('ملخص مسودة', 'Summary draft'),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: summaryStatus[l.id] == 'approved'
+                                      ? AppColors.success
+                                      : AppColors.inkMuted,
+                                ),
+                              ),
                             ),
                           ],
                         ],
