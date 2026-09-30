@@ -44,3 +44,6 @@ schema.live.ts
 
 # TypeScript incremental build info (created by `tsc -b`)
 *.tsbuildinfo
+
+# Built APKs are published as GitHub release assets, never committed (~69MB each)
+ayman_academy_flutter/*.apk
