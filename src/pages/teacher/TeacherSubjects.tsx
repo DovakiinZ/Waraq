@@ -62,6 +62,7 @@ interface TeacherSubject {
     stage: { title_ar: string; title_en: string | null } | null;
     lessons_count: number;
     published_count: number;
+    is_active: boolean;
 }
 
 interface SubjectStudent {
@@ -97,7 +98,7 @@ function useTeacherSubjects(userId: string | undefined) {
             // 1. Fetch subjects explicitly assigned to this teacher
             const { data: assignedSubjects, error: subjectsErr } = await supabase
                 .from('subjects')
-                .select('id, title_ar, title_en, stage:stages(title_ar, title_en)')
+                .select('id, title_ar, title_en, is_active, stage:stages(title_ar, title_en)')
                 .eq('teacher_id', userId!);
 
             if (subjectsErr) throw subjectsErr;
@@ -105,7 +106,7 @@ function useTeacherSubjects(userId: string | undefined) {
             // 2. Fetch all lessons by this teacher to catch legacy subjects or contributions
             const { data: lessons, error: lessonsErr } = await supabase
                 .from('lessons')
-                .select('id, subject_id, is_published, subject:subjects(id, title_ar, title_en, stage:stages(title_ar, title_en))')
+                .select('id, subject_id, is_published, subject:subjects(id, title_ar, title_en, is_active, stage:stages(title_ar, title_en))')
                 .eq('created_by', userId!);
 
             if (lessonsErr) throw lessonsErr;
@@ -121,6 +122,7 @@ function useTeacherSubjects(userId: string | undefined) {
                     stage: (subj as any).stage,
                     lessons_count: 0,
                     published_count: 0,
+                    is_active: subj.is_active,
                 });
             }
 
@@ -141,6 +143,7 @@ function useTeacherSubjects(userId: string | undefined) {
                         stage: subj.stage,
                         lessons_count: 1,
                         published_count: (lesson as any).is_published ? 1 : 0,
+                        is_active: subj.is_active,
                     });
                 }
             }
@@ -256,7 +259,10 @@ function useStages() {
 
 export default function TeacherSubjects() {
     const { t, direction } = useLanguage();
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
+    // A teacher pending approval builds freely but cannot publish. The database
+    // enforces this too (migration 113); this only keeps the UI honest.
+    const canPublish = profile?.is_active !== false;
     const queryClient = useQueryClient();
     const [selectedSubject, setSelectedSubject] = useState<TeacherSubject | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -481,7 +487,7 @@ export default function TeacherSubjects() {
                     ...payload,
                     teacher_id: user?.id,
                     slug: `${slug}-${Math.random().toString(36).substring(2, 7)}`,
-                    is_active: true,
+                    is_active: canPublish,
                     sort_order: 0,
                 } as any);
                 if (error) throw error;
@@ -492,6 +498,18 @@ export default function TeacherSubjects() {
             setCreateSubjectOpen(false);
             resetSubjectForm();
         } catch (err: any) {
+            if (String(err?.message || '').includes('TEACHER_NOT_APPROVED')) {
+                toast.error(
+                    t('النشر يُفتح بعد الموافقة', 'Publishing unlocks after approval'),
+                    {
+                        description: t(
+                            'يمكنك إنشاء المادة كمسودة ومتابعة العمل عليها الآن.',
+                            'You can create the subject as a draft and keep working on it now.',
+                        ),
+                    },
+                );
+                return;
+            }
             toast.error(t(editingSubjectId ? 'فشل في تحديث المادة' : 'فشل في إنشاء المادة', editingSubjectId ? 'Failed to update subject' : 'Failed to create subject'), {
                 description: err.message,
             });
@@ -1007,9 +1025,20 @@ export default function TeacherSubjects() {
                                     {t(subject.stage.title_ar, subject.stage.title_en || subject.stage.title_ar)}
                                 </span>
                             )}
-                            <h3 className="text-base font-medium text-foreground mb-3">
-                                {t(subject.title_ar, subject.title_en || subject.title_ar)}
-                            </h3>
+                            <div className="flex items-center justify-between gap-2 mb-3">
+                                <h3 className="text-base font-medium text-foreground">
+                                    {t(subject.title_ar, subject.title_en || subject.title_ar)}
+                                </h3>
+                                {subject.is_active ? (
+                                    <Badge variant="default" className="text-[10px] flex-shrink-0">
+                                        {t('منشورة', 'Published')}
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="secondary" className="text-[10px] flex-shrink-0">
+                                        {t('مسودة', 'Draft')}
+                                    </Badge>
+                                )}
+                            </div>
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                     <Video className="w-3.5 h-3.5" />
@@ -1020,6 +1049,11 @@ export default function TeacherSubjects() {
                                     {subject.published_count} {t('منشور', 'published')}
                                 </span>
                             </div>
+                            {!subject.is_active && !canPublish && (
+                                <p className="mt-2 text-[11px] font-medium text-muted-foreground">
+                                    {t('النشر يُفتح بعد الموافقة', 'Publishing unlocks after approval')}
+                                </p>
+                            )}
                         </button>
                     ))}
                 </div>
