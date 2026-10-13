@@ -132,6 +132,34 @@ export function ArcadeCard({
   );
 }
 
+const ARABIC_RE = /[؀-ۿ]/;
+
+// Pulls the inspectable text out of a chip's children: strings and numbers
+// are kept, arrays are walked recursively (this is what a mixed children
+// array like `<Smartphone /> Android` becomes), and anything else — an
+// element we cannot look inside — contributes nothing. That mirrors what a
+// reader actually sees: an icon has no letters to space out, so it should
+// never block tracking the Latin text sitting next to it.
+function extractText(node: ReactNode): string {
+  if (typeof node === 'string') return node;
+  if (typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join('');
+  return '';
+}
+
+// Letter-spacing is correct for the chip's Latin/uppercase/mono look, but it
+// breaks Arabic — Arabic letters join, and tracking pulls them apart into
+// disconnected glyphs (the project's standing rule: never letter-space
+// Arabic). Track only when we found text and none of it is Arabic; content
+// we could not extract any text from at all (e.g. an icon-only child) is
+// content we cannot confirm is Latin, so it defaults to no tracking — a
+// missing flourish on a Latin chip is a far smaller defect than broken
+// Arabic.
+function shouldTrackLetters(children: ReactNode): boolean {
+  const text = extractText(children);
+  return text.length > 0 && !ARABIC_RE.test(text);
+}
+
 /** Small mono chip. Used for stage names, counts and status markers. */
 export function ArcadeChip({
   children,
@@ -142,9 +170,10 @@ export function ArcadeChip({
   filled?: boolean;
   className?: string;
 }) {
+  const tracking = shouldTrackLetters(children) ? 'tracking-[0.12em]' : '';
   return (
     <span
-      className={`inline-flex items-center gap-1.5 border-2 px-2.5 py-1 font-mono text-[11px] font-black uppercase tracking-[0.12em] ${className}`}
+      className={`inline-flex items-center gap-1.5 border-2 px-2.5 py-1 font-mono text-[11px] font-black uppercase ${tracking} ${className}`}
       style={{
         background: filled ? A.accent : 'transparent',
         color: filled ? A.onAccent : A.ink,

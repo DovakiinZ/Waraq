@@ -270,7 +270,7 @@ export default function StudentMarketplace() {
                             <button
                                 type="button"
                                 onClick={dismissStrip}
-                                className="arc-focus"
+                                className="arc-focus -m-1 inline-flex items-center justify-center p-1"
                                 style={{ color: A.inkSoft }}
                                 aria-label={t('إغلاق', 'Dismiss')}
                             >
