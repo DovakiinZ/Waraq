@@ -24,7 +24,7 @@ void main() {
     repo = FakeAuthRepository();
   });
 
-  Future<void> pumpRegister(WidgetTester tester, {bool dark = false}) async {
+  Future<void> pumpRegisterStandalone(WidgetTester tester, {bool dark = false}) async {
     await pumpScreen(
       tester,
       const RegisterScreen(),
@@ -532,7 +532,7 @@ void main() {
   //  REGISTER — session-driven continuation (Task 5)
   // ════════════════════════════════════════════════════════════
   testWidgets('register has no confirm-password field', (tester) async {
-    await pumpRegister(tester);
+    await pumpRegisterStandalone(tester);
 
     // `ArcadeField` renders a required label as `Text.rich` with the
     // asterisk appended as a child span, so the rendered plain text is
@@ -559,7 +559,7 @@ void main() {
       ),
     );
 
-    await pumpRegister(tester);
+    await pumpRegisterStandalone(tester);
     await submitRegisterForm(tester);
 
     // The inbox copy belongs to the confirmation-on branch only.
@@ -569,7 +569,7 @@ void main() {
   testWidgets('no session shows the inbox screen', (tester) async {
     repo.signUpSession = null;
 
-    await pumpRegister(tester);
+    await pumpRegisterStandalone(tester);
     await submitRegisterForm(tester);
 
     expect(find.text('تحقّق من بريدك'), findsOneWidget);
