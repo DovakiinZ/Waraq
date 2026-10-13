@@ -80,6 +80,13 @@ class FakeAuthRepository implements AuthRepository {
   /// session immediately); leave null to simulate confirmation-on.
   sb.Session? signUpSession;
 
+  /// Returned by [fetchProfile]. Null by default, which is what every
+  /// existing test already expects.
+  Profile? profile;
+
+  /// Returned by [currentUser]. `refreshProfile` early-returns without it.
+  sb.User? user;
+
   /// Records what the screen actually submitted, so a test can assert that the
   /// email was trimmed and the right password was sent.
   final List<List<String>> signInCalls = [];
@@ -131,10 +138,10 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Profile?> fetchProfile(String userId) async => null;
+  Future<Profile?> fetchProfile(String userId) async => profile;
 
   @override
-  sb.User? get currentUser => null;
+  sb.User? get currentUser => user;
 
   @override
   sb.Session? get currentSession => null;
@@ -222,3 +229,35 @@ List<Override> get onlineOverrides => [
 void useEnglish(ProviderContainer container) {
   container.read(languageProvider.notifier).setLanguage('en');
 }
+
+/// A Supabase user with the minimum a test needs. `refreshProfile` only reads
+/// `.id`, but the constructor requires the rest.
+sb.User testUser({String id = 'test-user'}) => sb.User(
+      id: id,
+      appMetadata: const {},
+      userMetadata: const {},
+      aud: 'authenticated',
+      createdAt: DateTime(2026).toIso8601String(),
+    );
+
+/// A profile carrying exactly the fields the teacher surfaces read.
+Profile fakeProfile({
+  String role = 'teacher',
+  bool isActive = true,
+  String? fullName = 'بسام الأسد',
+  String email = 'teacher@example.com',
+  String? bioAr,
+  String? shamcashName,
+  String? shamcashNumber,
+}) =>
+    Profile(
+      id: 'test-user',
+      email: email,
+      fullName: fullName,
+      role: role,
+      isActive: isActive,
+      bioAr: bioAr,
+      shamcashAccountName: shamcashName,
+      shamcashAccountNumber: shamcashNumber,
+      createdAt: DateTime(2026).toIso8601String(),
+    );

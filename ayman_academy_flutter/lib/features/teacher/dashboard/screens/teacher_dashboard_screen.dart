@@ -6,6 +6,7 @@ import 'package:ayman_academy_app/core/router/routes.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
+import 'package:ayman_academy_app/features/teacher/widgets/sandbox_banner.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/providers/theme_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/avatar_widget.dart';
@@ -113,6 +114,14 @@ class TeacherDashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ═══════════════════════════════════════
+                  //  SANDBOX BANNER + SETUP CHECKLIST
+                  // ═══════════════════════════════════════
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                    child: const SandboxBanner(),
+                  ),
+
                   // ═══════════════════════════════════════
                   //  WELCOME HERO CARD
                   // ═══════════════════════════════════════

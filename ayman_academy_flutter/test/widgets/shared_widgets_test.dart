@@ -3,6 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
+import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
+import 'package:ayman_academy_app/features/teacher/widgets/sandbox_banner.dart';
+import 'package:ayman_academy_app/shared/models/profile.dart';
 import 'package:ayman_academy_app/shared/models/student_level.dart';
 import 'package:ayman_academy_app/shared/models/subject.dart';
 import 'package:ayman_academy_app/shared/widgets/avatar_widget.dart';
@@ -39,8 +42,13 @@ Subject makeSubject({
 }
 
 void main() {
+  late FakeAuthRepository repo;
+
   setUpAll(initTestHive);
-  setUp(resetSettings);
+  setUp(() async {
+    await resetSettings();
+    repo = FakeAuthRepository();
+  });
 
   group('SubjectCard', () {
     testWidgets('shows the title, the teacher and the price', (tester) async {
@@ -416,6 +424,64 @@ void main() {
           expect(p, inInclusiveRange(0.0, 1.0), reason: '$lvl @ $xp');
         }
       }
+    });
+  });
+
+  group('SandboxBanner', () {
+    // `stages` stands in for teacherStagesProvider, which cannot resolve
+    // against a fake Supabase. Overriding it keeps the checklist deterministic
+    // instead of dependent on a network call that will never complete.
+    Future<void> pumpBanner(
+      WidgetTester tester,
+      Profile seeded, {
+      String? stages,
+      bool dark = false,
+    }) async {
+      repo.user = testUser();
+      repo.profile = seeded;
+
+      final container = await pumpScreen(
+        tester,
+        const SandboxBanner(),
+        dark: dark,
+        overrides: [
+          ...onlineOverrides,
+          authRepositoryProvider.overrideWithValue(repo),
+          teacherStagesProvider.overrideWith((ref) async => stages),
+        ],
+      );
+      await container.read(authProvider.notifier).refreshProfile();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows the review message while pending', (tester) async {
+      await pumpBanner(tester, fakeProfile(isActive: false));
+
+      expect(find.text('قيد المراجعة'), findsOneWidget);
+      expect(find.textContaining('النشر والبيع يُفتحان'), findsOneWidget);
+    });
+
+    testWidgets('no review message once approved', (tester) async {
+      await pumpBanner(tester, fakeProfile(isActive: true));
+
+      expect(find.text('قيد المراجعة'), findsNothing);
+    });
+
+    testWidgets('renders nothing at all for an approved, fully set-up teacher',
+        (tester) async {
+      await pumpBanner(
+        tester,
+        fakeProfile(
+          isActive: true,
+          bioAr: 'نبذة',
+          shamcashName: 'بسام',
+          shamcashNumber: '0912345678',
+        ),
+        stages: 'primary,middle',
+      );
+
+      expect(find.text('قيد المراجعة'), findsNothing);
+      expect(find.text('أكمل ملفك'), findsNothing);
     });
   });
 }
