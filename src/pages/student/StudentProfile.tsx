@@ -27,7 +27,7 @@ export default function StudentProfile() {
         setIsSaving(true);
         setSaved(false);
 
-        const { error } = await (supabase.from('profiles') as any)
+        const { error } = await supabase.from('profiles')
             .update({
                 full_name: fullName,
                 student_stage: stage,
