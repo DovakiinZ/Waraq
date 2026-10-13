@@ -6,7 +6,7 @@
 // field order and autoComplete values are all preserved, since analytics and
 // browser autofill depend on them.
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowRight, ArrowLeft, Eye, EyeOff, AlertCircle, CheckCircle, Check } from 'lucide-react';
@@ -17,11 +17,11 @@ import { ArcadeBrand, ArcadeButton, ArcadeCard, ArcadeField, ArcadeLink } from '
 export default function Register() {
     const { signUp, role, isAuthenticated, redirectByRole, isLoading: authLoading } = useAuth();
     const { t, direction } = useLanguage();
+    const navigate = useNavigate();
 
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,11 +45,6 @@ export default function Register() {
             return false;
         }
 
-        if (password !== confirmPassword) {
-            setError(t('كلمتا المرور غير متطابقتين', 'Passwords do not match'));
-            return false;
-        }
-
         return true;
     };
 
@@ -66,7 +61,7 @@ export default function Register() {
         setIsSubmitting(true);
 
         try {
-            const { error: signUpError } = await signUp(email, password, fullName);
+            const { error: signUpError, session } = await signUp(email, password, fullName);
 
             if (signUpError) {
                 if (signUpError.message.includes('already registered')) {
@@ -79,9 +74,16 @@ export default function Register() {
                 return;
             }
 
-            // Success
+            if (session) {
+                // Confirmation is off, so the account is already usable. Go
+                // straight to the one question onboarding actually needs.
+                toast.success(t('تم إنشاء الحساب', 'Account created'));
+                navigate('/student/onboarding', { replace: true });
+                return;
+            }
+
+            // Confirmation is on: the success card is now telling the truth.
             setSuccess(true);
-            toast.success(t('تم إنشاء الحساب بنجاح', 'Account created successfully'));
         } finally {
             setIsSubmitting(false);
         }
@@ -275,20 +277,6 @@ export default function Register() {
                                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </button>
                             </div>
-                        </ArcadeField>
-
-                        <ArcadeField id="confirmPassword" label={t('تأكيد كلمة المرور', 'Confirm password')}>
-                            <input
-                                id="confirmPassword"
-                                className="arc-input"
-                                type={showPassword ? 'text' : 'password'}
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder={t('أعد إدخال كلمة المرور', 'Re-enter password')}
-                                required
-                                disabled={isSubmitting}
-                                autoComplete="new-password"
-                            />
                         </ArcadeField>
 
                         {error && (

@@ -25,7 +25,7 @@ interface AuthContextType {
     isTeacher: boolean;
     isStudent: boolean;
     signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-    signUp: (email: string, password: string, fullName: string) => Promise<{ error: AuthError | null }>;
+    signUp: (email: string, password: string, fullName: string) => Promise<{ error: AuthError | null; session: Session | null }>;
     signOut: () => Promise<void>;
     resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
     updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
@@ -335,7 +335,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signUp = async (email: string, password: string, fullName: string) => {
         devLog('Sign up attempt', email);
 
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -350,7 +350,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             devLog('Sign up error', signUpError.message);
         }
 
-        return { error: signUpError };
+        // The session is the whole point: with email confirmation off Supabase
+        // returns one immediately, so the caller can continue straight into
+        // onboarding instead of bouncing through /login. With confirmation on
+        // it is null, and the caller shows the "check your inbox" screen. That
+        // makes the Supabase setting a config change, not a code change.
+        return { error: signUpError, session: data?.session ?? null };
     };
 
     const signOut = async () => {
