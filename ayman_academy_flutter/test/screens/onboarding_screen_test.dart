@@ -148,6 +148,15 @@ void main() {
     expect(find.text('Continue'), findsOneWidget);
   });
 
+  testWidgets('each stage shows its grade range', (tester) async {
+    await pumpOnboarding(tester);
+
+    expect(find.text('KG'), findsOneWidget);
+    expect(find.text('Grades 1–6'), findsOneWidget);
+    expect(find.text('Grades 7–9'), findsOneWidget);
+    expect(find.text('Grades 10–12'), findsOneWidget);
+  });
+
   testWidgets('renders in dark mode with the stage list intact', (tester) async {
     await pumpOnboarding(tester, dark: true);
 

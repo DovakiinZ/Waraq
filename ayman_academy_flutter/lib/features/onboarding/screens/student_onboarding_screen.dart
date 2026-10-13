@@ -2,25 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
-import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
+import 'package:ayman_academy_app/shared/student_stages.dart';
 import 'package:ayman_academy_app/shared/widgets/arcade_auth_scaffold.dart';
-
-/// One educational stage the student can pick.
-///
-/// The accent colours are the **brand's** stage family (coral / sun / sky /
-/// green) rather than the Tailwind pink-blue-emerald-amber ramp that was here
-/// before, and each is the darkened variant that clears 3:1 as an icon colour.
-class _StageOption {
-  final String key;
-  final String ar;
-  final String en;
-  final IconData icon;
-  final Color color;
-
-  const _StageOption(this.key, this.ar, this.en, this.icon, this.color);
-}
 
 class StudentOnboardingScreen extends ConsumerStatefulWidget {
   const StudentOnboardingScreen({super.key});
@@ -33,13 +18,6 @@ class _StudentOnboardingScreenState extends ConsumerState<StudentOnboardingScree
   String? _selectedStage;
   bool _loading = false;
   String? _error;
-
-  static const _stages = <_StageOption>[
-    _StageOption('kindergarten', 'رياض الأطفال', 'Kindergarten', Icons.child_care_rounded, AppColors.stageKindergarten),
-    _StageOption('primary', 'المرحلة الابتدائية', 'Primary', Icons.auto_stories_rounded, AppColors.stagePrimary),
-    _StageOption('middle', 'المرحلة الإعدادية', 'Middle School', Icons.school_rounded, AppColors.stageMiddle),
-    _StageOption('high', 'المرحلة الثانوية', 'High School', Icons.workspace_premium_rounded, AppColors.stageSecondary),
-  ];
 
   Future<void> _submit() async {
     if (_selectedStage == null) return;
@@ -85,13 +63,13 @@ class _StudentOnboardingScreenState extends ConsumerState<StudentOnboardingScree
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                itemCount: _stages.length + (_error != null ? 1 : 0),
+                itemCount: kStages.length + (_error != null ? 1 : 0),
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   if (_error != null && index == 0) {
                     return ArcadeAlert(message: _error!);
                   }
-                  final stage = _stages[index - (_error != null ? 1 : 0)];
+                  final stage = kStages[index - (_error != null ? 1 : 0)];
                   return _StageTile(
                     stage: stage,
                     label: t(stage.ar, stage.en),
@@ -121,7 +99,7 @@ class _StudentOnboardingScreenState extends ConsumerState<StudentOnboardingScree
 }
 
 class _StageTile extends StatelessWidget {
-  final _StageOption stage;
+  final StageOption stage;
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -167,13 +145,28 @@ class _StageTile extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                  color: arc.ink,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                      color: arc.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    stage.range,
+                    textDirection: TextDirection.ltr,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                      color: arc.inkSoft,
+                    ),
+                  ),
+                ],
               ),
             ),
             if (selected)
