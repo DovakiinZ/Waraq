@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
+import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/shared/models/stage.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 
@@ -82,13 +84,14 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
         }
         return;
       }
+      final pending = ref.read(authProvider).profile?.isActive == false;
       final payload = {
         'title_ar': _titleArController.text.trim(),
         'title_en': _titleEnController.text.trim().isNotEmpty ? _titleEnController.text.trim() : null,
         'description_ar': _descArController.text.trim().isNotEmpty ? _descArController.text.trim() : null,
         'description_en': _descEnController.text.trim().isNotEmpty ? _descEnController.text.trim() : null,
         'stage_id': _selectedStageId,
-        'is_active': _isActive,
+        'is_active': pending ? false : _isActive,
         'is_paid': _isPaid,
         'price_amount': _isPaid ? double.tryParse(_priceController.text) ?? 0 : null,
         'price_currency': _isPaid ? _currency : null,
@@ -108,6 +111,17 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
         Navigator.pop(context, true);
       }
     } catch (e) {
+      if (e.toString().contains('TEACHER_NOT_APPROVED')) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(t(
+              'النشر يُفتح بعد الموافقة. حُفظت كمسودة.',
+              'Publishing unlocks after approval. Saved as a draft.',
+            )),
+          ));
+        }
+        return;
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('$e'), backgroundColor: AppColors.error),
@@ -134,6 +148,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
     final lang = ref.watch(languageProvider).languageCode;
     final stagesAsync = ref.watch(_stagesProvider);
     final isEditing = widget.subjectId != null;
+    final pending = ref.watch(authProvider).profile?.isActive == false;
 
     return Directionality(
       textDirection: lang == 'ar' ? TextDirection.rtl : TextDirection.ltr,
@@ -240,9 +255,23 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
                             Row(
                               children: [
                                 Expanded(child: Text(t('نشط', 'Active'), style: const TextStyle(fontWeight: FontWeight.w500))),
-                                Switch(value: _isActive, onChanged: (v) => setState(() => _isActive = v)),
+                                Switch(
+                                  value: _isActive,
+                                  onChanged: pending ? null : (v) => setState(() => _isActive = v),
+                                ),
                               ],
                             ),
+                            if (pending)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Text(
+                                    t('النشر يُفتح بعد الموافقة', 'Publishing unlocks after approval'),
+                                    style: TextStyle(fontSize: 12, color: context.arc.inkSoft),
+                                  ),
+                                ),
+                              ),
                             const Divider(),
                             Row(
                               children: [
