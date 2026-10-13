@@ -156,15 +156,9 @@ class _TeacherApplicationScreenState extends ConsumerState<TeacherApplicationScr
             const SizedBox(height: 20),
           ],
 
-          // `required: true` is deliberately omitted on these fields: ArcadeField
-          // renders the label as a Text.rich with a trailing ' *' TextSpan when
-          // required, which changes toPlainText() and breaks an exact find.text()
-          // match on the bare label (see arcade_widgets_test.dart's "required
-          // marks the label" test, which asserts the asterisk via `contains`,
-          // not equality, for exactly this reason). Every field below already
-          // enforces non-empty via its own validator.
           ArcadeField(
             label: t('الاسم الكامل', 'Full name'),
+            required: true,
             child: TextFormField(
               key: const Key('apply_name'),
               controller: _nameController,
@@ -184,6 +178,7 @@ class _TeacherApplicationScreenState extends ConsumerState<TeacherApplicationScr
 
           ArcadeField(
             label: t('البريد الإلكتروني', 'Email'),
+            required: true,
             child: TextFormField(
               key: const Key('apply_email'),
               controller: _emailController,
@@ -209,6 +204,7 @@ class _TeacherApplicationScreenState extends ConsumerState<TeacherApplicationScr
           ArcadeField(
             label: t('كلمة المرور', 'Password'),
             hint: t('6 أحرف على الأقل', 'At least 6 characters'),
+            required: true,
             child: TextFormField(
               key: const Key('apply_password'),
               controller: _passwordController,
@@ -240,6 +236,7 @@ class _TeacherApplicationScreenState extends ConsumerState<TeacherApplicationScr
 
           ArcadeField(
             label: t('رقم الهاتف', 'Phone number'),
+            required: true,
             child: TextFormField(
               key: const Key('apply_phone'),
               controller: _phoneController,
@@ -262,6 +259,7 @@ class _TeacherApplicationScreenState extends ConsumerState<TeacherApplicationScr
           // Semantics mirrors _StageTile on the onboarding screen.
           ArcadeField(
             label: t('المراحل التي تُدرّسها', 'Stages you teach'),
+            required: true,
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -282,7 +280,7 @@ class _TeacherApplicationScreenState extends ConsumerState<TeacherApplicationScr
               }).toList(),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 28),
 
           ArcadeButton(
             key: const Key('apply_submit'),

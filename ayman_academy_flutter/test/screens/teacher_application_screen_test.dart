@@ -33,15 +33,17 @@ void main() {
   testWidgets('asks for five things and not for a bio', (tester) async {
     await pumpApply(tester);
 
-    expect(find.text('الاسم الكامل'), findsOneWidget);
-    expect(find.text('البريد الإلكتروني'), findsOneWidget);
-    expect(find.text('كلمة المرور'), findsOneWidget);
-    expect(find.text('رقم الهاتف'), findsOneWidget);
-    expect(find.text('المراحل التي تُدرّسها'), findsOneWidget);
+    expect(find.text('الاسم الكامل *'), findsOneWidget);
+    expect(find.text('البريد الإلكتروني *'), findsOneWidget);
+    expect(find.text('كلمة المرور *'), findsOneWidget);
+    expect(find.text('رقم الهاتف *'), findsOneWidget);
+    expect(find.text('المراحل التي تُدرّسها *'), findsOneWidget);
 
-    // Bio, profession and major belong to the sandbox checklist.
-    expect(find.text('نبذة عنك'), findsNothing);
-    expect(find.text('المهنة'), findsNothing);
+    // Bio, profession and major belong to the sandbox checklist. Asserted
+    // with the same "<label> *" shape as the fields above, so a re-added
+    // required field here would render the identical string and be caught.
+    expect(find.text('نبذة عنك *'), findsNothing);
+    expect(find.text('المهنة *'), findsNothing);
   });
 
   testWidgets('offers all four stages as toggles', (tester) async {
@@ -63,6 +65,8 @@ void main() {
     await tester.enterText(find.byKey(const Key('apply_password')), 'password123');
     await tester.enterText(find.byKey(const Key('apply_phone')), '0912345678');
 
+    await tester.ensureVisible(find.byKey(const Key('apply_submit')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('apply_submit')));
     await tester.pumpAndSettle();
 
@@ -80,6 +84,8 @@ void main() {
     await tester.enterText(find.byKey(const Key('apply_phone')), '0912345678');
 
     await tester.tap(find.byKey(const Key('apply_stage_primary')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('apply_submit')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('apply_submit')));
     await tester.pumpAndSettle();
