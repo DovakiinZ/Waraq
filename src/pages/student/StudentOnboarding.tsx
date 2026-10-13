@@ -10,9 +10,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { verifiedUpdate } from '@/lib/adminDb';
+import { supabase } from '@/lib/supabase';
 import { AlertCircle, ArrowLeft, ArrowRight, Check } from 'lucide-react';
-import { A } from '@/components/arcade/theme';
+import { A, hard } from '@/components/arcade/theme';
 import { ArcadeBrand, ArcadeButton } from '@/components/arcade/primitives';
 import { STAGES, type StageKey } from '@/lib/studentStages';
 
@@ -32,22 +32,41 @@ export default function StudentOnboarding() {
         setSaving(true);
         setError('');
         try {
-            // verifiedUpdate (not the raw supabase.from(...).update() the
-            // convention would otherwise bypass for): migration 104's
-            // `profiles_update_self` policy (`id = auth.uid()`) and the
-            // `authenticated` role's column grants both permit a student to
-            // update and then re-select their own row, so the project's
-            // stated verified-write convention applies cleanly here. Checked
-            // live against pg_policy and information_schema.column_privileges
-            // before writing this, per Task 6 Step 2.
-            const result = await verifiedUpdate('profiles', profile.id, { student_stage: stage }, {
-                showErrorToast: false,
-            });
-            if (!result.success) throw new Error(result.error || 'update failed');
+            // Deliberately NOT verifiedUpdate, despite it being the project's
+            // stated convention for mutations. Two reasons, specific to this
+            // screen: (1) verifiedUpdate re-selects after the write and
+            // reports success even when the field comes back unchanged — its
+            // comment says this is to tolerate RLS silently filtering a
+            // field, but here that exact case IS the bug: RoleRoutes sends a
+            // student with no student_stage straight back to this page, so a
+            // write that "succeeds" without persisting creates an infinite
+            // redirect loop with nothing to explain it. (2) checkAuth() fires
+            // an unconditional toast.error on a missing session before
+            // verifiedUpdate ever looks at options.showErrorToast, so that
+            // flag cannot suppress it — a lapsed session here would toast
+            // AND show the inline message below. A raw update + re-select
+            // that strictly compares the returned value is simpler and
+            // closes both gaps.
+            const { data, error: updateError } = await supabase.from('profiles')
+                .update({ student_stage: stage })
+                .eq('id', profile.id)
+                .select('student_stage')
+                .single();
+
+            if (updateError) throw updateError;
+            // Prove the value actually landed. A zero-row update returns no
+            // row here, and a row whose stage does not match means the write
+            // was filtered. Either way the student must stay on this screen —
+            // routing onward would bounce them straight back via RoleRoutes'
+            // onboarding guard, with nothing to explain the loop.
+            if (data?.student_stage !== stage) {
+                throw new Error(`stage did not persist (got ${data?.student_stage ?? 'no row'})`);
+            }
 
             await refreshProfile();
             navigate('/student/marketplace', { replace: true });
         } catch (err) {
+            console.error('Onboarding save error:', err);
             // Inline and persistent, not a toast: the student cannot leave this
             // screen until it succeeds, so the message has to stay on screen.
             setError(t('فشل الحفظ — حاول مرة أخرى', 'Could not save — please try again'));
@@ -87,7 +106,7 @@ export default function StudentOnboarding() {
                                 style={{
                                     background: selected ? A.wash : A.surface,
                                     borderColor: A.line,
-                                    boxShadow: selected ? `5px 5px 0 var(--arc-shadow)` : 'none',
+                                    boxShadow: selected ? hard(5) : 'none',
                                 }}
                             >
                                 <span
@@ -101,7 +120,7 @@ export default function StudentOnboarding() {
                                     <span className="block text-[15px] font-black" style={{ color: A.ink }}>
                                         {t(s.ar, s.en)}
                                     </span>
-                                    <span className="mt-0.5 block font-mono text-[11px]" style={{ color: A.inkSoft }}>
+                                    <span dir="ltr" className="mt-0.5 block font-mono text-[11px]" style={{ color: A.inkSoft }}>
                                         {s.range}
                                     </span>
                                 </span>
@@ -110,7 +129,7 @@ export default function StudentOnboarding() {
                                         className="flex h-6 w-6 shrink-0 items-center justify-center border-2"
                                         style={{ background: A.accent, borderColor: A.line, color: A.onAccent }}
                                     >
-                                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                                        <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
                                     </span>
                                 )}
                             </button>
@@ -142,7 +161,7 @@ export default function StudentOnboarding() {
                 >
                     {!saving && t('متابعة', 'Continue')}
                     {saving && t('جارٍ الحفظ', 'Saving')}
-                    {!saving && <ArrowIcon className="h-4 w-4" />}
+                    {!saving && <ArrowIcon className="h-4 w-4" aria-hidden="true" />}
                 </ArcadeButton>
 
                 <p className="mt-4 text-center text-[13px] font-medium" style={{ color: A.inkSoft }}>
