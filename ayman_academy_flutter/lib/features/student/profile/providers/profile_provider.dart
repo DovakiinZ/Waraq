@@ -32,10 +32,14 @@ class ProfileService {
     if (userId == null) return;
     final updates = <String, dynamic>{
       'full_name': fullName,
+      // Always written, unlike gender/studentStage below: the profile screen
+      // clears the grade to null when the stage changes (a grade from the
+      // previous stage is invalid under the new one), and a null-guard here
+      // would silently keep the stale value instead of clearing it.
+      'grade': grade,
     };
     if (gender != null) updates['gender'] = gender;
     if (studentStage != null) updates['student_stage'] = studentStage;
-    if (grade != null) updates['grade'] = grade;
     await supabase.from('profiles').update(updates).eq('id', userId);
   }
 

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import type { StudentStage } from '@/types/database';
+import { STAGES, GRADE_OPTIONS, GENDERS } from '@/lib/studentStages';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,34 +38,25 @@ import { format } from 'date-fns';
 import { ar as arLocale, enUS } from 'date-fns/locale';
 
 // student_stage is a text enum on profiles, not a FK into `stages`.
-const STAGE_LABELS: Record<StudentStage, { ar: string; en: string }> = {
-    kindergarten: { ar: 'تمهيدي', en: 'Kindergarten' },
-    primary: { ar: 'ابتدائي', en: 'Primary' },
-    middle: { ar: 'متوسط', en: 'Middle' },
-    high: { ar: 'ثانوي', en: 'High' },
-};
+// Derived from the shared lists (src/lib/studentStages.ts) rather than
+// hardcoded here, so a label changes in one place for both this table and
+// the student profile editor.
+const STAGE_LABELS: Record<StudentStage, { ar: string; en: string }> = STAGES.reduce(
+    (acc, s) => ({ ...acc, [s.key]: { ar: s.ar, en: s.en } }),
+    {} as Record<StudentStage, { ar: string; en: string }>
+);
 
-const GRADE_LABELS: Record<number, { ar: string; en: string }> = {
-    0: { ar: 'التمهيدي', en: 'KG' },
-    1: { ar: 'الصف الأول', en: 'Grade 1' },
-    2: { ar: 'الصف الثاني', en: 'Grade 2' },
-    3: { ar: 'الصف الثالث', en: 'Grade 3' },
-    4: { ar: 'الصف الرابع', en: 'Grade 4' },
-    5: { ar: 'الصف الخامس', en: 'Grade 5' },
-    6: { ar: 'الصف السادس', en: 'Grade 6' },
-    7: { ar: 'الصف السابع', en: 'Grade 7' },
-    8: { ar: 'الصف الثامن', en: 'Grade 8' },
-    9: { ar: 'الصف التاسع', en: 'Grade 9' },
-    10: { ar: 'الصف العاشر', en: 'Grade 10' },
-    11: { ar: 'الصف الحادي عشر', en: 'Grade 11' },
-    12: { ar: 'الصف الثاني عشر', en: 'Grade 12' },
-};
+const GRADE_LABELS: Record<number, { ar: string; en: string }> = Object.values(GRADE_OPTIONS)
+    .flat()
+    .reduce(
+        (acc, g) => ({ ...acc, [g.value]: { ar: g.ar, en: g.en } }),
+        {} as Record<number, { ar: string; en: string }>
+    );
 
-const GENDER_LABELS: Record<string, { ar: string; en: string }> = {
-    male: { ar: 'ذكر', en: 'Male' },
-    female: { ar: 'أنثى', en: 'Female' },
-    unspecified: { ar: 'غير محدد', en: 'Unspecified' },
-};
+const GENDER_LABELS: Record<string, { ar: string; en: string }> = GENDERS.reduce(
+    (acc, g) => ({ ...acc, [g.value]: { ar: g.ar, en: g.en } }),
+    {} as Record<string, { ar: string; en: string }>
+);
 
 interface StudentRow {
     id: string;

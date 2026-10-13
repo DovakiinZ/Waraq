@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { STAGES, GRADE_OPTIONS, GENDERS, type StageKey } from '@/lib/studentStages';
 import { Loader2, User, Check } from 'lucide-react';
 
 export default function StudentProfile() {
@@ -12,6 +15,9 @@ export default function StudentProfile() {
     const { profile, refreshProfile } = useAuth();
 
     const [fullName, setFullName] = useState(profile?.full_name || '');
+    const [stage, setStage] = useState<StageKey | null>((profile?.student_stage as StageKey) ?? null);
+    const [gender, setGender] = useState(profile?.gender ?? 'unspecified');
+    const [grade, setGrade] = useState<number | null>(profile?.grade ?? null);
     const [isSaving, setIsSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
@@ -21,10 +27,22 @@ export default function StudentProfile() {
         setIsSaving(true);
         setSaved(false);
 
-        await supabase
-            .from('profiles')
-            .update({ full_name: fullName })
+        const { error } = await (supabase.from('profiles') as any)
+            .update({
+                full_name: fullName,
+                student_stage: stage,
+                gender,
+                // Clearing the stage must clear the grade: a grade without a
+                // stage is meaningless and would survive a stage change.
+                grade: stage ? grade : null,
+            })
             .eq('id', profile.id);
+
+        if (error) {
+            setIsSaving(false);
+            toast.error(t('فشل الحفظ', 'Could not save'), { description: error.message });
+            return;
+        }
 
         await refreshProfile();
         setIsSaving(false);
@@ -75,6 +93,74 @@ export default function StudentProfile() {
                             placeholder={t('أدخل اسمك الكامل', 'Enter your full name')}
                         />
                     </div>
+
+                    <div className="space-y-2">
+                        <Label>{t('المرحلة الدراسية', 'School stage')}</Label>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            {STAGES.map((s) => (
+                                <button
+                                    key={s.key}
+                                    type="button"
+                                    aria-pressed={stage === s.key}
+                                    onClick={() => {
+                                        setStage(s.key);
+                                        // A grade from the previous stage is invalid under
+                                        // the new one, so it goes with it.
+                                        setGrade(null);
+                                    }}
+                                    className={`rounded-md border-2 p-2.5 text-sm transition-colors ${
+                                        stage === s.key
+                                            ? 'border-primary bg-primary/5 font-semibold text-primary'
+                                            : 'border-border text-muted-foreground hover:border-primary/40'
+                                    }`}
+                                >
+                                    {t(s.ar, s.en)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>{t('الجنس', 'Gender')}</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {GENDERS.map((g) => (
+                                <button
+                                    key={g.value}
+                                    type="button"
+                                    aria-pressed={gender === g.value}
+                                    onClick={() => setGender(g.value)}
+                                    className={`rounded-md border-2 p-2.5 text-sm transition-colors ${
+                                        gender === g.value
+                                            ? 'border-primary bg-primary/5 font-semibold text-primary'
+                                            : 'border-border text-muted-foreground hover:border-primary/40'
+                                    }`}
+                                >
+                                    {t(g.ar, g.en)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {stage && (
+                        <div className="space-y-2">
+                            <Label>{t('الصف الدراسي (اختياري)', 'Grade (optional)')}</Label>
+                            <Select
+                                value={grade?.toString() ?? ''}
+                                onValueChange={(v) => setGrade(v ? parseInt(v, 10) : null)}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder={t('اختر الصف...', 'Select grade...')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {GRADE_OPTIONS[stage].map((g) => (
+                                        <SelectItem key={g.value} value={g.value.toString()}>
+                                            {t(g.ar, g.en)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
 
                     <div className="space-y-2">
                         <Label>{t('البريد الإلكتروني', 'Email')}</Label>

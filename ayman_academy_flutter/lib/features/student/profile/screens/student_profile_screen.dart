@@ -7,6 +7,7 @@ import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/features/student/profile/providers/profile_provider.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/providers/theme_provider.dart';
+import 'package:ayman_academy_app/shared/student_stages.dart';
 import 'package:ayman_academy_app/shared/widgets/avatar_widget.dart';
 import 'package:ayman_academy_app/shared/widgets/xp_progress_bar.dart';
 
@@ -20,6 +21,8 @@ class StudentProfileScreen extends ConsumerStatefulWidget {
 class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
   late TextEditingController _nameController;
   String? _selectedGender;
+  String? _selectedStage;
+  int? _selectedGrade;
   bool _saving = false;
   bool _uploading = false;
 
@@ -29,6 +32,8 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
     final profile = ref.read(authProvider).profile;
     _nameController = TextEditingController(text: profile?.fullName ?? '');
     _selectedGender = profile?.gender;
+    _selectedStage = profile?.studentStage;
+    _selectedGrade = profile?.grade;
   }
 
   @override
@@ -46,6 +51,10 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
       await ProfileService.updateStudentProfile(
         fullName: _nameController.text.trim(),
         gender: _selectedGender,
+        studentStage: _selectedStage,
+        // Clearing the stage must clear the grade: a grade from the
+        // previous stage is invalid under the new one.
+        grade: _selectedStage != null ? _selectedGrade : null,
       );
       await ref.read(authProvider.notifier).refreshProfile();
       if (mounted) {
@@ -176,6 +185,143 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
     return InkWell(
       onTap: () {
         setState(() => _selectedGender = value);
+        Navigator.pop(ctx);
+        _save();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'IBMPlexSansArabic',
+                fontSize: 16,
+                color: isDark ? AppColors.inkDark : AppColors.ink,
+              ),
+            ),
+            const Spacer(),
+            if (isSelected)
+              const Icon(Icons.check_rounded, color: AppColors.accent, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showStagePicker() {
+    final t = ref.read(languageProvider.notifier).t;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (var i = 0; i < kStages.length; i++) ...[
+              if (i > 0)
+                Divider(height: 0.5, thickness: 0.5, color: isDark ? AppColors.borderDark : AppColors.border),
+              _stageOption(ctx, kStages[i].key, t(kStages[i].ar, kStages[i].en), isDark),
+            ],
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _stageOption(BuildContext ctx, String value, String label, bool isDark) {
+    final isSelected = _selectedStage == value;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedStage = value;
+          // A grade from the previous stage is invalid under the new
+          // one, so it goes with it.
+          _selectedGrade = null;
+        });
+        Navigator.pop(ctx);
+        _save();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'IBMPlexSansArabic',
+                fontSize: 16,
+                color: isDark ? AppColors.inkDark : AppColors.ink,
+              ),
+            ),
+            const Spacer(),
+            if (isSelected)
+              const Icon(Icons.check_rounded, color: AppColors.accent, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showGradePicker() {
+    final t = ref.read(languageProvider.notifier).t;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final grades = kGradeOptions[_selectedStage] ?? const [];
+    if (grades.isEmpty) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.borderDark : AppColors.border,
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (var i = 0; i < grades.length; i++) ...[
+              if (i > 0)
+                Divider(height: 0.5, thickness: 0.5, color: isDark ? AppColors.borderDark : AppColors.border),
+              _gradeOption(ctx, grades[i].$1, t(grades[i].$2, grades[i].$3), isDark),
+            ],
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _gradeOption(BuildContext ctx, int value, String label, bool isDark) {
+    final isSelected = _selectedGrade == value;
+    return InkWell(
+      onTap: () {
+        setState(() => _selectedGrade = value);
         Navigator.pop(ctx);
         _save();
       },
@@ -339,10 +485,20 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
                   _settingsRow(
                     icon: Icons.school_outlined,
                     label: t('المرحلة', 'Stage'),
-                    value: _stageName(profile?.studentStage, t),
+                    value: _stageName(_selectedStage, t),
                     isDark: isDark,
-                    showDivider: false,
+                    onTap: _showStagePicker,
+                    showDivider: _selectedStage != null,
                   ),
+                  if (_selectedStage != null)
+                    _settingsRow(
+                      icon: Icons.filter_1_outlined,
+                      label: t('الصف الدراسي', 'Grade'),
+                      value: _gradeName(_selectedStage, _selectedGrade, t),
+                      isDark: isDark,
+                      onTap: _showGradePicker,
+                      showDivider: false,
+                    ),
                 ],
               ),
             ),
@@ -543,12 +699,17 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen> {
   }
 
   String _stageName(String? stage, String Function(String, String) t) {
-    switch (stage) {
-      case 'kindergarten': return t('رياض الأطفال', 'Kindergarten');
-      case 'primary': return t('ابتدائي', 'Primary');
-      case 'middle': return t('إعدادي', 'Middle');
-      case 'high': return t('ثانوي', 'High School');
-      default: return t('غير محدد', 'Not set');
+    for (final s in kStages) {
+      if (s.key == stage) return t(s.ar, s.en);
     }
+    return t('غير محدد', 'Not set');
+  }
+
+  String _gradeName(String? stage, int? grade, String Function(String, String) t) {
+    if (stage == null || grade == null) return t('غير محدد', 'Not set');
+    for (final g in kGradeOptions[stage] ?? const []) {
+      if (g.$1 == grade) return t(g.$2, g.$3);
+    }
+    return t('غير محدد', 'Not set');
   }
 }
