@@ -17,7 +17,7 @@ export function useTeacherSetup() {
     const { user, profile } = useAuth();
 
     const { data: application, isLoading: isFetching, isError } = useQuery({
-        queryKey: ['teacher', user?.id, 'application'],
+        queryKey: ['teacher', user?.id, 'application', profile?.email],
         enabled: !!profile?.email,
         queryFn: async () => {
             const { data } = await supabase

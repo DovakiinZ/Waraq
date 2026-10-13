@@ -76,6 +76,10 @@ export function SandboxBanner() {
                                         textDecoration: row.done ? 'line-through' : 'none',
                                     }}
                                 >
+                                    <span className="sr-only">
+                                        {row.done ? t('مكتمل', 'Completed') : t('غير مكتمل', 'Not completed')}
+                                        {': '}
+                                    </span>
                                     {row.done || !row.to ? t(row.ar, row.en) : (
                                         <Link to={row.to} className="arc-link arc-focus">{t(row.ar, row.en)}</Link>
                                     )}
