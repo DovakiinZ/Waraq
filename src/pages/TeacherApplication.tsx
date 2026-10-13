@@ -11,7 +11,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import Layout from '@/components/layout/Layout';
@@ -19,9 +19,9 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { GraduationCap, CheckCircle, ArrowRight, ArrowLeft, Eye, EyeOff, Check } from 'lucide-react';
+import { GraduationCap, Eye, EyeOff, Check } from 'lucide-react';
 import { A, PIXEL_STRIP } from '@/components/arcade/theme';
-import { ArcadeButton, ArcadeCard, ArcadeField, ArcadeLink } from '@/components/arcade/primitives';
+import { ArcadeButton, ArcadeCard, ArcadeField } from '@/components/arcade/primitives';
 
 const GRADE_OPTIONS = [
     { value: 'kindergarten', ar: 'تمهيدي', en: 'Kindergarten' },
@@ -32,8 +32,8 @@ const GRADE_OPTIONS = [
 
 export default function TeacherApplication() {
     const { t, language, direction } = useLanguage();
+    const navigate = useNavigate();
     const [submitting, setSubmitting] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
     const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -51,11 +51,6 @@ export default function TeacherApplication() {
                         .min(6, t('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'Password must be at least 6 characters')),
                     confirm_password: z.string(),
                     phone: z.string().min(6, t('رقم الهاتف مطلوب', 'Phone number is required')),
-                    bio: z
-                        .string()
-                        .min(20, t('يرجى كتابة نبذة عنك (20 حرف على الأقل)', 'Please write a short bio (at least 20 characters)')),
-                    profession: z.string().min(2, t('المهنة مطلوبة', 'Profession is required')),
-                    major: z.string().optional(),
                     grades_taught: z
                         .string()
                         .min(1, t('يرجى اختيار مرحلة واحدة على الأقل', 'Please pick at least one stage')),
@@ -82,9 +77,6 @@ export default function TeacherApplication() {
             password: '',
             confirm_password: '',
             phone: '',
-            bio: '',
-            profession: '',
-            major: '',
             grades_taught: '',
         },
     });
@@ -123,7 +115,6 @@ export default function TeacherApplication() {
                     full_name: data.full_name,
                     role: 'teacher',
                     is_active: false,
-                    bio_ar: data.bio,
                     language_pref: 'ar',
                 })
                 .select()
@@ -137,7 +128,6 @@ export default function TeacherApplication() {
                         full_name: data.full_name,
                         role: 'teacher',
                         is_active: false,
-                        bio_ar: data.bio,
                     })
                     .eq('id', authData.user.id);
             }
@@ -149,9 +139,6 @@ export default function TeacherApplication() {
                     full_name: data.full_name,
                     email: data.email,
                     phone: data.phone,
-                    bio: data.bio,
-                    profession: data.profession,
-                    major: data.major || null,
                     grades_taught: data.grades_taught,
                     status: 'pending',
                 });
@@ -161,10 +148,10 @@ export default function TeacherApplication() {
                 // Don't throw — account is created, application is secondary
             }
 
-            // Sign out so they can log in fresh
-            await supabase.auth.signOut();
-
-            setSubmitted(true);
+            // Keep the session: the teacher lands in the sandbox and starts
+            // building. Signing them out of an account they just created was
+            // the single largest piece of friction in this flow.
+            navigate('/teacher', { replace: true });
         } catch (err: any) {
             console.error('Registration error:', err);
             if (err.message?.includes('already registered')) {
@@ -183,7 +170,6 @@ export default function TeacherApplication() {
         }
     };
 
-    const BackArrow = direction === 'rtl' ? ArrowRight : ArrowLeft;
     const PasswordIcon = showPassword ? EyeOff : Eye;
 
     const SectionHeading = ({ children }: { children: React.ReactNode }) => (
@@ -191,49 +177,6 @@ export default function TeacherApplication() {
             {children}
         </h2>
     );
-
-    if (submitted) {
-        return (
-            <Layout>
-                <div className="flex min-h-[60vh] items-center justify-center px-5 py-16">
-                    <div className="w-full max-w-[520px]">
-                        <ArcadeCard className="p-9 text-center">
-                            <span
-                                className="mx-auto flex h-16 w-16 items-center justify-center border-2"
-                                style={{ background: A.accent, color: A.onAccent, borderColor: A.line }}
-                            >
-                                <CheckCircle className="h-8 w-8" />
-                            </span>
-                            <h1
-                                className="mt-6 text-[28px] font-black leading-tight tracking-tight"
-                                style={{ color: A.ink }}
-                            >
-                                {t('تم إنشاء حسابك', 'Your account is created')}
-                            </h1>
-                            <p
-                                className="mx-auto mt-4 max-w-[44ch] text-[15px] font-medium leading-relaxed"
-                                style={{ color: A.inkSoft }}
-                            >
-                                {t(
-                                    'حسابك قيد المراجعة من الإدارة. يمكنك تسجيل الدخول لمتابعة حالة طلبك وتعديل ملفك الشخصي.',
-                                    'Your account is under review. You can log in to check your application status and edit your profile.',
-                                )}
-                            </p>
-                            <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-                                <ArcadeLink to="/login" variant="solid">
-                                    {t('تسجيل الدخول', 'Log in')}
-                                </ArcadeLink>
-                                <ArcadeLink to="/" variant="outline">
-                                    <BackArrow className="h-4 w-4" />
-                                    {t('الصفحة الرئيسية', 'Homepage')}
-                                </ArcadeLink>
-                            </div>
-                        </ArcadeCard>
-                    </div>
-                </div>
-            </Layout>
-        );
-    }
 
     return (
         <Layout>
@@ -382,41 +325,6 @@ export default function TeacherApplication() {
                             <div style={{ borderTop: `2px solid ${A.line}`, paddingTop: '2rem' }}>
                                 <SectionHeading>{t('المعلومات المهنية', 'Professional info')}</SectionHeading>
                                 <div className="mt-5 space-y-5">
-                                    <ArcadeField
-                                        id="profession"
-                                        label={`${t('مهنتك أو ماذا تدرّس؟', 'Your profession, or what do you teach?')} *`}
-                                        error={errors.profession?.message}
-                                    >
-                                        <input
-                                            id="profession"
-                                            className="arc-input"
-                                            aria-invalid={!!errors.profession}
-                                            {...register('profession')}
-                                        />
-                                    </ArcadeField>
-
-                                    <ArcadeField id="major" label={t('تخصصك الجامعي', 'Your university major')}>
-                                        <input id="major" className="arc-input" {...register('major')} />
-                                    </ArcadeField>
-
-                                    <ArcadeField
-                                        id="bio"
-                                        label={`${t('نبذة عنك', 'About you')} *`}
-                                        error={errors.bio?.message}
-                                    >
-                                        <textarea
-                                            id="bio"
-                                            className="arc-input"
-                                            rows={4}
-                                            placeholder={t(
-                                                'أخبرنا عن نفسك وخبرتك التعليمية',
-                                                'Tell us about yourself and your teaching experience',
-                                            )}
-                                            aria-invalid={!!errors.bio}
-                                            {...register('bio')}
-                                        />
-                                    </ArcadeField>
-
                                     {/* Grades. Native checkbox for keyboard and screen-reader
                                         support, visually replaced by a square arcade marker. */}
                                     <fieldset>
