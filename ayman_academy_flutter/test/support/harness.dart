@@ -76,6 +76,10 @@ class FakeAuthRepository implements AuthRepository {
   Object? resetError;
   Duration delay;
 
+  /// Set to a session to simulate confirmation-off (Supabase returns a usable
+  /// session immediately); leave null to simulate confirmation-on.
+  sb.Session? signUpSession;
+
   /// Records what the screen actually submitted, so a test can assert that the
   /// email was trimmed and the right password was sent.
   final List<List<String>> signInCalls = [];
@@ -110,7 +114,7 @@ class FakeAuthRepository implements AuthRepository {
     signUpCalls.add({'email': email, 'password': password, 'fullName': fullName});
     await _wait();
     if (signUpError != null) throw signUpError!;
-    return sb.AuthResponse();
+    return sb.AuthResponse(session: signUpSession);
   }
 
   @override

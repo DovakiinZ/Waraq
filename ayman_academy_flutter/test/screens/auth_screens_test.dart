@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
@@ -22,6 +23,27 @@ void main() {
     await resetSettings();
     repo = FakeAuthRepository();
   });
+
+  Future<void> pumpRegister(WidgetTester tester, {bool dark = false}) async {
+    await pumpScreen(
+      tester,
+      const RegisterScreen(),
+      dark: dark,
+      overrides: [
+        ...onlineOverrides,
+        authRepositoryProvider.overrideWithValue(repo),
+      ],
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> submitRegisterForm(WidgetTester tester) async {
+    await tester.enterText(find.byKey(const Key('register_name')), 'أحمد الحسن');
+    await tester.enterText(find.byKey(const Key('register_email')), 'a@example.com');
+    await tester.enterText(find.byKey(const Key('register_password')), 'password123');
+    await tester.tap(find.byKey(const Key('register_submit')));
+    await tester.pumpAndSettle();
+  }
 
   List<Override> authOverride() => [
         ...onlineOverrides,
@@ -223,13 +245,14 @@ void main() {
     Future<ProviderContainer> pumpRegister(WidgetTester tester, {bool dark = false}) =>
         pumpScreen(tester, const RegisterScreen(), dark: dark, overrides: authOverride());
 
-    testWidgets('renders all four fields and the submit button', (tester) async {
+    testWidgets('renders all three fields and the submit button', (tester) async {
       await pumpRegister(tester);
       await tester.pumpAndSettle();
 
-      for (final k in ['register_name', 'register_email', 'register_password', 'register_confirm']) {
+      for (final k in ['register_name', 'register_email', 'register_password']) {
         expect(find.byKey(Key(k)), findsOneWidget, reason: k);
       }
+      expect(find.byKey(const Key('register_confirm')), findsNothing);
       expect(find.byKey(const Key('register_submit')), findsOneWidget);
     });
 
@@ -240,41 +263,8 @@ void main() {
       await tester.tap(find.byKey(const Key('register_submit')));
       await tester.pumpAndSettle();
 
-      expect(find.text('مطلوب'), findsNWidgets(4));
+      expect(find.text('مطلوب'), findsNWidgets(3));
       expect(repo.signUpCalls, isEmpty);
-    });
-
-    testWidgets('mismatched passwords are caught before submit', (tester) async {
-      await pumpRegister(tester);
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const Key('register_name')), 'سارة');
-      await tester.enterText(find.byKey(const Key('register_email')), 'sara@example.com');
-      await tester.enterText(find.byKey(const Key('register_password')), 'secret123');
-      await tester.enterText(find.byKey(const Key('register_confirm')), 'different');
-      await tester.tap(find.byKey(const Key('register_submit')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('كلمة المرور غير متطابقة'), findsOneWidget);
-      expect(repo.signUpCalls, isEmpty);
-    });
-
-    testWidgets('an empty confirmation says "required", not "mismatch"',
-        (tester) async {
-      // The old validator compared against the password first, so leaving the
-      // field blank produced "passwords do not match" — a confusing message
-      // for a field the user simply had not filled in.
-      await pumpRegister(tester);
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const Key('register_name')), 'سارة');
-      await tester.enterText(find.byKey(const Key('register_email')), 'sara@example.com');
-      await tester.enterText(find.byKey(const Key('register_password')), 'secret123');
-      await tester.tap(find.byKey(const Key('register_submit')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('كلمة المرور غير متطابقة'), findsNothing);
-      expect(find.text('مطلوب'), findsOneWidget);
     });
 
     testWidgets('a valid form submits the trimmed name and email',
@@ -285,7 +275,6 @@ void main() {
       await tester.enterText(find.byKey(const Key('register_name')), '  سارة أحمد  ');
       await tester.enterText(find.byKey(const Key('register_email')), '  sara@example.com ');
       await tester.enterText(find.byKey(const Key('register_password')), 'secret123');
-      await tester.enterText(find.byKey(const Key('register_confirm')), 'secret123');
       await tester.tap(find.byKey(const Key('register_submit')));
       await tester.pumpAndSettle();
 
@@ -304,7 +293,6 @@ void main() {
       await tester.enterText(find.byKey(const Key('register_name')), 'سارة');
       await tester.enterText(find.byKey(const Key('register_email')), 'sara@example.com');
       await tester.enterText(find.byKey(const Key('register_password')), 'secret123');
-      await tester.enterText(find.byKey(const Key('register_confirm')), 'secret123');
       await tester.tap(find.byKey(const Key('register_submit')));
       await tester.pumpAndSettle();
 
@@ -322,7 +310,6 @@ void main() {
       await tester.enterText(find.byKey(const Key('register_name')), 'سارة');
       await tester.enterText(find.byKey(const Key('register_email')), 'sara@example.com');
       await tester.enterText(find.byKey(const Key('register_password')), 'secret123');
-      await tester.enterText(find.byKey(const Key('register_confirm')), 'secret123');
       await tester.tap(find.byKey(const Key('register_submit')));
       await tester.pumpAndSettle();
 
@@ -331,7 +318,27 @@ void main() {
           reason: 'the user must not lose what they typed');
     });
 
-    testWidgets('both eye buttons toggle independently', (tester) async {
+    testWidgets('the password field submits the form from the keyboard',
+        (tester) async {
+      // Now the last field in the form, so it must carry the submit
+      // affordance the removed confirm field used to own.
+      await pumpRegister(tester);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('register_name')), 'سارة');
+      await tester.enterText(find.byKey(const Key('register_email')), 'sara@example.com');
+      await tester.enterText(find.byKey(const Key('register_password')), 'secret123');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(repo.signUpCalls.single, {
+        'email': 'sara@example.com',
+        'password': 'secret123',
+        'fullName': 'سارة',
+      });
+    });
+
+    testWidgets('the eye button toggles password visibility', (tester) async {
       await pumpRegister(tester);
       await tester.pumpAndSettle();
 
@@ -340,17 +347,10 @@ void main() {
           );
 
       expect(field('register_password').obscureText, isTrue);
-      expect(field('register_confirm').obscureText, isTrue);
 
       await tester.tap(find.byKey(const Key('register_toggle_password')));
       await tester.pumpAndSettle();
       expect(field('register_password').obscureText, isFalse);
-      expect(field('register_confirm').obscureText, isTrue,
-          reason: 'the two fields must not share one toggle');
-
-      await tester.tap(find.byKey(const Key('register_toggle_confirm')));
-      await tester.pumpAndSettle();
-      expect(field('register_confirm').obscureText, isFalse);
     });
 
     testWidgets('translates to English', (tester) async {
@@ -364,7 +364,6 @@ void main() {
       // `ArcadeField` renders a required label as `Text.rich` so it can append
       // the asterisk, so the plain text carries the marker too.
       expect(find.textContaining('Full name'), findsOneWidget);
-      expect(find.textContaining('Confirm password'), findsOneWidget);
     });
 
     testWidgets('renders in dark mode', (tester) async {
@@ -527,5 +526,52 @@ void main() {
     await pumpScreen(tester, const LoginScreen(), overrides: authOverride());
     await tester.pumpAndSettle();
     expect(find.text('Sign In'), findsWidgets);
+  });
+
+  // ════════════════════════════════════════════════════════════
+  //  REGISTER — session-driven continuation (Task 5)
+  // ════════════════════════════════════════════════════════════
+  testWidgets('register has no confirm-password field', (tester) async {
+    await pumpRegister(tester);
+
+    // `ArcadeField` renders a required label as `Text.rich` with the
+    // asterisk appended as a child span, so the rendered plain text is
+    // "<label> *" — matching on that exactly avoids both failure modes: a
+    // bare `find.text(label)` never matches (missing the asterisk), and
+    // `find.textContaining(label)` over-matches the password field's own
+    // hint text ("أدخل كلمة المرور" contains "كلمة المرور" too).
+    expect(find.text('الاسم الكامل *'), findsOneWidget);
+    expect(find.text('البريد الإلكتروني *'), findsOneWidget);
+    expect(find.text('كلمة المرور *'), findsOneWidget);
+    expect(find.text('تأكيد كلمة المرور *'), findsNothing);
+  });
+
+  testWidgets('a session from signup skips the inbox screen', (tester) async {
+    repo.signUpSession = sb.Session(
+      accessToken: 'test-token',
+      tokenType: 'bearer',
+      user: sb.User(
+        id: 'test-user',
+        appMetadata: const {},
+        userMetadata: const {},
+        aud: 'authenticated',
+        createdAt: DateTime.now().toIso8601String(),
+      ),
+    );
+
+    await pumpRegister(tester);
+    await submitRegisterForm(tester);
+
+    // The inbox copy belongs to the confirmation-on branch only.
+    expect(find.text('تحقّق من بريدك'), findsNothing);
+  });
+
+  testWidgets('no session shows the inbox screen', (tester) async {
+    repo.signUpSession = null;
+
+    await pumpRegister(tester);
+    await submitRegisterForm(tester);
+
+    expect(find.text('تحقّق من بريدك'), findsOneWidget);
   });
 }

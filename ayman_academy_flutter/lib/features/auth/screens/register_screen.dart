@@ -19,10 +19,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
   bool _loading = false;
   bool _obscurePassword = true;
-  bool _obscureConfirm = true;
   String? _error;
   bool _success = false;
 
@@ -31,7 +29,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmController.dispose();
     super.dispose();
   }
 
@@ -39,12 +36,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() { _loading = true; _error = null; });
     try {
-      await ref.read(authProvider.notifier).signUp(
+      final session = await ref.read(authProvider.notifier).signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         fullName: _nameController.text.trim(),
       );
-      setState(() => _success = true);
+      // A session means the account is usable now: the router's
+      // `needsOnboarding` redirect takes the student to the stage screen on
+      // its own, so there is nothing to navigate to here. No session means
+      // confirmation is on and the inbox screen is the truthful next step.
+      if (session == null) setState(() => _success = true);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -67,10 +68,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               children: [
                 ArcadeAuthHeader(
                   title: _success
-                      ? t('أهلاً بك', 'Welcome aboard')
+                      ? t('تحقّق من بريدك', 'Check your email')
                       : t('إنشاء حساب', 'Create account'),
                   subtitle: _success
-                      ? t('خطوة واحدة وتبدأ', 'One step left before you start')
+                      ? t('أكّد بريدك ثم سجّل الدخول', 'Confirm your email, then sign in')
                       : t('ابدأ رحلة التعلم مع ورق أكاديمي', 'Start your learning journey with Waraq'),
                   languageLabel: lang.languageCode == 'ar' ? 'EN' : 'عربي',
                   onToggleLanguage: () => ref.read(languageProvider.notifier).toggle(),
@@ -206,9 +207,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               key: const Key('register_password'),
               controller: _passwordController,
               obscureText: _obscurePassword,
-              textInputAction: TextInputAction.next,
+              textInputAction: TextInputAction.done,
               textDirection: TextDirection.ltr,
               autofillHints: const [AutofillHints.newPassword],
+              onFieldSubmitted: (_) => _loading ? null : _submit(),
               decoration: InputDecoration(
                 hintText: t('أدخل كلمة المرور', 'Enter your password'),
                 prefixIcon: Icon(Icons.lock_outline_rounded, size: 20, color: arc.inkSoft),
@@ -225,40 +227,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               validator: (v) {
                 if (v == null || v.isEmpty) return t('مطلوب', 'Required');
                 if (v.length < 6) return t('6 أحرف على الأقل', 'At least 6 characters');
-                return null;
-              },
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          ArcadeField(
-            label: t('تأكيد كلمة المرور', 'Confirm password'),
-            required: true,
-            child: TextFormField(
-              key: const Key('register_confirm'),
-              controller: _confirmController,
-              obscureText: _obscureConfirm,
-              textInputAction: TextInputAction.done,
-              textDirection: TextDirection.ltr,
-              onFieldSubmitted: (_) => _loading ? null : _submit(),
-              decoration: InputDecoration(
-                hintText: t('أعد إدخال كلمة المرور', 'Re-enter your password'),
-                prefixIcon: Icon(Icons.lock_outline_rounded, size: 20, color: arc.inkSoft),
-                suffixIcon: IconButton(
-                  key: const Key('register_toggle_confirm'),
-                  icon: Icon(
-                    _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                    size: 20,
-                    color: arc.inkSoft,
-                  ),
-                  onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                ),
-              ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return t('مطلوب', 'Required');
-                if (v != _passwordController.text) {
-                  return t('كلمة المرور غير متطابقة', 'Passwords do not match');
-                }
                 return null;
               },
             ),

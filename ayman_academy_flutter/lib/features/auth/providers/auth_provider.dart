@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// Prefixed: gotrue also exports an `AuthState`, and this file needs both it
+// (for the auth-event stream) and this file's own `AuthState` (for the
+// notifier).
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:ayman_academy_app/shared/models/profile.dart';
 import 'package:ayman_academy_app/features/auth/data/auth_repository.dart';
 import 'package:ayman_academy_app/shared/services/notification_service.dart';
@@ -110,12 +114,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> signUp({
+  /// Returns the session Supabase handed back, or null when email
+  /// confirmation is on and the account is not usable yet. The caller decides
+  /// where to go next from that.
+  Future<sb.Session?> signUp({
     required String email,
     required String password,
     required String fullName,
   }) async {
-    await _repo.signUp(email: email, password: password, fullName: fullName);
+    final response =
+        await _repo.signUp(email: email, password: password, fullName: fullName);
+    return response.session;
   }
 
   Future<void> signOut() async {
