@@ -1,221 +1,152 @@
+// Student onboarding: one question, because `student_stage` is the only
+// onboarding answer the system makes a decision from — the guard at
+// RoleRoutes.tsx, `needsOnboarding` on Flutter, and every subject query's
+// filter. Gender and grade live on the profile; nothing gates on them.
+//
+// Styled in the arcade language. This page previously used the pre-rebrand
+// logo, rounded corners and a hard-coded dir="rtl" that ignored the language
+// setting.
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, GraduationCap, User2, School } from 'lucide-react';
-import { toast } from 'sonner';
-import type { StudentGender, StudentStage, Profile } from '@/types/database';
-import logo from '@/assets/logo.png';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-
-const onboardingSchema = z.object({
-    gender: z.enum(['male', 'female', 'unspecified']),
-    stage: z.enum(['kindergarten', 'primary', 'middle', 'high'], {
-        required_error: 'يرجى اختيار المرحلة الدراسية',
-    }),
-    grade: z.number().nullable().optional(),
-});
-
-type OnboardingForm = z.infer<typeof onboardingSchema>;
-
-const GRADE_OPTIONS: Record<StudentStage, { value: number; ar: string; en: string }[]> = {
-    kindergarten: [
-        { value: 0, ar: 'التمهيدي (KG)', en: 'Kindergarten' },
-    ],
-    primary: [
-        { value: 1, ar: 'الصف الأول', en: '1st Grade' },
-        { value: 2, ar: 'الصف الثاني', en: '2nd Grade' },
-        { value: 3, ar: 'الصف الثالث', en: '3rd Grade' },
-        { value: 4, ar: 'الصف الرابع', en: '4th Grade' },
-        { value: 5, ar: 'الصف الخامس', en: '5th Grade' },
-        { value: 6, ar: 'الصف السادس', en: '6th Grade' },
-    ],
-    middle: [
-        { value: 7, ar: 'الصف السابع', en: '7th Grade' },
-        { value: 8, ar: 'الصف الثامن', en: '8th Grade' },
-        { value: 9, ar: 'الصف التاسع', en: '9th Grade' },
-    ],
-    high: [
-        { value: 10, ar: 'الصف العاشر', en: '10th Grade' },
-        { value: 11, ar: 'الصف الحادي عشر', en: '11th Grade' },
-        { value: 12, ar: 'الصف الثاني عشر', en: '12th Grade' },
-    ],
-};
+import { verifiedUpdate } from '@/lib/adminDb';
+import { AlertCircle, ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { A } from '@/components/arcade/theme';
+import { ArcadeBrand, ArcadeButton } from '@/components/arcade/primitives';
+import { STAGES, type StageKey } from '@/lib/studentStages';
 
 export default function StudentOnboarding() {
     const { profile, refreshProfile } = useAuth();
-    const { t } = useLanguage();
+    const { t, direction } = useLanguage();
     const navigate = useNavigate();
+
+    const [stage, setStage] = useState<StageKey | null>(null);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
 
-    const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<OnboardingForm>({
-        resolver: zodResolver(onboardingSchema),
-        defaultValues: {
-            gender: 'unspecified',
-            stage: undefined,
-            grade: null,
-        }
-    });
+    const ArrowIcon = direction === 'rtl' ? ArrowLeft : ArrowRight;
 
-    const selectedStage = watch('stage');
-    const selectedGender = watch('gender');
-    const selectedGrade = watch('grade');
-
-    const onSubmit = async (data: OnboardingForm) => {
-        if (!profile?.id) return;
-
+    const onSubmit = async () => {
+        if (!stage || !profile?.id) return;
         setSaving(true);
+        setError('');
         try {
-            const { error } = await (supabase
-                .from('profiles') as any)
-                .update({
-                    gender: data.gender,
-                    student_stage: data.stage,
-                    grade: data.grade,
-                })
-                .eq('id', profile.id);
-
-            if (error) throw error;
+            // verifiedUpdate (not the raw supabase.from(...).update() the
+            // convention would otherwise bypass for): migration 104's
+            // `profiles_update_self` policy (`id = auth.uid()`) and the
+            // `authenticated` role's column grants both permit a student to
+            // update and then re-select their own row, so the project's
+            // stated verified-write convention applies cleanly here. Checked
+            // live against pg_policy and information_schema.column_privileges
+            // before writing this, per Task 6 Step 2.
+            const result = await verifiedUpdate('profiles', profile.id, { student_stage: stage }, {
+                showErrorToast: false,
+            });
+            if (!result.success) throw new Error(result.error || 'update failed');
 
             await refreshProfile();
-            toast.success(t('تم حفظ البيانات بنجاح! تصفح المتجر الآن', 'Profile saved! Browse the marketplace now'));
             navigate('/student/marketplace', { replace: true });
-        } catch (err: any) {
-            console.error('Onboarding save error:', err);
-            toast.error(t('فشل حفظ البيانات — حاول مرة أخرى', 'Failed to save — please try again'));
+        } catch (err) {
+            // Inline and persistent, not a toast: the student cannot leave this
+            // screen until it succeeds, so the message has to stay on screen.
+            setError(t('فشل الحفظ — حاول مرة أخرى', 'Could not save — please try again'));
         } finally {
             setSaving(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/3 flex items-center justify-center p-4" dir="rtl">
-            <div className="w-full max-w-lg">
-                {/* Logo */}
-                <div className="text-center mb-6">
-                    <img src={logo} alt="Waraq Academy" className="h-16 mx-auto mb-3" />
-                    <h1 className="text-2xl font-bold text-foreground">
-                        {t('أهلاً بك في ورق أكاديمي! 🎉', 'Welcome to Waraq Academy! 🎉')}
-                    </h1>
-                    <p className="text-sm text-muted-foreground mt-2">
-                        {t('أخبرنا عن نفسك لتخصيص تجربتك التعليمية', 'Tell us about yourself to personalize your learning')}
-                    </p>
+        <div
+            dir={direction}
+            className="flex min-h-[100dvh] items-center justify-center p-5 font-arabic"
+            style={{ background: A.bg }}
+        >
+            <div className="w-full max-w-[460px]">
+                <ArcadeBrand size={36} className="mb-7" />
+
+                <h1 className="text-[28px] font-black leading-tight tracking-tight" style={{ color: A.ink }}>
+                    {profile?.full_name
+                        ? t(`مرحبًا ${profile.full_name.split(' ')[0]}`, `Welcome, ${profile.full_name.split(' ')[0]}`)
+                        : t('مرحبًا بك', 'Welcome')}
+                </h1>
+                <p className="mt-3 text-[15px] font-medium" style={{ color: A.inkSoft }}>
+                    {t('اختر مرحلتك الدراسية لنُرتّب لك المواد.', 'Pick your stage and we will sort the subjects for you.')}
+                </p>
+
+                <div className="mt-7 flex flex-col gap-2.5">
+                    {STAGES.map((s) => {
+                        const selected = stage === s.key;
+                        return (
+                            <button
+                                key={s.key}
+                                type="button"
+                                onClick={() => setStage(s.key)}
+                                aria-pressed={selected}
+                                className="arc-focus flex items-center gap-3 border-2 p-3 text-start"
+                                style={{
+                                    background: selected ? A.wash : A.surface,
+                                    borderColor: A.line,
+                                    boxShadow: selected ? `5px 5px 0 var(--arc-shadow)` : 'none',
+                                }}
+                            >
+                                <span
+                                    className="flex h-11 w-11 shrink-0 items-center justify-center border-2 text-[15px] font-black"
+                                    style={{ background: s.color, borderColor: A.line, color: '#FFFFFF' }}
+                                    aria-hidden
+                                >
+                                    {s.glyph}
+                                </span>
+                                <span className="flex-1">
+                                    <span className="block text-[15px] font-black" style={{ color: A.ink }}>
+                                        {t(s.ar, s.en)}
+                                    </span>
+                                    <span className="mt-0.5 block font-mono text-[11px]" style={{ color: A.inkSoft }}>
+                                        {s.range}
+                                    </span>
+                                </span>
+                                {selected && (
+                                    <span
+                                        className="flex h-6 w-6 shrink-0 items-center justify-center border-2"
+                                        style={{ background: A.accent, borderColor: A.line, color: A.onAccent }}
+                                    >
+                                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
 
-                {/* Form Card */}
-                <form onSubmit={handleSubmit(onSubmit)} className="bg-background rounded-2xl border border-border shadow-lg p-6 space-y-6">
-
-                    {/* ===== GENDER ===== */}
-                    <div className="space-y-3">
-                        <Label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <User2 className="w-4 h-4 text-primary" />
-                            {t('الجنس', 'Gender')}
-                        </Label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {([
-                                { value: 'male' as const, ar: 'ذكر', en: 'Male', icon: '👦' },
-                                { value: 'female' as const, ar: 'أنثى', en: 'Female', icon: '👧' },
-                                { value: 'unspecified' as const, ar: 'غير محدد', en: 'Unspecified', icon: '🙂' },
-                            ]).map((opt) => (
-                                <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() => setValue('gender', opt.value)}
-                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${selectedGender === opt.value
-                                        ? 'border-primary bg-primary/5 text-primary font-semibold shadow-sm'
-                                        : 'border-border bg-background text-muted-foreground hover:border-primary/30 hover:bg-primary/3'
-                                        }`}
-                                >
-                                    <span className="text-xl">{opt.icon}</span>
-                                    {t(opt.ar, opt.en)}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* ===== STAGE ===== */}
-                    <div className="space-y-3">
-                        <Label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <School className="w-4 h-4 text-primary" />
-                            {t('المرحلة الدراسية', 'School Stage')}
-                            <span className="text-destructive">*</span>
-                        </Label>
-                        <div className="grid grid-cols-4 gap-2">
-                            {([
-                                { value: 'kindergarten' as const, ar: 'تمهيدي', en: 'KG', icon: '🎨' },
-                                { value: 'primary' as const, ar: 'ابتدائي', en: 'Primary', icon: '🌱' },
-                                { value: 'middle' as const, ar: 'متوسط', en: 'Middle', icon: '📖' },
-                                { value: 'high' as const, ar: 'ثانوي', en: 'High', icon: '🎓' },
-                            ]).map((opt) => (
-                                <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() => {
-                                        setValue('stage', opt.value);
-                                        setValue('grade', null);
-                                    }}
-                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm ${selectedStage === opt.value
-                                        ? 'border-primary bg-primary/5 text-primary font-semibold shadow-sm'
-                                        : 'border-border bg-background text-muted-foreground hover:border-primary/30 hover:bg-primary/3'
-                                        }`}
-                                >
-                                    <span className="text-xl">{opt.icon}</span>
-                                    {t(opt.ar, opt.en)}
-                                </button>
-                            ))}
-                        </div>
-                        {errors.stage && (
-                            <p className="text-xs text-destructive mt-1">{t(errors.stage.message || '', errors.stage.message || '')}</p>
-                        )}
-                    </div>
-
-                    {/* ===== GRADE (conditional) ===== */}
-                    {selectedStage && (
-                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <Label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                <GraduationCap className="w-4 h-4 text-primary" />
-                                {t('الصف الدراسي (اختياري)', 'Grade (optional)')}
-                            </Label>
-                            <Select
-                                value={selectedGrade?.toString() || ''}
-                                onValueChange={(v) => setValue('grade', v ? parseInt(v) : null)}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder={t('اختر الصف...', 'Select grade...')} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {GRADE_OPTIONS[selectedStage].map((g) => (
-                                        <SelectItem key={g.value} value={g.value.toString()}>
-                                            {t(g.ar, g.en)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-
-                    {/* ===== SUBMIT ===== */}
-                    <Button
-                        type="submit"
-                        className="w-full h-12 text-base font-semibold"
-                        disabled={saving || !selectedStage}
+                {error && (
+                    <div
+                        className="mt-5 flex items-start gap-2.5 border-2 p-3"
+                        style={{
+                            borderColor: 'hsl(var(--destructive))',
+                            background: 'hsl(var(--destructive) / 0.08)',
+                        }}
+                        role="alert"
                     >
-                        {saving ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                            t('ابدأ رحلتك التعليمية 🚀', 'Start Learning 🚀')
-                        )}
-                    </Button>
-                </form>
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'hsl(var(--destructive))' }} />
+                        <p className="text-[13px] font-bold" style={{ color: 'hsl(var(--destructive))' }}>{error}</p>
+                    </div>
+                )}
 
-                <p className="text-xs text-muted-foreground text-center mt-4">
-                    {t('يمكنك تعديل هذه البيانات لاحقاً من ملفك الشخصي', 'You can update this later from your profile')}
+                <ArcadeButton
+                    type="button"
+                    variant="solid"
+                    className="mt-6 w-full"
+                    onClick={onSubmit}
+                    disabled={!stage}
+                    loading={saving}
+                >
+                    {!saving && t('متابعة', 'Continue')}
+                    {saving && t('جارٍ الحفظ', 'Saving')}
+                    {!saving && <ArrowIcon className="h-4 w-4" />}
+                </ArcadeButton>
+
+                <p className="mt-4 text-center text-[13px] font-medium" style={{ color: A.inkSoft }}>
+                    {t('يمكنك تغييرها لاحقًا من ملفك.', 'You can change this later from your profile.')}
                 </p>
             </div>
         </div>
