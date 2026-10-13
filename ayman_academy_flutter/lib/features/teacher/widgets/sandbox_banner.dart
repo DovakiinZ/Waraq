@@ -39,6 +39,8 @@ class SandboxBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // watch (not read) so the banner re-renders when the user flips AR/EN.
+    ref.watch(languageProvider);
     final t = ref.read(languageProvider.notifier).t;
     final arc = context.arc;
     final profile = ref.watch(authProvider).profile;
@@ -124,38 +126,43 @@ class SandboxBanner extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
                 for (final row in rows)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 18,
-                          height: 18,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            // On the electric-green fill the glyph takes
-                            // onAccent, never white.
-                            color: row.done ? arc.accent : Colors.transparent,
-                            border: Border.all(color: arc.line, width: Arc.borderWidth),
+                  Semantics(
+                    label:
+                        '${row.done ? t('مكتمل', 'Completed') : t('غير مكتمل', 'Not completed')}: ${t(row.ar, row.en)}',
+                    excludeSemantics: true,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 18,
+                            height: 18,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              // On the electric-green fill the glyph takes
+                              // onAccent, never white.
+                              color: row.done ? arc.accent : Colors.transparent,
+                              border: Border.all(color: arc.line, width: Arc.borderWidth),
+                            ),
+                            child: row.done
+                                ? Icon(Icons.check_rounded, size: 12, color: arc.onAccent)
+                                : null,
                           ),
-                          child: row.done
-                              ? Icon(Icons.check_rounded, size: 12, color: arc.onAccent)
-                              : null,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            t(row.ar, row.en),
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                              color: row.done ? arc.inkSoft : arc.ink,
-                              decoration: row.done ? TextDecoration.lineThrough : null,
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              t(row.ar, row.en),
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: row.done ? arc.inkSoft : arc.ink,
+                                decoration: row.done ? TextDecoration.lineThrough : null,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
               ],

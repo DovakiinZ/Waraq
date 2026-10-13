@@ -465,6 +465,10 @@ void main() {
       await pumpBanner(tester, fakeProfile(isActive: true));
 
       expect(find.text('قيد المراجعة'), findsNothing);
+      // This profile is approved but incomplete (no stages/bio/Sham Cash),
+      // so the checklist card is the branch this case exercises — assert it
+      // actually renders, not just that the pending banner is absent.
+      expect(find.text('أكمل ملفك'), findsOneWidget);
     });
 
     testWidgets('renders nothing at all for an approved, fully set-up teacher',
@@ -482,6 +486,12 @@ void main() {
 
       expect(find.text('قيد المراجعة'), findsNothing);
       expect(find.text('أكمل ملفك'), findsNothing);
+      // The two string checks above would also pass if the widget rendered
+      // some other, unrelated content. Assert the subtree is actually empty.
+      expect(
+        find.descendant(of: find.byType(SandboxBanner), matching: find.byType(ArcadeCard)),
+        findsNothing,
+      );
     });
   });
 }
