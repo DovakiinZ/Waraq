@@ -6,9 +6,9 @@ import { supabase } from '@/lib/supabase';
 import {
     BookOpen, Video, Plus, BookMarked, ClipboardList, Loader2,
     Users, Award, MessageSquare, Megaphone, ChevronRight, ChevronLeft,
-    AlertTriangle, CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SandboxBanner } from '@/components/teacher/SandboxBanner';
 
 function useTeacherDashboardData(userId: string | undefined) {
     return useQuery({
@@ -105,57 +105,9 @@ export default function TeacherDashboard() {
         { label: { ar: 'الرسائل', en: 'Messages' }, to: '/teacher/messages', icon: MessageSquare },
     ];
 
-    const isPending = profile?.is_active === false;
-    const p = profile as any;
-    const missingShamCash = !p?.shamcash_account_name || !p?.shamcash_account_number;
-
     return (
         <div className="space-y-8">
-            {/* Pending Approval Banner */}
-            {isPending && (
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-5 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                        <Loader2 className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-amber-800 dark:text-amber-300">
-                            {t('حسابك قيد المراجعة', 'Your Account is Under Review')}
-                        </h3>
-                        <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                            {t(
-                                'طلبك قيد المراجعة من قبل الإدارة. يمكنك تعديل ملفك الشخصي أثناء الانتظار. ستتمكن من نشر المواد والدروس بعد الموافقة على طلبك.',
-                                'Your application is being reviewed by the admin team. You can edit your profile while waiting. You\'ll be able to publish subjects and lessons once approved.'
-                            )}
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Missing Sham Cash Warning */}
-            {!isPending && missingShamCash && (
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-5 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                        <AlertTriangle className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="font-semibold text-amber-800 dark:text-amber-300">
-                            {t('بيانات شام كاش مطلوبة', 'Sham Cash Details Required')}
-                        </h3>
-                        <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                            {t(
-                                'يرجى إضافة بيانات حساب شام كاش الخاص بك لتتمكن من استلام المدفوعات من الطلاب.',
-                                'Please add your Sham Cash account details to receive student payments.'
-                            )}
-                        </p>
-                        <Link to="/teacher/profile">
-                            <Button size="sm" variant="outline" className="mt-3 gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/30">
-                                <CreditCard className="w-4 h-4" />
-                                {t('إضافة بيانات شام كاش', 'Add Sham Cash Details')}
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-            )}
+            <SandboxBanner />
 
             {/* Welcome */}
             <div className="bg-gradient-to-br from-primary/8 via-primary/4 to-background rounded-2xl p-6 border border-primary/10">
