@@ -156,6 +156,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             const SizedBox(height: 20),
           ],
 
+          ArcadeCard(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    t('هل أنت معلّم؟', 'Are you a teacher?'),
+                    style: TextStyle(color: arc.ink, fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                TextButton(
+                  key: const Key('register_go_apply'),
+                  onPressed: () => context.go(Routes.teacherApply),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(t('قدّم من هنا', 'Apply here')),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
           ArcadeField(
             label: t('الاسم الكامل', 'Full name'),
             required: true,

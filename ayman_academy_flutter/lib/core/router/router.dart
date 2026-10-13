@@ -5,6 +5,7 @@ import 'package:ayman_academy_app/core/router/routes.dart';
 import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/features/auth/screens/login_screen.dart';
 import 'package:ayman_academy_app/features/auth/screens/register_screen.dart';
+import 'package:ayman_academy_app/features/teacher/application/screens/teacher_application_screen.dart';
 import 'package:ayman_academy_app/features/auth/screens/reset_password_screen.dart';
 import 'package:ayman_academy_app/features/admin/screens/admin_panel_screen.dart';
 import 'package:ayman_academy_app/features/auth/screens/admin_web_only_screen.dart';
@@ -103,6 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Auth routes
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: Routes.register, builder: (_, _) => const RegisterScreen()),
+      GoRoute(path: Routes.teacherApply, builder: (_, _) => const TeacherApplicationScreen()),
       GoRoute(path: Routes.resetPassword, builder: (_, _) => const ResetPasswordScreen()),
       GoRoute(path: Routes.onboarding, builder: (_, _) => const StudentOnboardingScreen()),
       GoRoute(path: Routes.adminPanel, builder: (_, _) => const AdminPanelScreen()),
