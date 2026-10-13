@@ -321,9 +321,12 @@ export default function TeacherApplication() {
                                 </div>
                             </div>
 
-                            {/* Professional section */}
+                            {/* What they teach. The bio, profession and major that used to sit
+                                here moved to the setup checklist on the dashboard — they are
+                                public-profile material, not approve-or-reject material — so this
+                                section is named for what it actually still asks. */}
                             <div style={{ borderTop: `2px solid ${A.line}`, paddingTop: '2rem' }}>
-                                <SectionHeading>{t('المعلومات المهنية', 'Professional info')}</SectionHeading>
+                                <SectionHeading>{t('ماذا تُدرّس', 'What you teach')}</SectionHeading>
                                 <div className="mt-5 space-y-5">
                                     {/* Grades. Native checkbox for keyboard and screen-reader
                                         support, visually replaced by a square arcade marker. */}
