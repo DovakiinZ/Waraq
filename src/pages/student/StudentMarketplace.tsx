@@ -14,6 +14,9 @@ import { supabase } from '@/lib/supabase';
 import { STALE_TIMES } from '@/lib/queryConfig';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { STAGES } from '@/lib/studentStages';
+import { A } from '@/components/arcade/theme';
+import { ArcadeChip } from '@/components/arcade/primitives';
 import {
     ShoppingCart,
     Store,
@@ -29,9 +32,12 @@ import {
     GraduationCap,
     Play,
     Star,
+    X,
 } from 'lucide-react';
 
 type Tab = 'browse' | 'orders';
+
+const STRIP_KEY = 'waraq-seen-stage-strip';
 
 // Gradient placeholders when no cover image
 const GRADIENTS = [
@@ -52,6 +58,19 @@ export default function StudentMarketplace() {
     const [activeTab, setActiveTab] = useState<Tab>('browse');
     const [searchQuery, setSearchQuery] = useState('');
     const [stageFilter, setStageFilter] = useState<string>('all');
+
+    // Dismissal is per-device local state, not a profile column. Reappearing once
+    // on a second device costs less than a migration.
+    const [showStrip, setShowStrip] = useState(() => {
+        try { return localStorage.getItem(STRIP_KEY) !== '1'; } catch { return false; }
+    });
+
+    const dismissStrip = () => {
+        setShowStrip(false);
+        try { localStorage.setItem(STRIP_KEY, '1'); } catch { /* private mode: just hide it */ }
+    };
+
+    const stageLabel = STAGES.find((s) => s.key === profile?.student_stage);
 
     // The cart lives in CartContext now, so it survives leaving this page,
     // signing in, and a reload — and the header button can show its count.
@@ -239,6 +258,27 @@ export default function StudentMarketplace() {
             {/* ── BROWSE TAB ──────────────────────── */}
             {activeTab === 'browse' && (
                 <>
+                    {showStrip && stageLabel && (
+                        <div
+                            className="mb-5 flex items-center gap-3 border-2 p-3"
+                            style={{ background: A.wash, borderColor: A.line }}
+                        >
+                            <ArcadeChip filled>{t('جديد', 'New')}</ArcadeChip>
+                            <span className="flex-1 text-[14px] font-bold" style={{ color: A.ink }}>
+                                {t(`مواد ${stageLabel.arLong}`, `${stageLabel.enLong} subjects`)}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={dismissStrip}
+                                className="arc-focus"
+                                style={{ color: A.inkSoft }}
+                                aria-label={t('إغلاق', 'Dismiss')}
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                    )}
+
                     {/* Search + Stage Filters */}
                     <div className="space-y-4 mb-6">
                         {/* Search */}
