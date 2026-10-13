@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
@@ -91,7 +92,6 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
         'description_ar': _descArController.text.trim().isNotEmpty ? _descArController.text.trim() : null,
         'description_en': _descEnController.text.trim().isNotEmpty ? _descEnController.text.trim() : null,
         'stage_id': _selectedStageId,
-        'is_active': pending ? false : _isActive,
         'is_paid': _isPaid,
         'price_amount': _isPaid ? double.tryParse(_priceController.text) ?? 0 : null,
         'price_currency': _isPaid ? _currency : null,
@@ -99,9 +99,17 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
       };
 
       if (widget.subjectId != null) {
+        // is_active is deliberately NOT part of an update: deactivating a
+        // teacher must not unpublish subjects they already published
+        // (migration 113 permits UPDATEs to a published subject precisely so
+        // this keeps working), and the web client (TeacherSubjects.tsx) never
+        // sends is_active on update either.
         await supabase.from('subjects').update(payload).eq('id', widget.subjectId!);
       } else {
-        await supabase.from('subjects').insert(payload);
+        await supabase.from('subjects').insert({
+          ...payload,
+          'is_active': pending ? false : _isActive,
+        });
       }
 
       if (mounted) {
@@ -111,7 +119,7 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
         Navigator.pop(context, true);
       }
     } catch (e) {
-      if (e.toString().contains('TEACHER_NOT_APPROVED')) {
+      if (_isTeacherNotApproved(e)) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(t(
@@ -130,6 +138,18 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// A pending (deactivated) teacher is forced to draft by a database
+  /// trigger (migration 113), which raises this as a Postgres error. Follows
+  /// the same type-check pattern as `_isRlsDenial` in lesson_editor_screen.dart
+  /// rather than matching on the raw exception string.
+  static bool _isTeacherNotApproved(Object e) {
+    if (e is PostgrestException) {
+      return e.message.contains('TEACHER_NOT_APPROVED') ||
+          (e.code?.contains('TEACHER_NOT_APPROVED') ?? false);
+    }
+    return e.toString().contains('TEACHER_NOT_APPROVED');
   }
 
   @override
