@@ -450,16 +450,43 @@ EOF
 
 - [ ] **Step 1: Force draft when pending**
 
-In `_save()`, the payload at `course_editor_screen.dart:85-96` sets `'is_active': _isActive`. Change it to respect approval:
+In `_save()`, the payload at `course_editor_screen.dart:85-96` sets `'is_active': _isActive`, and that one `payload` map is used for **both** the `update` and the `insert` call.
+
+**`is_active` must come out of the shared payload.** Forcing it in the shared map would mean a deactivated teacher who edits a typo on an already-published course silently unpublishes it — contradicting the spec's decision in §2.3 and migration 113's deliberate allowance of UPDATEs to a published subject.
+
+**The rule is "never force `is_active: false` on an update", NOT "never send `is_active` on an update."** Those are different, and the second reading leaves a draft that can never be published — which is exactly what happened on the first attempt here and had to be fixed after the whole-branch review. Migration 113 only short-circuits when `old.is_active` was *already* true; it explicitly permits an approved teacher's `false → true`.
+
+| | insert | update |
+|---|---|---|
+| pending | `is_active: false` | **omit the key entirely** — the row keeps whatever it has |
+| approved | `is_active: _isActive` | `is_active: _isActive` — they are deliberately choosing it |
 
 ```dart
       final pending = ref.read(authProvider).profile?.isActive == false;
       final payload = {
-        // ... unchanged keys ...
-        'is_active': pending ? false : _isActive,
-        // ... unchanged keys ...
+        // ... every existing key EXCEPT is_active ...
       };
+
+      if (widget.subjectId != null) {
+        // A pending teacher's update omits is_active entirely: deactivating a
+        // teacher must not unpublish subjects they already published. An
+        // approved teacher's update DOES include it — they are deliberately
+        // choosing the switch's value. Never force `false` on an update either way.
+        await supabase.from('subjects').update({
+          ...payload,
+          if (!pending) 'is_active': _isActive,
+        }).eq('id', widget.subjectId!);
+      } else {
+        await supabase.from('subjects').insert({
+          ...payload,
+          'is_active': pending ? false : _isActive,
+        });
+      }
 ```
+
+The switch is disabled while pending, so `_isActive` cannot change during a pending session.
+
+**The web side needs a publish control too** (§2.2 asks for it locked, not hidden). `TeacherSubjects.tsx` writes `is_active` only on create, so without a per-subject publish toggle — sending *only* `is_active` and `updated_at`, never the whole form payload — a draft is equally stranded there.
 
 - [ ] **Step 2: Disable the publish switch and say why**
 
@@ -1161,12 +1188,22 @@ Create `.smoke/31-student-onboarding.mjs`:
  * The student's original stage is restored in the finally block.
  */
 import { createClient } from '@supabase/supabase-js';
-import 'dotenv/config';
+import { readFileSync } from 'fs';
 
-const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+// Same loader as .smoke/verify-110.mjs: the Supabase URL and anon key live in
+// the repo-root .env as VITE_* and the test student's credentials in
+// .smoke/.env. There is no dotenv dependency and no process.env here.
+// **Run this from the repo root** — both paths are relative.
+const rd = (p) => Object.fromEntries(readFileSync(p, 'utf8').split(/\r?\n/)
+  .filter(l => l.includes('=') && !l.startsWith('#'))
+  .map(l => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim()]));
+const env = rd('.env'), senv = rd('.smoke/.env');
+
+const sb = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY,
+  { auth: { persistSession: false } });
 const { data: auth, error: authError } = await sb.auth.signInWithPassword({
-  email: process.env.STUDENT_EMAIL,
-  password: process.env.STUDENT_PASSWORD,
+  email: senv.STUDENT_EMAIL,
+  password: senv.STUDENT_PASSWORD,
 });
 if (authError) { console.error('sign-in failed:', authError.message); process.exit(1); }
 const UID = auth.user.id;
@@ -1402,8 +1439,10 @@ EOF
 
 Change the write in `handleSave` to carry all four, and surface a failure — the current call ignores its error entirely:
 
+**No `as any` cast here.** `supabase` is `createClient<Database>` and `profiles` is typed as `TableDef<Profile>`, so `.update()` already accepts these columns — `StudentOnboarding.tsx` writes `student_stage` to the same table uncast. Adding the cast only buys a `no-explicit-any` lint error on a clean file.
+
 ```tsx
-        const { error } = await (supabase.from('profiles') as any)
+        const { error } = await supabase.from('profiles')
             .update({
                 full_name: fullName,
                 student_stage: stage,
