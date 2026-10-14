@@ -99,12 +99,21 @@ class _CourseEditorScreenState extends ConsumerState<CourseEditorScreen> {
       };
 
       if (widget.subjectId != null) {
-        // is_active is deliberately NOT part of an update: deactivating a
-        // teacher must not unpublish subjects they already published
+        // A pending teacher's update omits `is_active` entirely: deactivating
+        // a teacher must not unpublish subjects they already published
         // (migration 113 permits UPDATEs to a published subject precisely so
-        // this keeps working), and the web client (TeacherSubjects.tsx) never
-        // sends is_active on update either.
-        await supabase.from('subjects').update(payload).eq('id', widget.subjectId!);
+        // this keeps working), and sending `is_active: false` here would force
+        // an already-published subject back to draft on every unrelated edit.
+        // An approved teacher's update DOES include it — they are deliberately
+        // choosing the switch's value, and the database already permits an
+        // approved teacher's false -> true transition (migration 113), so the
+        // web client (TeacherSubjects.tsx) sends it too via its own publish
+        // control. Never force `false` on an update either way.
+        final updatePayload = {
+          ...payload,
+          if (!pending) 'is_active': _isActive,
+        };
+        await supabase.from('subjects').update(updatePayload).eq('id', widget.subjectId!);
       } else {
         await supabase.from('subjects').insert({
           ...payload,

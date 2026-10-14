@@ -289,6 +289,7 @@ export default function TeacherSubjects() {
         cover_image_url: '',
     });
     const [uploadingCover, setUploadingCover] = useState(false);
+    const [togglingSubjectId, setTogglingSubjectId] = useState<string | null>(null);
 
     const { data: subjects = [], isLoading } = useTeacherSubjects(user?.id);
     const { data: detail, isLoading: detailLoading } = useSubjectDetail(
@@ -515,6 +516,47 @@ export default function TeacherSubjects() {
             });
         } finally {
             setCreatingSubject(false);
+        }
+    };
+
+    // Flips `is_active` for one subject. Sends ONLY `is_active` (+ `updated_at`)
+    // on the update — never the whole form payload — so this can't clobber
+    // other fields with stale state. Guarded by `canPublish` at the call site;
+    // the database trigger (migration 113) is the real enforcement, this is
+    // just what keeps a pending teacher from seeing a working control.
+    const handleTogglePublish = async (subject: TeacherSubject) => {
+        if (!canPublish) return;
+        setTogglingSubjectId(subject.id);
+        try {
+            const { error } = await supabase
+                .from('subjects')
+                .update({ is_active: !subject.is_active, updated_at: new Date().toISOString() })
+                .eq('id', subject.id);
+            if (error) throw error;
+
+            queryClient.invalidateQueries({ queryKey: ['teacher', user?.id, 'subjects'] });
+            toast.success(subject.is_active
+                ? t('تم إخفاء المادة', 'Subject unpublished')
+                : t('تم نشر المادة', 'Subject published'));
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err ?? '');
+            if (message.includes('TEACHER_NOT_APPROVED')) {
+                toast.error(
+                    t('النشر يُفتح بعد الموافقة', 'Publishing unlocks after approval'),
+                    {
+                        description: t(
+                            'سيتم فتح النشر بعد موافقة الإدارة على حسابك.',
+                            'Publishing will unlock once your account is approved.',
+                        ),
+                    },
+                );
+                return;
+            }
+            toast.error(t('فشل في تحديث حالة النشر', 'Failed to update publish status'), {
+                description: message,
+            });
+        } finally {
+            setTogglingSubjectId(null);
         }
     };
 
@@ -1009,52 +1051,78 @@ export default function TeacherSubjects() {
             ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredSubjects.map((subject) => (
-                        <button
+                        <div
                             key={subject.id}
-                            onClick={() => setSelectedSubject(subject)}
-                            className="bg-background rounded-lg border border-border p-5 text-start hover:border-primary/30 transition-colors group"
+                            className="bg-background rounded-lg border border-border p-5 hover:border-primary/30 transition-colors group"
                         >
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="w-10 h-10 rounded-lg bg-primary/8 flex items-center justify-center">
-                                    <BookOpen className="w-5 h-5 text-primary" />
+                            <button
+                                onClick={() => setSelectedSubject(subject)}
+                                className="w-full text-start"
+                            >
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="w-10 h-10 rounded-lg bg-primary/8 flex items-center justify-center">
+                                        <BookOpen className="w-5 h-5 text-primary" />
+                                    </div>
+                                    <ChevronIcon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                 </div>
-                                <ChevronIcon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                            </div>
-                            {subject.stage && (
-                                <span className="inline-block px-2 py-0.5 bg-secondary text-[10px] text-muted-foreground rounded mb-2">
-                                    {t(subject.stage.title_ar, subject.stage.title_en || subject.stage.title_ar)}
-                                </span>
-                            )}
-                            <div className="flex items-center justify-between gap-2 mb-3">
-                                <h3 className="text-base font-medium text-foreground">
-                                    {t(subject.title_ar, subject.title_en || subject.title_ar)}
-                                </h3>
-                                {subject.is_active ? (
-                                    <Badge variant="default" className="text-[10px] flex-shrink-0">
-                                        {t('منشورة', 'Published')}
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="secondary" className="text-[10px] flex-shrink-0">
-                                        {t('مسودة', 'Draft')}
-                                    </Badge>
+                                {subject.stage && (
+                                    <span className="inline-block px-2 py-0.5 bg-secondary text-[10px] text-muted-foreground rounded mb-2">
+                                        {t(subject.stage.title_ar, subject.stage.title_en || subject.stage.title_ar)}
+                                    </span>
+                                )}
+                                <div className="flex items-center justify-between gap-2 mb-3">
+                                    <h3 className="text-base font-medium text-foreground">
+                                        {t(subject.title_ar, subject.title_en || subject.title_ar)}
+                                    </h3>
+                                    {subject.is_active ? (
+                                        <Badge variant="default" className="text-[10px] flex-shrink-0">
+                                            {t('منشورة', 'Published')}
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="secondary" className="text-[10px] flex-shrink-0">
+                                            {t('مسودة', 'Draft')}
+                                        </Badge>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                        <Video className="w-3.5 h-3.5" />
+                                        {subject.lessons_count} {t('درس', 'lessons')}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <BookOpen className="w-3.5 h-3.5" />
+                                        {subject.published_count} {t('منشور', 'published')}
+                                    </span>
+                                </div>
+                            </button>
+
+                            {/* Publish control — locked (not hidden) while the
+                                teacher is pending approval, so the disabled
+                                control plus the reason below it teach the rule
+                                instead of looking like a missing feature. */}
+                            <div className="mt-3 pt-3 border-t border-border">
+                                <Button
+                                    size="sm"
+                                    variant={subject.is_active ? 'outline' : 'default'}
+                                    className="w-full"
+                                    disabled={!canPublish || togglingSubjectId === subject.id}
+                                    onClick={() => handleTogglePublish(subject)}
+                                >
+                                    {togglingSubjectId === subject.id ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : subject.is_active ? (
+                                        t('إخفاء', 'Unpublish')
+                                    ) : (
+                                        t('نشر', 'Publish')
+                                    )}
+                                </Button>
+                                {!subject.is_active && !canPublish && (
+                                    <p className="mt-2 text-[11px] font-medium text-muted-foreground">
+                                        {t('النشر يُفتح بعد الموافقة', 'Publishing unlocks after approval')}
+                                    </p>
                                 )}
                             </div>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                    <Video className="w-3.5 h-3.5" />
-                                    {subject.lessons_count} {t('درس', 'lessons')}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                    <BookOpen className="w-3.5 h-3.5" />
-                                    {subject.published_count} {t('منشور', 'published')}
-                                </span>
-                            </div>
-                            {!subject.is_active && !canPublish && (
-                                <p className="mt-2 text-[11px] font-medium text-muted-foreground">
-                                    {t('النشر يُفتح بعد الموافقة', 'Publishing unlocks after approval')}
-                                </p>
-                            )}
-                        </button>
+                        </div>
                     ))}
                 </div>
             )}
