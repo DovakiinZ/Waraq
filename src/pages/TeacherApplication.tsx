@@ -12,6 +12,7 @@
 
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import Layout from '@/components/layout/Layout';
@@ -32,6 +33,7 @@ const GRADE_OPTIONS = [
 
 export default function TeacherApplication() {
     const { t, language, direction } = useLanguage();
+    const { refreshProfile } = useAuth();
     const navigate = useNavigate();
     const [submitting, setSubmitting] = useState(false);
     const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
@@ -92,7 +94,16 @@ export default function TeacherApplication() {
     const onSubmit = async (data: ApplicationFormData) => {
         setSubmitting(true);
         try {
-            // 1. Create auth user
+            // Normalised once, used for every write below. profiles.email and
+            // teacher_applications.email must agree on casing — GoTrue already
+            // lowercases its own JWT email claim, and the admin approval flow
+            // and the setup-checklist lookup both compare these two columns
+            // verbatim, so a mismatch here means "Ahmad@Gmail.com" never
+            // matches "ahmad@gmail.com" later.
+            const normalizedEmail = data.email.trim().toLowerCase();
+
+            // 1. Create auth user (GoTrue normalises the email itself; passing
+            // the as-typed value here is fine)
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: data.email,
                 password: data.password,
@@ -111,7 +122,7 @@ export default function TeacherApplication() {
             const { error: profileError } = await (supabase.from('profiles') as any)
                 .insert({
                     id: authData.user.id,
-                    email: data.email,
+                    email: normalizedEmail,
                     full_name: data.full_name,
                     role: 'teacher',
                     is_active: false,
@@ -137,7 +148,7 @@ export default function TeacherApplication() {
                 .from('teacher_applications')
                 .insert({
                     full_name: data.full_name,
-                    email: data.email,
+                    email: normalizedEmail,
                     phone: data.phone,
                     grades_taught: data.grades_taught,
                     status: 'pending',
@@ -147,6 +158,15 @@ export default function TeacherApplication() {
                 console.error('Application insert error:', appError);
                 // Don't throw — account is created, application is secondary
             }
+
+            // handle_new_user (043) hard-codes role = 'student' on the
+            // trigger-created profile row, ignoring raw_user_meta_data.role.
+            // The INSERT/UPDATE above corrects it to 'teacher', but the auth
+            // listener's own profile fetch can win the race and leave stale
+            // state in context. Awaiting a refresh here is load-bearing: skip
+            // it and TeacherRoute can see role: 'student' and bounce this
+            // teacher into the student onboarding stage picker.
+            await refreshProfile();
 
             // Keep the session: the teacher lands in the sandbox and starts
             // building. Signing them out of an account they just created was

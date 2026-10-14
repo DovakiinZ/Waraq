@@ -57,6 +57,16 @@ class _TeacherApplicationScreenState extends ConsumerState<TeacherApplicationScr
 
     setState(() { _loading = true; _error = null; });
     try {
+      // Normalised once, used for every write below. profiles.email and
+      // teacher_applications.email must agree on casing — GoTrue already
+      // lowercases its own JWT email claim, and the admin approval flow and
+      // the setup-checklist lookup both compare these two columns verbatim,
+      // so a mismatch here means "Ahmad@Gmail.com" never matches
+      // "ahmad@gmail.com" later.
+      final normalizedEmail = _emailController.text.trim().toLowerCase();
+
+      // GoTrue normalises the email itself; passing the as-typed value here
+      // is fine.
       final session = await ref.read(authProvider.notifier).signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -69,7 +79,7 @@ class _TeacherApplicationScreenState extends ConsumerState<TeacherApplicationScr
         // publish until an admin flips it (enforced by migration 113).
         await supabase.from('profiles').upsert({
           'id': userId,
-          'email': _emailController.text.trim(),
+          'email': normalizedEmail,
           'full_name': _nameController.text.trim(),
           'phone': _phoneController.text.trim(),
           'role': 'teacher',
@@ -82,7 +92,7 @@ class _TeacherApplicationScreenState extends ConsumerState<TeacherApplicationScr
         try {
           await supabase.from('teacher_applications').insert({
             'full_name': _nameController.text.trim(),
-            'email': _emailController.text.trim(),
+            'email': normalizedEmail,
             'phone': _phoneController.text.trim(),
             'grades_taught': _selectedStages.join(','),
             'status': 'pending',
@@ -93,8 +103,22 @@ class _TeacherApplicationScreenState extends ConsumerState<TeacherApplicationScr
       }
 
       // A session means they are in: the router redirect takes them to the
-      // teacher home on its own. No session means confirmation is on.
-      if (session == null) setState(() => _success = true);
+      // teacher home on its own. No session means confirmation is on — there
+      // is no profile to refresh on that branch, since signUp returned before
+      // one could ever be fetched.
+      //
+      // handle_new_user (043) hard-codes role = 'student' on the
+      // trigger-created profile row, ignoring raw_user_meta_data.role. The
+      // upsert above corrects it to 'teacher', but the router's own profile
+      // read can win the race and leave stale state in the provider.
+      // Awaiting a refresh here is load-bearing: skip it and the redirect in
+      // router.dart can see role: 'student' and send this teacher to the
+      // student onboarding stage picker.
+      if (session == null) {
+        setState(() => _success = true);
+      } else {
+        await ref.read(authProvider.notifier).refreshProfile();
+      }
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {

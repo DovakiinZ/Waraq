@@ -112,10 +112,14 @@ export default function TeacherApplications() {
             if (updateError) throw updateError;
 
             // 2. Activate the teacher's profile (created during registration with is_active: false)
+            // Compare lowercased: profiles.email and teacher_applications.email
+            // don't always agree on casing across clients, so a raw equality
+            // check can silently return null here, leave is_active untouched,
+            // and still toast success — a teacher who can never be approved.
             const { data: teacherProfile } = await supabase
                 .from('profiles')
                 .select('id')
-                .eq('email', app.email)
+                .eq('email', app.email.trim().toLowerCase())
                 .eq('role', 'teacher')
                 .maybeSingle();
 

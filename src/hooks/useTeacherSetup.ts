@@ -20,10 +20,14 @@ export function useTeacherSetup() {
         queryKey: ['teacher', user?.id, 'application', profile?.email],
         enabled: !!profile?.email,
         queryFn: async () => {
+            // Compare lowercased: profiles.email and teacher_applications.email
+            // don't always agree on casing (web writes GoTrue's lowercased
+            // value, Android has written the as-typed value), so a raw
+            // equality check can silently miss the applicant's own row.
             const { data } = await supabase
                 .from('teacher_applications')
                 .select('grades_taught')
-                .eq('email', profile!.email)
+                .eq('email', profile!.email.trim().toLowerCase())
                 .maybeSingle();
             return data;
         },
