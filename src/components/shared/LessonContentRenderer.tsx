@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LessonBlock, LessonSection } from '@/types/database';
 import { cn } from '@/lib/utils';
-import { Lightbulb, AlertTriangle, FileText, CheckCircle, Video as VideoIcon } from 'lucide-react';
+import { Lightbulb, AlertTriangle, FileText, CheckCircle, Video as VideoIcon, Download, ExternalLink } from 'lucide-react';
 
 // Helper to extract YouTube ID
 const getYoutubeId = (url: string) => {
@@ -199,7 +199,7 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
                     </div>
                 </div>
             );
-        case 'video':
+        case 'video': {
             const localYoutubeId = block.url ? getYoutubeId(block.url) : null;
             if (localYoutubeId) {
                 return (
@@ -219,18 +219,84 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
                     </div>
                 );
             }
+            // Not a YouTube link, so it is an uploaded clip (or any direct
+            // media URL) — play it inline rather than printing the raw URL.
+            if (!block.url) return null;
             return (
-                <a href={block.url || '#'} target="_blank" rel="noopener noreferrer" className="block p-4 bg-secondary/20 rounded-lg flex items-center gap-3 hover:bg-secondary/40 transition-colors">
-                    <VideoIcon className="w-6 h-6 text-primary" />
-                    <span className="text-brand-green dark:text-brand-mint underline">{block.url}</span>
-                </a>
-            );
-        case 'image':
-            return (
-                <div className="rounded-lg overflow-hidden my-4">
-                    <img src={block.url || ''} alt="Lesson Content" className="max-w-full h-auto mx-auto rounded-lg shadow-sm" />
+                <div className="space-y-2">
+                    {(block.title_ar || block.title_en) && (
+                        <h3 className="text-sm font-semibold">{t(block.title_ar || '', block.title_en || '')}</h3>
+                    )}
+                    <video
+                        src={block.url}
+                        controls
+                        preload="metadata"
+                        className="w-full max-h-[70vh] rounded-lg bg-black"
+                    />
                 </div>
             );
+        }
+        case 'image': {
+            if (!block.url) return null;
+            // The block title is the teacher-written caption. Using it as alt
+            // text too means a described image is actually described to a
+            // screen reader; an undescribed one stays alt="" (decorative)
+            // rather than announcing a useless generic label.
+            const caption = t(block.title_ar || '', block.title_en || '');
+            return (
+                <figure className="my-4">
+                    <img
+                        src={block.url}
+                        alt={caption}
+                        loading="lazy"
+                        className="max-w-full h-auto mx-auto rounded-lg shadow-sm"
+                    />
+                    {caption && (
+                        <figcaption className="mt-2 text-center text-xs text-muted-foreground">
+                            {caption}
+                        </figcaption>
+                    )}
+                </figure>
+            );
+        }
+        case 'file': {
+            if (!block.url) return null;
+            const name = t(block.title_ar || '', block.title_en || '')
+                || t('ملف مرفق', 'Attached file');
+            return (
+                <a
+                    href={block.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 bg-secondary/20 rounded-lg hover:bg-secondary/40 transition-colors my-2"
+                >
+                    <FileText className="w-6 h-6 text-primary shrink-0" />
+                    <span className="flex-1 text-sm font-medium truncate">{name}</span>
+                    <Download className="w-4 h-4 text-muted-foreground shrink-0" />
+                </a>
+            );
+        }
+        case 'link': {
+            if (!block.url) return null;
+            const label = t(block.title_ar || '', block.title_en || '') || block.url;
+            const note = t(block.content_ar || '', block.content_en || '');
+            return (
+                <a
+                    href={block.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-3 p-4 bg-secondary/20 rounded-lg hover:bg-secondary/40 transition-colors my-2"
+                >
+                    <ExternalLink className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-medium break-words">{label}</span>
+                        {note && (
+                            <span className="block text-xs text-muted-foreground mt-0.5">{note}</span>
+                        )}
+                    </span>
+                </a>
+            );
+        }
         default:
             return null;
     }

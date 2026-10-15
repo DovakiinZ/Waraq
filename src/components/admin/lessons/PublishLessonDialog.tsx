@@ -13,7 +13,41 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Eye, CheckCircle2, Globe, Lock, Coins, Loader2 } from 'lucide-react';
+import { Eye, CheckCircle2, Globe, Lock, Coins, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
+import { ReadinessIssue, checkLessonReadiness, hasBlockers } from '@/lib/lessonReadiness';
+
+/** Bilingual copy for each readiness code. `n` is the affected block count. */
+const ISSUE_COPY: Record<string, (n: number) => [string, string]> = {
+    no_title: () => ['الدرس بدون عنوان عربي', 'The lesson has no Arabic title'],
+    no_content: () => [
+        'لا يوجد محتوى منشور في هذا الدرس — سيرى الطلاب صفحة فارغة',
+        'This lesson has no published content — students would see an empty page',
+    ],
+    media_without_url: n => [
+        `${n} عنصر وسائط بدون رابط أو ملف`,
+        `${n} media block${n === 1 ? '' : 's'} with no file or link`,
+    ],
+    empty_text_block: n => [
+        `${n} عنصر نصي فارغ`,
+        `${n} empty text block${n === 1 ? '' : 's'}`,
+    ],
+    qa_without_question: n => [
+        `${n} سؤال بدون نص السؤال`,
+        `${n} Q&A block${n === 1 ? '' : 's'} with no question`,
+    ],
+    no_english_title: () => [
+        'لا يوجد عنوان إنجليزي (اختياري)',
+        'No English title (optional)',
+    ],
+    blocks_without_english: n => [
+        `${n} عنصر بالعربية فقط`,
+        `${n} block${n === 1 ? '' : 's'} in Arabic only`,
+    ],
+    no_duration: () => [
+        'مدة الدرس غير محددة — سيُحتسب التقدم بالتقدير',
+        'Lesson duration not set — progress will be estimated',
+    ],
+};
 
 interface PublishLessonDialogProps {
     open: boolean;
@@ -40,7 +74,20 @@ export default function PublishLessonDialog({
         is_free_preview: lesson.is_free_preview || false,
     });
 
+    const issues = checkLessonReadiness(lesson, blocks);
+    // Blockers only matter when the teacher is actually making it visible.
+    // Saving a draft with gaps is the normal way to work.
+    const blocked = settings.is_published && hasBlockers(issues);
+
+    const issueText = (issue: ReadinessIssue) => {
+        const copy = ISSUE_COPY[issue.code];
+        if (!copy) return issue.code;
+        const [ar, en] = copy(issue.count ?? 0);
+        return t(ar, en);
+    };
+
     const handlePublish = async () => {
+        if (blocked) return;
         setIsSubmitting(true);
         try {
             await onPublish(settings);
@@ -167,6 +214,41 @@ export default function PublishLessonDialog({
                             </div>
                         </div>
 
+                        {/* Readiness checklist — blockers are what students
+                            would actually see broken; warnings are the
+                            teacher's call and never prevent publishing. */}
+                        {issues.length > 0 && (
+                            <div className="p-4 rounded-lg border space-y-2">
+                                <p className="text-xs font-medium uppercase text-muted-foreground">
+                                    {t('جاهزية الدرس', 'Lesson readiness')}
+                                </p>
+                                <ul className="space-y-1.5">
+                                    {issues.map((issue, i) => (
+                                        <li key={i} className="flex items-start gap-2 text-sm">
+                                            {issue.severity === 'blocker' ? (
+                                                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-destructive" />
+                                            ) : (
+                                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+                                            )}
+                                            <span className={issue.severity === 'blocker'
+                                                ? 'text-destructive'
+                                                : 'text-muted-foreground'}>
+                                                {issueText(issue)}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                                {blocked && (
+                                    <p className="text-xs text-destructive pt-1">
+                                        {t(
+                                            'أصلح النقاط الحمراء أو احفظ الدرس كمسودة.',
+                                            'Fix the items in red, or save the lesson as a draft.',
+                                        )}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-2">
                             <p className="text-xs font-medium text-primary uppercase">
                                 {t('ملخص الحالة', 'Status Summary')}
@@ -193,8 +275,19 @@ export default function PublishLessonDialog({
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>
                         {t('إلغاء', 'Cancel')}
                     </Button>
-                    <Button onClick={handlePublish} disabled={isSubmitting} className="min-w-[140px]">
-                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('تأكيد ونشر الدرس', 'Confirm & Publish Lesson')}
+                    <Button
+                        onClick={handlePublish}
+                        disabled={isSubmitting || blocked}
+                        className="min-w-[140px]"
+                        title={blocked
+                            ? t('أصلح النقاط الحمراء أولاً', 'Fix the items in red first')
+                            : undefined}
+                    >
+                        {isSubmitting
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : settings.is_published
+                                ? t('تأكيد ونشر الدرس', 'Confirm & Publish Lesson')
+                                : t('حفظ كمسودة', 'Save as draft')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

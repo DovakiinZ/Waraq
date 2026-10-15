@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { LessonBlock, LessonBlockType } from '@/types/database';
+import AssetUploadField from './AssetUploadField';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -11,7 +13,7 @@ import AIBlockAssistant from './AIBlockAssistant';
 import {
     GripVertical, X, Type, Image as ImageIcon, Video, FileText,
     Link as LinkIcon, AlertTriangle, Lightbulb, Plus, Eye, EyeOff,
-    BookOpen, PenLine, Sigma, HelpCircle, Beaker, Sparkles,
+    BookOpen, PenLine, Sigma, HelpCircle, Beaker, Sparkles, Wand2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -26,15 +28,33 @@ import {
     DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 
+/**
+ * The lesson id the media blocks upload into. Passed by context rather than
+ * threaded through SortableBlock -> BlockRenderer -> each block component,
+ * which would mean editing eight signatures to deliver one string.
+ */
+const LessonAssetContext = createContext<{ lessonId?: string | null }>({});
+
+/** lessonId + the signed-in teacher's uid, for AssetUploadField. */
+function useLessonAssetTarget() {
+    const { lessonId } = useContext(LessonAssetContext);
+    const { profile } = useAuth();
+    return { lessonId, teacherId: profile?.id ?? null };
+}
+
 interface BlockEditorProps {
     blocks: LessonBlock[];
     onReorder: (blocks: LessonBlock[]) => void;
     onCreateBlock: (type: LessonBlockType) => void;
     onUpdateBlock: (id: string, data: Partial<LessonBlock>) => void;
     onDeleteBlock: (id: string) => void;
+    /** Required for media uploads; without it the blocks fall back to URL entry. */
+    lessonId?: string | null;
+    /** Opens the paste-a-lesson dialog. Omitted = button hidden. */
+    onRequestImport?: () => void;
 }
 
-export default function BlockEditor({ blocks, onReorder, onCreateBlock, onUpdateBlock, onDeleteBlock }: BlockEditorProps) {
+export default function BlockEditor({ blocks, onReorder, onCreateBlock, onUpdateBlock, onDeleteBlock, lessonId, onRequestImport }: BlockEditorProps) {
     const { t } = useLanguage();
     const sensors = useSensors(useSensor(PointerSensor));
 
@@ -48,6 +68,7 @@ export default function BlockEditor({ blocks, onReorder, onCreateBlock, onUpdate
     };
 
     return (
+        <LessonAssetContext.Provider value={{ lessonId }}>
         <div className="space-y-6 pb-20">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
@@ -65,10 +86,21 @@ export default function BlockEditor({ blocks, onReorder, onCreateBlock, onUpdate
             </DndContext>
 
             {/* Add Block Area */}
-            <div className="flex justify-center mt-8 px-2">
+            <div className="flex flex-wrap justify-center items-center gap-2 mt-8 px-2">
                 <AddBlockMenu onAdd={onCreateBlock} />
+                {onRequestImport && (
+                    <Button
+                        variant="ghost"
+                        onClick={onRequestImport}
+                        className="gap-2 h-12 md:h-9 w-full md:w-auto"
+                    >
+                        <Wand2 className="w-5 h-5 md:w-4 md:h-4" />
+                        {t('لصق درس', 'Paste a lesson')}
+                    </Button>
+                )}
             </div>
         </div>
+        </LessonAssetContext.Provider>
     );
 }
 
@@ -367,14 +399,10 @@ function TextContentBlock({ block, updateBlock, lang }: { block: LessonBlock; up
 
 function VideoBlock({ block, updateBlock, lang }: { block: LessonBlock; updateBlock: (id: string, data: Partial<LessonBlock>) => void; lang: 'ar' | 'en' }) {
     const { t } = useLanguage();
-    const [url, setUrl] = useState(block.url || '');
+    const { lessonId, teacherId } = useLessonAssetTarget();
     const { localTitle, setLocalTitle, commitTitle } = useBlockContent(block, lang, updateBlock);
 
-    useEffect(() => { setUrl(block.url || ''); }, [block.url]);
-
-    const handleUrlBlur = () => {
-        if (url !== block.url) updateBlock(block.id, { url });
-    };
+    const url = block.url || '';
 
     const getYoutubeId = (urlStr: string) => {
         const match = urlStr.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*)/);
@@ -382,6 +410,9 @@ function VideoBlock({ block, updateBlock, lang }: { block: LessonBlock; updateBl
     };
 
     const ytId = url ? getYoutubeId(url) : null;
+    // An uploaded clip is a direct file URL, so it plays in a <video>; a
+    // YouTube link has to go through the iframe embed.
+    const isDirectVideo = Boolean(url) && !ytId;
 
     return (
         <div className="p-3 space-y-2">
@@ -393,23 +424,34 @@ function VideoBlock({ block, updateBlock, lang }: { block: LessonBlock; updateBl
                 dir={lang === 'ar' ? 'rtl' : 'ltr'}
                 className="h-8 text-sm font-medium border-none shadow-none focus-visible:ring-1 bg-transparent"
             />
-            <Input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onBlur={handleUrlBlur}
-                placeholder="https://youtube.com/..."
-                className="h-8 text-xs"
-            />
-            {ytId && (
-                <div className="aspect-video bg-black rounded-md overflow-hidden mt-1">
-                    <iframe
-                        width="100%" height="100%"
-                        src={`https://www.youtube.com/embed/${ytId}`}
-                        title="Preview" frameBorder="0" allowFullScreen
-                        className="w-full h-full"
-                    />
-                </div>
-            )}
+            <AssetUploadField
+                kind="video"
+                url={url}
+                onChange={(next) => updateBlock(block.id, { url: next })}
+                lessonId={lessonId}
+                teacherId={teacherId}
+                urlPlaceholder="https://youtube.com/..."
+            >
+                {ytId && (
+                    <div className="aspect-video bg-black rounded-md overflow-hidden mt-1">
+                        <iframe
+                            width="100%" height="100%"
+                            src={`https://www.youtube.com/embed/${ytId}`}
+                            title={t('معاينة', 'Preview')} frameBorder="0" allowFullScreen
+                            className="w-full h-full"
+                        />
+                    </div>
+                )}
+                {isDirectVideo && (
+                    <video src={url} controls className="w-full max-h-48 rounded-md bg-black mt-1" />
+                )}
+            </AssetUploadField>
+            <p className="text-[11px] text-muted-foreground">
+                {t(
+                    'للدروس الطويلة استخدم رابط يوتيوب — أسرع للطلاب وبدون حد للحجم.',
+                    'For long lessons use a YouTube link — faster for students and no size limit.',
+                )}
+            </p>
         </div>
     );
 }
@@ -418,28 +460,34 @@ function VideoBlock({ block, updateBlock, lang }: { block: LessonBlock; updateBl
 
 function ImageBlock({ block, updateBlock, lang }: { block: LessonBlock; updateBlock: (id: string, data: Partial<LessonBlock>) => void; lang: 'ar' | 'en' }) {
     const { t } = useLanguage();
-    const [url, setUrl] = useState(block.url || '');
-
-    useEffect(() => { setUrl(block.url || ''); }, [block.url]);
-
-    const handleBlur = () => {
-        if (url !== block.url) updateBlock(block.id, { url });
-    };
+    const { lessonId, teacherId } = useLessonAssetTarget();
+    const { localTitle, setLocalTitle, commitTitle } = useBlockContent(block, lang, updateBlock);
 
     return (
         <div className="p-3 space-y-2">
+            <AssetUploadField
+                kind="image"
+                url={block.url || ''}
+                onChange={(url) => updateBlock(block.id, { url })}
+                lessonId={lessonId}
+                teacherId={teacherId}
+                urlPlaceholder={lang === 'ar' ? 'رابط الصورة...' : 'Image URL...'}
+            >
+                {block.url && (
+                    <div className="mt-1 rounded-md overflow-hidden bg-accent/10">
+                        <img src={block.url} alt="" className="max-h-48 object-contain mx-auto" />
+                    </div>
+                )}
+            </AssetUploadField>
+            {/* Alt text doubles as the caption students see under the image. */}
             <Input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onBlur={handleBlur}
-                placeholder={lang === 'ar' ? 'رابط الصورة...' : 'Image URL...'}
+                value={localTitle}
+                onChange={(e) => setLocalTitle(e.target.value)}
+                onBlur={commitTitle}
+                placeholder={lang === 'ar' ? 'وصف الصورة (يظهر للطلاب)' : 'Image caption (shown to students)'}
+                dir={lang === 'ar' ? 'rtl' : 'ltr'}
                 className="h-8 text-xs"
             />
-            {block.url && (
-                <div className="mt-1 rounded-md overflow-hidden bg-accent/10">
-                    <img src={block.url} alt="Preview" className="max-h-48 object-contain mx-auto" />
-                </div>
-            )}
         </div>
     );
 }
@@ -448,14 +496,8 @@ function ImageBlock({ block, updateBlock, lang }: { block: LessonBlock; updateBl
 
 function FileBlock({ block, updateBlock, lang }: { block: LessonBlock; updateBlock: (id: string, data: Partial<LessonBlock>) => void; lang: 'ar' | 'en' }) {
     const { t } = useLanguage();
-    const [url, setUrl] = useState(block.url || '');
+    const { lessonId, teacherId } = useLessonAssetTarget();
     const { localTitle, setLocalTitle, commitTitle } = useBlockContent(block, lang, updateBlock);
-
-    useEffect(() => { setUrl(block.url || ''); }, [block.url]);
-
-    const handleUrlBlur = () => {
-        if (url !== block.url) updateBlock(block.id, { url });
-    };
 
     return (
         <div className="p-3 border rounded-md bg-card space-y-2">
@@ -471,12 +513,12 @@ function FileBlock({ block, updateBlock, lang }: { block: LessonBlock; updateBlo
                 dir={lang === 'ar' ? 'rtl' : 'ltr'}
                 className="h-8 text-sm"
             />
-            <Input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onBlur={handleUrlBlur}
-                placeholder="https://..."
-                className="h-8 text-xs"
+            <AssetUploadField
+                kind="file"
+                url={block.url || ''}
+                onChange={(url) => updateBlock(block.id, { url })}
+                lessonId={lessonId}
+                teacherId={teacherId}
             />
         </div>
     );

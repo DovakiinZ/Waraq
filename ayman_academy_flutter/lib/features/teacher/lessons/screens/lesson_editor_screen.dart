@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ayman_academy_app/core/supabase_client.dart';
 import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
+import 'package:ayman_academy_app/features/teacher/lessons/services/lesson_upload_service.dart';
 import 'package:ayman_academy_app/shared/models/lesson.dart';
 import 'package:ayman_academy_app/shared/models/lesson_block.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
@@ -621,6 +623,7 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
       {'type': 'warning', 'label': t('تنبيه', 'Warning'), 'icon': Icons.warning_rounded, 'color': AppColors.warning},
       {'type': 'example', 'label': t('مثال', 'Example'), 'icon': Icons.auto_awesome_rounded, 'color': AppColors.success},
       {'type': 'exercise', 'label': t('تمرين', 'Exercise'), 'icon': Icons.edit_note_rounded, 'color': AppColors.exerciseBorder},
+      {'type': 'file', 'label': t('ملف', 'File'), 'icon': Icons.attach_file_rounded, 'color': AppColors.info},
       {'type': 'equation', 'label': t('معادلة', 'Equation'), 'icon': Icons.functions_rounded, 'color': AppColors.equationBorder},
       {'type': 'qa', 'label': t('سؤال وجواب', 'Q&A'), 'icon': Icons.quiz_rounded, 'color': AppColors.qaBorder},
       {'type': 'link', 'label': t('رابط', 'Link'), 'icon': Icons.link_rounded, 'color': AppColors.inkMuted},
@@ -718,6 +721,15 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
                 TextFormField(controller: titleController, decoration: InputDecoration(hintText: t('العنوان', 'Title'))),
                 const SizedBox(height: 12),
               ],
+              // An image is almost always already on the device — in the
+              // camera roll or about to be photographed — so uploading comes
+              // first and the URL field below is the fallback.
+              if (type == 'image')
+                _ImageUploadRow(
+                  lessonId: widget.lessonId!,
+                  urlController: urlController,
+                  t: t,
+                ),
               if (needsUrl) ...[
                 TextFormField(controller: urlController, textDirection: TextDirection.ltr,
                     decoration: InputDecoration(hintText: 'URL', prefixIcon: const Icon(Icons.link_rounded, size: 20))),
@@ -1196,6 +1208,137 @@ class _PreviewScreen extends StatelessWidget {
                 ...blocks.map((block) => LessonBlockRenderer(block: block)),
               ],
             ),
+    );
+  }
+}
+
+/// Camera + gallery upload for an image block, with the resulting public URL
+/// written straight into the sheet's URL field.
+///
+/// Stateful because the bottom sheet it lives in is not — it needs to show a
+/// spinner while the upload runs and a thumbnail once it lands.
+class _ImageUploadRow extends StatefulWidget {
+  final String lessonId;
+  final TextEditingController urlController;
+  final String Function(String, String) t;
+
+  const _ImageUploadRow({
+    required this.lessonId,
+    required this.urlController,
+    required this.t,
+  });
+
+  @override
+  State<_ImageUploadRow> createState() => _ImageUploadRowState();
+}
+
+class _ImageUploadRowState extends State<_ImageUploadRow> {
+  bool _uploading = false;
+
+  Future<void> _pick(ImageSource source) async {
+    final t = widget.t;
+    try {
+      // Capped rather than sent at full resolution: a modern phone camera
+      // produces 8-12 MB files, well past the 5 MB rule, and a lesson image
+      // never needs more than this on screen.
+      final picked = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 82,
+      );
+      if (picked == null) return;
+
+      setState(() => _uploading = true);
+      final url = await LessonUploadService.uploadImage(
+        filePath: picked.path,
+        lessonId: widget.lessonId,
+      );
+      if (!mounted) return;
+      widget.urlController.text = url;
+      setState(() => _uploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('تم رفع الصورة', 'Image uploaded'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _uploading = false);
+      final message = e is LessonUploadException
+          ? switch (e.reason) {
+              LessonUploadError.tooLarge =>
+                t('حجم الصورة كبير جداً (الحد 5 ميجابايت)', 'Image is too large (5 MB limit)'),
+              LessonUploadError.empty => t('الملف فارغ', 'The file is empty'),
+              LessonUploadError.noSession =>
+                t('انتهت الجلسة، سجّل الدخول مرة أخرى', 'Session expired, please sign in again'),
+            }
+          : t('فشل رفع الصورة', 'Image upload failed');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.t;
+    final url = widget.urlController.text;
+
+    if (_uploading) {
+      return const Padding(
+        padding: EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+            SizedBox(width: 10),
+            Text('...'),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ArcadeButton(
+                  onPressed: () => _pick(ImageSource.camera),
+                  label: t('التقط صورة', 'Take photo'),
+                  icon: Icons.photo_camera_rounded,
+                  variant: ArcadeVariant.outline,
+                  size: ArcadeSize.sm,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ArcadeButton(
+                  onPressed: () => _pick(ImageSource.gallery),
+                  label: t('من المعرض', 'From gallery'),
+                  icon: Icons.photo_library_rounded,
+                  variant: ArcadeVariant.outline,
+                  size: ArcadeSize.sm,
+                ),
+              ),
+            ],
+          ),
+          if (url.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ClipRect(
+              child: Image.network(
+                url,
+                height: 120,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Text(
+                  t('لا يمكن عرض الصورة', 'Cannot preview image'),
+                  style: const TextStyle(fontSize: 12, color: AppColors.inkMuted),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

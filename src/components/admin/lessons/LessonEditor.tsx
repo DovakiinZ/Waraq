@@ -18,13 +18,15 @@ import BlockEditor from './BlockEditor';
 import LessonSettings from './LessonSettings';
 import DraftRecoveryDialog from './DraftRecoveryDialog';
 import PublishLessonDialog from './PublishLessonDialog';
+import ImportLessonDialog from './ImportLessonDialog';
+import { ImportedBlock } from '@/lib/lessonImport';
 
 // Utilities
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { LessonDraftManager, LessonDraft } from '@/lib/draftManager';
 import { useIsMobileLayout } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { List, Settings as SettingsIcon, Sparkles } from 'lucide-react';
+import { List, Settings as SettingsIcon, Sparkles, Wand2 } from 'lucide-react';
 import LessonSummaryPanel from './LessonSummaryPanel';
 
 // Save status type
@@ -56,6 +58,7 @@ export default function LessonEditor() {
     const [isOutlineOpen, setIsOutlineOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+    const [isImportOpen, setIsImportOpen] = useState(false);
     const isMobile = useIsMobileLayout();
 
     // Auto-save timers
@@ -374,6 +377,48 @@ export default function LessonEditor() {
         }
     };
 
+    /**
+     * Bulk-insert the blocks parsed from a pasted lesson.
+     *
+     * One insert call for the whole batch rather than N round trips, and the
+     * sort_order is assigned here so the pasted order is preserved. Appends
+     * after whatever is already in the active section, so importing into a
+     * part-written lesson never overwrites existing content.
+     */
+    const handleImportBlocks = async (imported: ImportedBlock[]) => {
+        if (!id || !imported.length) return;
+        try {
+            const relevantBlocks = blocks.filter(b => b.section_id === activeSectionId || (!activeSectionId && !b.section_id));
+            const maxOrder = relevantBlocks.length > 0 ? Math.max(...relevantBlocks.map(b => b.sort_order)) : -1;
+
+            const rows = imported.map((b, i) => ({
+                lesson_id: id,
+                section_id: activeSectionId || null,
+                type: b.type,
+                sort_order: maxOrder + 1 + i,
+                // content_ar is NOT NULL-safe to default to '' elsewhere in
+                // this file, so keep that contract for blocks that only
+                // carried English or only a URL.
+                content_ar: b.content_ar ?? '',
+                content_en: b.content_en ?? null,
+                title_ar: b.title_ar ?? null,
+                title_en: b.title_en ?? null,
+                url: b.url ?? null,
+                is_published: true,
+            }));
+
+            const { data, error } = await supabase.from('lesson_blocks').insert(rows as any).select();
+            if (error) throw error;
+
+            setBlocks([...blocks, ...((data as any[]) || [])]);
+            toast.success(t(`تم إضافة ${rows.length} عنصر`, `Added ${rows.length} blocks`));
+        } catch (error: any) {
+            toast.error(t('فشل في استيراد المحتوى', 'Failed to import content'), {
+                description: error?.message,
+            });
+        }
+    };
+
     const handleUpdateBlock = async (blockId: string, data: Partial<LessonBlock>) => {
         // Optimistic update
         setBlocks(blocks.map(b => b.id === blockId ? { ...b, ...data } : b));
@@ -511,6 +556,12 @@ export default function LessonEditor() {
                 sections={sections}
                 blocks={blocks}
                 onPublish={handlePublishLesson}
+            />
+
+            <ImportLessonDialog
+                open={isImportOpen}
+                onOpenChange={setIsImportOpen}
+                onImport={handleImportBlocks}
             />
 
             <div className="flex bg-background overflow-hidden relative h-full">
@@ -677,6 +728,8 @@ export default function LessonEditor() {
                                     onCreateBlock={handleCreateBlock}
                                     onUpdateBlock={handleUpdateBlock}
                                     onDeleteBlock={handleDeleteBlock}
+                                    lessonId={id}
+                                    onRequestImport={() => setIsImportOpen(true)}
                                 />
 
                                 {filteredBlocks.length === 0 && (
@@ -684,10 +737,18 @@ export default function LessonEditor() {
                                         <p className="text-muted-foreground text-sm mb-4">
                                             {t('لا يوجد محتوى في هذا القسم', 'No content in this section')}
                                         </p>
-                                        <Button variant="secondary" onClick={() => handleCreateBlock('rich_text')}>
-                                            <Plus className="w-4 h-4 me-2" />
-                                            {t('إضافة نص', 'Add Text')}
-                                        </Button>
+                                        {/* Pasting an existing lesson is the fast path, so it
+                                            leads here rather than hiding behind "add one block". */}
+                                        <div className="flex flex-wrap items-center justify-center gap-2">
+                                            <Button onClick={() => setIsImportOpen(true)}>
+                                                <Wand2 className="w-4 h-4 me-2" />
+                                                {t('لصق درس جاهز', 'Paste a lesson')}
+                                            </Button>
+                                            <Button variant="secondary" onClick={() => handleCreateBlock('rich_text')}>
+                                                <Plus className="w-4 h-4 me-2" />
+                                                {t('إضافة نص', 'Add Text')}
+                                            </Button>
+                                        </div>
                                     </div>
                                 )}
                             </>

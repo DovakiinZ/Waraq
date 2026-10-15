@@ -388,9 +388,19 @@ anywhere), so any Arabic it renders today is wrong. Fixing that is a prerequisit
 and it is a pre-existing certificate bug, not a summary one. Bundled faces are in
 `assets/fonts/IBMPlexSansArabic-*.ttf`.
 
+### Lesson authoring — image upload from the phone (added 2026-10-15)
+
+The lesson editor had **no upload path at all**: `image`/`video`/`file` blocks were URL text fields, so a photo of a worksheet in the camera roll could not be attached. The phone is where the camera is, so this mattered more here than on the web.
+
+- **`features/teacher/lessons/services/lesson_upload_service.dart`** — the Dart twin of the web's `src/lib/lessonUploads.ts`. **The storage path is a contract:** `lessons/<teacherId>/<lessonId>/<ts>.<ext>`, because migration 117's INSERT policy requires segment 1 = `lessons` and segment 2 = `auth.uid()`. Change it and every upload fails RLS.
+- **`_ImageUploadRow`** in `lesson_editor_screen.dart` — Take photo / From gallery, a spinner, a thumbnail, and bilingual errors per failure reason. Uses the **existing** `image_picker` dependency (already there for avatars), so no new package. Capped at `maxWidth: 1600, imageQuality: 82`: a modern phone camera exceeds the 5 MB rule at full resolution.
+- The `file` block type was **missing from the add-block grid** while the edit sheet already handled it (`needsUrl`/`needsTitle`), so it was unreachable on Android. Added.
+- **PDF upload is still not possible on Android** — `image_picker` cannot pick documents. Needs `file_picker` added to `pubspec.yaml`.
+- The bucket is genuinely public (`getPublicUrl` needs no session), exactly like lesson video URLs. Nothing private belongs there.
+
 ### Tests
 
-`flutter test` runs 188 tests; `flutter analyze` reports no issues. Keep both clean.
+`flutter test` runs 211 tests; `flutter analyze` reports no issues. Keep both clean.
 
 | Path | Covers |
 |---|---|
