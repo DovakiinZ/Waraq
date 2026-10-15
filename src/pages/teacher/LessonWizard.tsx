@@ -33,6 +33,7 @@ import {
 import { ImportedBlock, parseLessonText, summariseBlocks } from '@/lib/lessonImport';
 import { ISSUE_COPY, checkLessonReadiness, hasBlockers } from '@/lib/lessonReadiness';
 import { isRlsDenial } from '@/lib/rlsError';
+import { useLessonCreateMode } from '@/hooks/useLessonCreateMode';
 import type { LessonBlock } from '@/types/database';
 
 /**
@@ -72,6 +73,7 @@ export default function LessonWizard() {
     const { user, isSuperAdmin } = useAuth();
     const navigate = useNavigate();
     const [params] = useSearchParams();
+    const [, setCreateMode] = useLessonCreateMode();
 
     const [step, setStep] = useState(0);
     const [busy, setBusy] = useState(false);
@@ -630,6 +632,26 @@ export default function LessonWizard() {
                         </p>
                     )}
                 </Card>
+            )}
+
+            {/* Escape hatch to the single-form flow. Offered only on step 1,
+                where nothing has been created yet, so switching cannot
+                strand a half-built lesson. */}
+            {step === 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                    {t('تفضّل الطريقة السريعة؟ ', 'Prefer the quick way? ')}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setCreateMode('quick');
+                            navigate('/teacher/lessons?create=quick');
+                        }}
+                        className="underline underline-offset-2 hover:text-foreground"
+                    >
+                        {t('استخدم النموذج السريع', 'Use the quick form')}
+                    </button>
+                    {t(' — العنوان فقط ثم المحرّر.', ' — just a title, then the editor.')}
+                </p>
             )}
 
             {/* Footer navigation */}

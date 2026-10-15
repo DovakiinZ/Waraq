@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -39,10 +39,26 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Pencil, Trash2, FileText, Search, RefreshCw, BookOpen } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FileText, Search, RefreshCw, BookOpen, ChevronDown, Check, Wand2, Zap } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useLessonCreateMode, type LessonCreateMode } from '@/hooks/useLessonCreateMode';
 import { toast } from 'sonner';
 import { affectedNoRows, isRlsDenial } from '@/lib/rlsError';
 import { cn } from '@/lib/utils';
+
+/**
+ * Writes go through an untyped handle — the generated Supabase row types do
+ * not match the live schema, so every write site in this codebase casts. One
+ * named handle beats an inline `as any`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const writeDb = supabase as any;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -89,6 +105,7 @@ export default function TeacherLessons() {
     const { t } = useLanguage();
     const { user, isSuperAdmin } = useAuth();
     const navigate = useNavigate();
+    const [params, setParams] = useSearchParams();
 
     const [lessons, setLessons] = useState<LessonWithSubject[]>([]);
     /**
@@ -103,10 +120,30 @@ export default function TeacherLessons() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Creating a lesson lives in the wizard at /teacher/lessons/new; this page
-    // only lists, opens and deletes.
+    // Two creation flows, the teacher's choice and remembered between visits:
+    // the four-step wizard at /teacher/lessons/new, or the single form in the
+    // dialog at the bottom of this file.
+    const [createMode, setCreateMode] = useLessonCreateMode();
+    const [dialogOpen, setDialogOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<LessonWithSubject | null>(null);
+    const [form, setForm] = useState({ subject_id: '', title_ar: '', title_en: '' });
+
+    /** Open whichever flow is preferred; `mode` overrides for one-off use. */
+    const startCreate = (mode: LessonCreateMode = createMode) => {
+        if (mode === 'wizard') {
+            navigate('/teacher/lessons/new');
+        } else {
+            setForm({ subject_id: '', title_ar: '', title_en: '' });
+            setDialogOpen(true);
+        }
+    };
+
+    /** Pick a flow, remember it, and go straight there. */
+    const chooseMode = (mode: LessonCreateMode) => {
+        setCreateMode(mode);
+        startCreate(mode);
+    };
 
     const fetchData = async () => {
         if (!user) return;
@@ -161,6 +198,73 @@ export default function TeacherLessons() {
     useEffect(() => {
         fetchData();
     }, [user]);
+
+    // The wizard hands off here with ?create=quick when the teacher switches
+    // flows. Open the form and drop the param so a refresh does not reopen it.
+    useEffect(() => {
+        if (params.get('create') === 'quick') {
+            setForm({ subject_id: '', title_ar: '', title_en: '' });
+            setDialogOpen(true);
+            const next = new URLSearchParams(params);
+            next.delete('create');
+            setParams(next, { replace: true });
+        }
+    }, [params, setParams]);
+
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!form.subject_id || !form.title_ar.trim()) {
+            toast.error(t('يرجى ملء جميع الحقول المطلوبة', 'Please fill in all required fields'));
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const slug = form.title_ar.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u0621-\u064A-]/g, '');
+            const { data, error } = await writeDb
+                .from('lessons')
+                .insert({
+                    subject_id: form.subject_id,
+                    title_ar: form.title_ar,
+                    title_en: form.title_en || null,
+                    slug,
+                    created_by: user?.id,
+                    sort_order: lessons.length + 1,
+                    is_paid: true,
+                    is_published: false,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            toast.success(t('تم إنشاء الدرس', 'Lesson created'));
+            setDialogOpen(false);
+            setForm({ subject_id: '', title_ar: '', title_en: '' });
+
+            // Navigate to block editor
+            if (data) {
+                navigate(`/teacher/lessons/${data.id}`);
+            }
+        } catch (err) {
+            if (isRlsDenial(err)) {
+                toast.error(
+                    t('لا يمكنك إضافة درس إلى هذه المادة', 'You cannot add a lesson to this subject'),
+                    {
+                        description: t(
+                            'يمكنك إنشاء الدروس في المواد التي تدرّسها فقط. إذا كان يجب أن تكون هذه المادة لك، تواصل مع الإدارة.',
+                            'You can only create lessons in subjects you teach. If this subject should be yours, contact an administrator.'
+                        ),
+                    }
+                );
+            } else {
+                const message = err instanceof Error ? err.message : 'Unknown error';
+                toast.error(t('فشل في إنشاء الدرس', 'Failed to create lesson'), { description: message });
+            }
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const filteredLessons = lessons.filter(lesson => {
         if (!searchQuery.trim()) return true;
@@ -221,10 +325,53 @@ export default function TeacherLessons() {
                     <Button variant="outline" size="sm" onClick={fetchData}>
                         <RefreshCw className="w-4 h-4" />
                     </Button>
-                    <Button onClick={() => navigate('/teacher/lessons/new')}>
-                        <Plus className="w-4 h-4 me-2" />
-                        {t('درس جديد', 'New Lesson')}
-                    </Button>
+                    {/* Split button: the main half uses the remembered flow,
+                        the caret switches and remembers the new choice. */}
+                    <div className="flex">
+                        <Button onClick={() => startCreate()} className="rounded-e-none">
+                            <Plus className="w-4 h-4 me-2" />
+                            {t('درس جديد', 'New Lesson')}
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    className="rounded-s-none border-s border-primary-foreground/25 px-2"
+                                    aria-label={t('اختيار طريقة الإنشاء', 'Choose how to create')}
+                                >
+                                    <ChevronDown className="w-4 h-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                                    {t('طريقة إنشاء الدرس', 'How to create a lesson')}
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => chooseMode('wizard')} className="gap-2 items-start">
+                                    <Wand2 className="w-4 h-4 mt-0.5 shrink-0" />
+                                    <span className="flex-1">
+                                        <span className="flex items-center gap-2 font-medium">
+                                            {t('خطوة بخطوة', 'Step by step')}
+                                            {createMode === 'wizard' && <Check className="w-3.5 h-3.5" />}
+                                        </span>
+                                        <span className="block text-xs text-muted-foreground">
+                                            {t('أربع خطوات مع لصق المحتوى ومراجعة', 'Four steps, with paste and a review')}
+                                        </span>
+                                    </span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => chooseMode('quick')} className="gap-2 items-start">
+                                    <Zap className="w-4 h-4 mt-0.5 shrink-0" />
+                                    <span className="flex-1">
+                                        <span className="flex items-center gap-2 font-medium">
+                                            {t('نموذج سريع', 'Quick form')}
+                                            {createMode === 'quick' && <Check className="w-3.5 h-3.5" />}
+                                        </span>
+                                        <span className="block text-xs text-muted-foreground">
+                                            {t('العنوان فقط، ثم المحرّر مباشرة', 'Just a title, straight to the editor')}
+                                        </span>
+                                    </span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
             </div>
 
@@ -260,7 +407,7 @@ export default function TeacherLessons() {
                             }
                         </p>
                         {!searchQuery && (
-                            <Button onClick={() => navigate('/teacher/lessons/new')}>
+                            <Button onClick={() => startCreate()}>
                                 <Plus className="w-4 h-4 me-2" />
                                 {t('درس جديد', 'New Lesson')}
                             </Button>
@@ -327,6 +474,55 @@ export default function TeacherLessons() {
                 )}
             </div>
 
+
+            {/* Create Lesson Dialog */}
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{t('إنشاء درس جديد', 'Create New Lesson')}</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleCreate} className="space-y-4 mt-4">
+                        <div className="space-y-2">
+                            <Label>{t('المادة', 'Subject')} *</Label>
+                            <Select value={form.subject_id} onValueChange={(value) => setForm({ ...form, subject_id: value })}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={t('اختر مادة', 'Select Subject')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {subjects.map((s) => (
+                                        <SelectItem key={s.id} value={s.id}>{s.title_ar}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="new_title_ar">{t('عنوان الدرس (عربي)', 'Lesson Title (Arabic)')} *</Label>
+                            <Input
+                                id="new_title_ar"
+                                value={form.title_ar}
+                                onChange={(e) => setForm({ ...form, title_ar: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="new_title_en">{t('عنوان الدرس (إنجليزي)', 'Lesson Title (English)')}</Label>
+                            <Input
+                                id="new_title_en"
+                                value={form.title_en}
+                                onChange={(e) => setForm({ ...form, title_en: e.target.value })}
+                            />
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                            <Button type="button" variant="outline" className="flex-1" onClick={() => setDialogOpen(false)}>
+                                {t('إلغاء', 'Cancel')}
+                            </Button>
+                            <Button type="submit" className="flex-1" disabled={submitting || !form.subject_id || !form.title_ar.trim()}>
+                                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('إنشاء وفتح المحرر', 'Create & Open Editor')}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             {/* Delete Confirmation */}
             <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
