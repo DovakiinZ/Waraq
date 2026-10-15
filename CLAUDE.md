@@ -552,7 +552,13 @@ const form = useForm<FormData>({
 
 The only rules a release must follow for the page to work: **the APK is attached as a `.apk` file** and **its file name contains `vX.Y.Z`**.
 
-Published so far: `v1.0.0-android` (prerelease), `v1.0.1-android`, `v1.0.2-android`, `v1.0.3-android`, `design/arcade-green-v1` (v1.1.0, `waraq-academy-v1.1.0.apk`).
+Published so far: `v1.0.0-android` (prerelease), `v1.0.1-android`, `v1.0.2-android`, `v1.0.3-android`, `design/arcade-green-v1` (v1.1.0, `waraq-academy-v1.1.0.apk`), `v1.2.0-android`, `v1.2.1-android`, **`v1.3.0-android`** (2026-10-15, camera/gallery upload in the lesson editor + the `file` block type).
+
+**Signing, measured 2026-10-15 — do not lose this machine's debug keystore.** `android/key.properties` does **not** exist, so release builds fall back to `~/.android/debug.keystore`, and **every published APK so far is signed with it** (`CN=Android Debug`, SHA-256 `55711ae87fa2800999b7941243d035114067ae9a84149106277fb66f6cced542`). That is fine for GitHub sideloading and is why updates install over each other, but it means two things: the Play Store would reject these builds, and **an APK built on a different machine will not install as an update** — users would have to uninstall first and lose local data. Before each release, confirm the new APK's signer matches with `apksigner verify --print-certs` (`%LOCALAPPDATA%\Android\Sdk\build-tools\35.0.0\apksigner.bat`), and confirm `versionCode` increased with `aapt2 dump badging`.
+
+**`ONESIGNAL_APP_ID` is not stored anywhere in the repo and has never been compiled in** — verified by byte-searching `libapp.so` of the shipped v1.2.1 for a UUID (zero matches). Push notifications are therefore already disabled in every published build; omitting the flag is not a regression, but push will stay dead until the id is supplied at build time.
+
+**Verifying the binary (release policy step 3): search BYTES, not decoded text.** Dart stores non-ASCII string literals as **UTF-16**, so `libapp.so.toString('utf8')` finds none of the app's Arabic strings and makes a correct build look broken. Use `Buffer.indexOf(Buffer.from(needle, 'utf16le'))` for Arabic and `'utf8'` for ASCII paths, and always include a control needle that should be absent so a false positive is visible.
 
 ---
 
