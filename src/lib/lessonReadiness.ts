@@ -118,3 +118,42 @@ export function checkLessonReadiness(
 export function hasBlockers(issues: ReadinessIssue[]): boolean {
     return issues.some(i => i.severity === 'blocker');
 }
+
+/**
+ * Bilingual copy for each issue code, as [arabic, english]. Data, not JSX, so
+ * this module stays pure and verifiable. `n` is the affected block count.
+ *
+ * Lives here rather than in a component so the publish dialog and the lesson
+ * wizard cannot drift apart — they describe the same rules to the teacher.
+ */
+export const ISSUE_COPY: Record<string, (n: number) => [string, string]> = {
+    no_title: () => ['الدرس بدون عنوان عربي', 'The lesson has no Arabic title'],
+    no_content: () => [
+        'لا يوجد محتوى منشور في هذا الدرس — سيرى الطلاب صفحة فارغة',
+        'This lesson has no published content — students would see an empty page',
+    ],
+    media_without_url: n => [
+        `${n} عنصر وسائط بدون رابط أو ملف`,
+        `${n} media block${n === 1 ? '' : 's'} with no file or link`,
+    ],
+    empty_text_block: n => [
+        `${n} عنصر نصي فارغ`,
+        `${n} empty text block${n === 1 ? '' : 's'}`,
+    ],
+    qa_without_question: n => [
+        `${n} سؤال بدون نص السؤال`,
+        `${n} Q&A block${n === 1 ? '' : 's'} with no question`,
+    ],
+    no_english_title: () => [
+        'لا يوجد عنوان إنجليزي (اختياري)',
+        'No English title (optional)',
+    ],
+    blocks_without_english: n => [
+        `${n} عنصر بالعربية فقط`,
+        `${n} block${n === 1 ? '' : 's'} in Arabic only`,
+    ],
+    no_duration: () => [
+        'مدة الدرس غير محددة — سيُحتسب التقدم بالتقدير',
+        'Lesson duration not set — progress will be estimated',
+    ],
+};

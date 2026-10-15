@@ -100,6 +100,7 @@ import TeacherLayout from "./components/teacher/TeacherLayout";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherSubjects from "./pages/teacher/TeacherSubjects";
 import TeacherLessons from "./pages/teacher/TeacherLessons";
+import LessonWizard from "./pages/teacher/LessonWizard";
 import TeacherQuizzes from "./pages/teacher/TeacherQuizzes";
 import LessonEditor from "./components/admin/lessons/LessonEditor";
 import TeacherProfile from "./pages/teacher/TeacherProfile";
@@ -221,6 +222,9 @@ const App = () => (
                     <Route path="orders" element={<TeacherOrders />} />
                     <Route path="subjects" element={<TeacherSubjects />} />
                     <Route path="lessons" element={<TeacherLessons />} />
+                    {/* Declared before lessons/:id so "new" is never read as an id.
+                        React Router ranks static above dynamic anyway; this is explicit. */}
+                    <Route path="lessons/new" element={<ErrorBoundary><LessonWizard /></ErrorBoundary>} />
                     <Route path="lessons/:id" element={<ErrorBoundary><LessonEditor /></ErrorBoundary>} />
                     <Route path="quizzes" element={<TeacherQuizzes />} />
                     <Route path="messages" element={<Messages />} />
