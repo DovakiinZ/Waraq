@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ayman_academy_app/core/router/routes.dart';
+import 'package:ayman_academy_app/features/auth/screens/role_choice_screen.dart';
+import 'package:ayman_academy_app/features/onboarding/data/intro_prefs.dart';
+import 'package:ayman_academy_app/features/onboarding/screens/intro_screen.dart';
 import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
 import 'package:ayman_academy_app/features/auth/screens/login_screen.dart';
 import 'package:ayman_academy_app/features/auth/screens/register_screen.dart';
@@ -70,7 +73,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (!auth.isAuthenticated) {
-        return isAuthRoute ? null : Routes.login;
+        if (isAuthRoute) return null;
+        // A first launch gets the intro slides before the login screen; every
+        // later launch, and anyone who has already seen them, goes straight to
+        // login. IntroPrefs.seen never throws, because a redirect that threw
+        // would strand the app on a blank screen.
+        if (path == Routes.intro) return null;
+        return IntroPrefs.seen ? Routes.login : Routes.intro;
       }
 
       // Admins get the web CMS embedded in the app (see AdminPanelScreen).
@@ -100,9 +109,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const GuideScreen(),
       ),
       GoRoute(path: Routes.splash, builder: (_, _) => const _SplashScreen()),
+      GoRoute(path: Routes.intro, builder: (_, _) => const IntroScreen()),
 
       // Auth routes
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
+      GoRoute(path: Routes.chooseRole, builder: (_, _) => const RoleChoiceScreen()),
       GoRoute(path: Routes.register, builder: (_, _) => const RegisterScreen()),
       GoRoute(path: Routes.teacherApply, builder: (_, _) => const TeacherApplicationScreen()),
       GoRoute(path: Routes.resetPassword, builder: (_, _) => const ResetPasswordScreen()),

@@ -200,7 +200,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
 
                             ArcadeButton.nav(
                               key: const Key('login_go_register'),
-                              onPressed: () => context.push(Routes.register),
+                              onPressed: () => context.push(Routes.chooseRole),
                               size: ArcadeSize.lg,
                               variant: ArcadeVariant.outline,
                               label: t('إنشاء حساب جديد', 'Create new account'),

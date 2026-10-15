@@ -398,9 +398,26 @@ The lesson editor had **no upload path at all**: `image`/`video`/`file` blocks w
 - **PDF upload is still not possible on Android** — `image_picker` cannot pick documents. Needs `file_picker` added to `pubspec.yaml`.
 - The bucket is genuinely public (`getPublicUrl` needs no session), exactly like lesson video URLs. Nothing private belongs there.
 
+### First run — the intro slides and the role fork (added 2026-10-15)
+
+A new install used to open straight on the raw login screen. It now shows four intro slides, then a student-or-teacher fork before either sign-up form.
+
+- **`features/onboarding/widgets/chalkboard.dart` — the blackboard surface.** Chosen because the brand's deep green *is* blackboard green, so the direction spends a colour the brand already owns rather than adding one. **It is deliberately one fixed look and does NOT follow `context.arc` or dark mode** — a board that turns white is not a board. This is the only screen in the app allowed to do that; everything else still resolves `context.arc`. Nothing here is an image asset: the texture is a `CustomPainter` and every drawing is a stroked path, so the APK does not grow.
+  **There is no chalk typeface and there must not be one.** IBM Plex Sans Arabic carries every word; no chalk-style Arabic face is bundled, and adding one would cost megabytes and break the brand rule. "Chalk" is colour, texture and drawing — never lettering.
+  `ChalkMark` redraws `assets/brand/mark.svg` geometry as open strokes, so it stays the brand mark rather than a different drawing. `ChalkCircled` replaces a selection fill with a hand-drawn ellipse — the gesture a teacher makes at a board.
+- **`features/onboarding/screens/intro_screen.dart`.** Four slides, each naming one real thing: the brand, the four real stages, the content types that genuinely exist in the lesson editor, and the certificate. **Skip appears on slides 1–3 but not slide 4**, which ends in one action instead.
+  **Swipe direction is free** — a `PageView` inside an RTL `Directionality` reverses itself, so Arabic swipes left-to-right with no direction logic. Only the forward *arrow* flips, via `_arrowForward`.
+  `onFinish` is injectable because `context.go` asserts with no `GoRouter` in scope — the same trap that used to crash register and reset-password in tests.
+- **`features/onboarding/data/intro_prefs.dart`** — the `intro_seen` flag in the existing `settings` Hive box, beside language and theme. **Every read is wrapped in try/catch and falls back to "not seen"**, because the router calls it on every redirect and a redirect that threw would strand the app on a blank screen.
+- **Router:** the signed-out branch became `isAuthRoute → null`, `path == intro → null`, else `IntroPrefs.seen ? login : intro`. **`Routes.intro` is `/intro`, deliberately not under `/auth`**, since `isAuthRoute` matches that prefix.
+- **`features/auth/screens/role_choice_screen.dart`** — "من أنت؟", reached from login's create-account button (`Routes.chooseRole`). Student → `register`, teacher → `teacherApply`. The old "are you a teacher?" link at the bottom of the register form is kept as a safety net for anyone landing there by another route. **From this screen on, the UI returns to the ordinary quiet arcade chrome** — a teacher should not feel they are signing up to a children's app.
+  Its footer uses `Wrap`, not `Row`: the English "Already have an account?" overflowed a narrow phone by 79px as a Row, which Flutter renders as a striped overflow box. Caught by the dark/English test, not by eye.
+- **Gender is NOT asked during sign-up**, matching the 13 Oct spec rather than the later request to add it; that decision is still open with the user. Adding it is one screen between account and stage.
+
 ### Tests
 
-`flutter test` runs 211 tests; `flutter analyze` reports no issues. Keep both clean.
+`flutter test` runs 233 tests; `flutter analyze` reports no issues. Keep both clean.
+`test/screens/intro_screen_test.dart` (16) covers the slides, the first-run flag, direction flipping and the fixed board; `test/screens/role_choice_screen_test.dart` (6) covers the fork.
 
 | Path | Covers |
 |---|---|

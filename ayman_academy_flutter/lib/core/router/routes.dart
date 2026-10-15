@@ -1,7 +1,14 @@
 abstract class Routes {
   static const splash = '/splash';
+
+  /// First-run intro slides. Deliberately NOT under '/auth', since the
+  /// redirect treats every '/auth' path as a signed-out destination.
+  static const intro = '/intro';
   static const login = '/auth/login';
   static const register = '/auth/register';
+
+  /// Student-or-teacher fork, shown before either sign-up form.
+  static const chooseRole = '/auth/choose-role';
   static const teacherApply = '/auth/apply-teacher';
   static const resetPassword = '/auth/reset-password';
   static const onboarding = '/onboarding';
