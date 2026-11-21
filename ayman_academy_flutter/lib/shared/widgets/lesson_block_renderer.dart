@@ -94,7 +94,7 @@ class LessonBlockRenderer extends ConsumerWidget {
         return _EquationBlock(content: content, title: title);
 
       case 'qa':
-        return _QABlock(question: title, answer: content);
+        return _QABlock(question: title, answer: content, lang: lang);
 
       case 'file':
         return _FileBlock(url: block.url, title: title, lang: lang);
@@ -170,7 +170,14 @@ class _SideBorderBlock extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(content, style: TextStyle(fontSize: 14, height: 1.8, color: arc.ink)),
+          // Markdown, like rich_text: AI-written callouts carry **bold**, which
+          // a plain Text showed as literal asterisks.
+          MarkdownBody(
+            data: content,
+            styleSheet: MarkdownStyleSheet(
+              p: TextStyle(fontSize: 14, height: 1.8, color: arc.ink),
+            ),
+          ),
         ],
       ),
     );
@@ -298,8 +305,9 @@ class _EquationBlock extends StatelessWidget {
 class _QABlock extends StatefulWidget {
   final String question;
   final String answer;
+  final String lang;
 
-  const _QABlock({required this.question, required this.answer});
+  const _QABlock({required this.question, required this.answer, required this.lang});
 
   @override
   State<_QABlock> createState() => _QABlockState();
@@ -322,7 +330,7 @@ class _QABlockState extends State<_QABlock> {
           ListTile(
             title: Row(
               children: [
-                Text('Q: ', style: TextStyle(color: AppColors.qaBorder, fontWeight: FontWeight.bold)),
+                Text(widget.lang == 'ar' ? 'س: ' : 'Q: ', style: TextStyle(color: AppColors.qaBorder, fontWeight: FontWeight.bold)),
                 Expanded(child: Text(widget.question, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14))),
               ],
             ),
@@ -335,8 +343,13 @@ class _QABlockState extends State<_QABlock> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('A: ', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
-                  Expanded(child: Text(widget.answer, style: const TextStyle(fontSize: 14, height: 1.7))),
+                  Text(widget.lang == 'ar' ? 'ج: ' : 'A: ', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: MarkdownBody(
+                      data: widget.answer,
+                      styleSheet: MarkdownStyleSheet(p: const TextStyle(fontSize: 14, height: 1.7)),
+                    ),
+                  ),
                 ],
               ),
             ),

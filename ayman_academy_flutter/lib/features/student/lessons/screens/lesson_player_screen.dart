@@ -625,17 +625,23 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                     // After migration 109 an unentitled student receives the
                     // lesson row with ZERO blocks rather than an error, so an
                     // empty list means "locked" far more often than it means
-                    // "the teacher wrote nothing". A free-preview lesson is the
+                    // "the teacher wrote nothing". A free-preview lesson, or a
+                    // lesson in a course the student can already open, is the
                     // exception: empty there really is an authoring gap, and
-                    // showing a purchase CTA for it would be wrong.
+                    // showing a purchase CTA for it would be wrong (the web had
+                    // the same bug; found by the 2026-11-21 smoke test).
                     final lesson = lessonAsync.valueOrNull;
-                    final locked = lesson != null && !(lesson.isFreePreview);
+                    final access = lesson == null
+                        ? null
+                        : ref.watch(checkSubjectAccessProvider(lesson.subjectId)).valueOrNull;
+                    final hasAccess = access?['has_access'] == true;
+                    final locked = lesson != null && !lesson.isFreePreview && !hasAccess;
                     if (locked) {
                       return _LessonLocked(subjectId: lesson.subjectId, t: t);
                     }
                     return Center(
                       child: Text(
-                        t('لا يوجد محتوى بعد', 'No content yet'),
+                        t('لم يُضِف المعلّم محتوى لهذا الدرس بعد', 'The teacher has not added content to this lesson yet'),
                         style: const TextStyle(color: AppColors.inkMuted),
                       ),
                     );
