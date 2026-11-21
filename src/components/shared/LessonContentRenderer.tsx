@@ -132,7 +132,7 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
         case 'rich_text':
             return (
                 <div className="prose dark:prose-invert max-w-none text-muted-foreground text-sm">
-                    <p className="whitespace-pre-wrap">{t(block.content_ar || '', block.content_en || block.content_ar || '')}</p>
+                    <p className="whitespace-pre-wrap">{inlineMarkdown(t(block.content_ar || '', block.content_en || block.content_ar || ''))}</p>
                 </div>
             );
         case 'tip':
@@ -142,7 +142,7 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
                         <Lightbulb className="w-4 h-4" />
                         {t('نصيحة', 'Tip')}
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{t(block.content_ar || '', block.content_en || block.content_ar || '')}</p>
+                    <p className="text-sm whitespace-pre-wrap">{inlineMarkdown(t(block.content_ar || '', block.content_en || block.content_ar || ''))}</p>
                 </div>
             );
         case 'warning':
@@ -152,7 +152,7 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
                         <AlertTriangle className="w-4 h-4" />
                         {t('تنبيه', 'Warning')}
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{t(block.content_ar || '', block.content_en || block.content_ar || '')}</p>
+                    <p className="text-sm whitespace-pre-wrap">{inlineMarkdown(t(block.content_ar || '', block.content_en || block.content_ar || ''))}</p>
                 </div>
             );
         case 'example':
@@ -162,7 +162,7 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
                         <FileText className="w-4 h-4" />
                         {t('مثال', 'Example')}
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{t(block.content_ar || '', block.content_en || block.content_ar || '')}</p>
+                    <p className="text-sm whitespace-pre-wrap">{inlineMarkdown(t(block.content_ar || '', block.content_en || block.content_ar || ''))}</p>
                 </div>
             );
         case 'exercise':
@@ -172,7 +172,7 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
                         <FileText className="w-4 h-4" />
                         {t('تمرين', 'Exercise')}
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{t(block.content_ar || '', block.content_en || block.content_ar || '')}</p>
+                    <p className="text-sm whitespace-pre-wrap">{inlineMarkdown(t(block.content_ar || '', block.content_en || block.content_ar || ''))}</p>
                 </div>
             );
         case 'equation':
@@ -190,12 +190,12 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
             return (
                 <div className="bg-brand-mint/20 dark:bg-brand-green/15 border border-brand-mint dark:border-brand-green rounded-lg p-4 space-y-2">
                     <div className="flex items-start gap-2">
-                        <span className="text-brand-green dark:text-brand-mint font-bold text-sm mt-0.5">Q:</span>
+                        <span className="text-brand-green dark:text-brand-mint font-bold text-sm mt-0.5">{t('س:', 'Q:')}</span>
                         <p className="text-sm font-medium">{t(block.title_ar || '', block.title_en || '')}</p>
                     </div>
                     <div className="flex items-start gap-2">
-                        <span className="text-brand-deep dark:text-brand-paper font-bold text-sm mt-0.5">A:</span>
-                        <p className="text-sm whitespace-pre-wrap">{t(block.content_ar || '', block.content_en || block.content_ar || '')}</p>
+                        <span className="text-brand-deep dark:text-brand-paper font-bold text-sm mt-0.5">{t('ج:', 'A:')}</span>
+                        <p className="text-sm whitespace-pre-wrap">{inlineMarkdown(t(block.content_ar || '', block.content_en || block.content_ar || ''))}</p>
                     </div>
                 </div>
             );
@@ -300,4 +300,22 @@ function BlockDisplay({ block }: { block: LessonBlock }) {
         default:
             return null;
     }
+}
+
+/**
+ * `**bold**` → <strong>, and a leading "#"/"##"/"###" heading marker dropped.
+ *
+ * Text blocks are plain text, but the AI assistant's expand / simplify /
+ * generate-example actions return Markdown, so students saw literal
+ * asterisks (seen live 2026-11-21). This builds React nodes — never HTML — so
+ * lesson text still cannot inject markup.
+ */
+function inlineMarkdown(text: string): React.ReactNode {
+    if (!text || (!text.includes('**') && !/^#{1,3}\s/m.test(text))) return text;
+    const cleaned = text.replace(/^#{1,3}\s+/gm, '');
+    return cleaned.split(/(\*\*[^*\n]+\*\*)/g).map((part, i) =>
+        part.startsWith('**') && part.endsWith('**') && part.length > 4
+            ? <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>
+            : part,
+    );
 }

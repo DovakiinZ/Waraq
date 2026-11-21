@@ -16,6 +16,7 @@ import { LessonContentRenderer } from '@/components/shared/LessonContentRenderer
 import LessonSummaryCard from '@/components/student/LessonSummaryCard';
 import { LessonLocked } from '@/components/shared/LessonLocked';
 import { isLessonContentWithheld } from '@/lib/lessonAccess';
+import { useCheckSubjectAccess } from '@/hooks/useAcademyData';
 import { computeProgress } from '@/lib/progressModel';
 import QuizPlayer from './QuizPlayer';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,10 @@ export default function LessonPlayer() {
     const lesson = (lessonData?.lesson || null) as LessonWithDetails | null;
     const quizId = lessonData?.quizId || null;
     const nextLesson = lessonData?.nextLesson || null;
+    // Lets an EMPTY lesson read as empty rather than as a paywall for a
+    // student who already has access (see isLessonContentWithheld).
+    const { data: subjectAccess } = useCheckSubjectAccess(profile?.id, lesson?.subject_id);
+    const hasAccess = subjectAccess?.has_access;
 
     const currentVideoUrl = useMemo(() => {
         if (!lesson) return null;
@@ -325,7 +330,7 @@ export default function LessonPlayer() {
                                 <LessonSummaryCard lessonId={lesson.id} />
 
                                 {/* Blocks Content Renderer */}
-                                {isLessonContentWithheld(lesson) ? (
+                                {isLessonContentWithheld(lesson, hasAccess) ? (
                                     /* RLS (migration 109) withheld the content — show the
                                        paywall rather than an empty tab. */
                                     <LessonLocked
@@ -340,7 +345,9 @@ export default function LessonPlayer() {
                                         <h2 className="text-2xl font-bold mb-4">{t('حول هذا الدرس', 'About this lesson')}</h2>
                                         <div className="prose dark:prose-invert max-w-none text-muted-foreground">
                                             <p className="whitespace-pre-wrap">
-                                                {t(lesson.summary_ar || '', lesson.summary_en || lesson.summary_ar || '')}
+                                                {lesson.summary_ar || lesson.summary_en
+                                                    ? t(lesson.summary_ar || '', lesson.summary_en || lesson.summary_ar || '')
+                                                    : t('لم يُضِف المعلّم محتوى لهذا الدرس بعد.', "The teacher hasn't added content to this lesson yet.")}
                                             </p>
                                         </div>
                                     </div>

@@ -364,7 +364,10 @@ export default function CoursePreview() {
 
                 <div className="space-y-1">
                     {course.lessons.map((lesson: any, idx: number) => {
-                        const isFreeLesson = lesson.is_free_preview || !lesson.is_paid;
+                        // Playable exactly when the server will return its content (migration
+                        // 109): a free preview, or the student can open the course. A lesson's
+                        // own is_paid=false does NOT open it inside a paid course.
+                        const isFreeLesson = !!lesson.is_free_preview || canOpen;
                         const duration = lesson.duration_minutes || (lesson.duration_seconds ? Math.floor(lesson.duration_seconds / 60) : null);
 
                         return (
@@ -376,13 +379,10 @@ export default function CoursePreview() {
                                         : 'opacity-75'
                                 }`}
                                 onClick={() => {
-                                    if (isFreeLesson) {
-                                        if (enrollmentStatus === 'enrolled') {
-                                            navigate(`/student/lesson/${lesson.id}`);
-                                        } else {
-                                            navigate(`/lesson/${lesson.id}`);
-                                        }
-                                    }
+                                    // Always the student player: this page is student-only, and the
+                                    // public /lesson page showed a "subscribers only" box beside a
+                                    // free preview the student was allowed to watch.
+                                    if (isFreeLesson) navigate(`/student/lesson/${lesson.id}`);
                                 }}
                             >
                                 {/* Number / icon */}

@@ -168,7 +168,7 @@ export default function PublishLessonDialog({
                                             {t('محتوى مدفوع', 'Paid Content')}
                                         </Label>
                                         <p className="text-xs text-muted-foreground">
-                                            {t('يتطلب اشتراكاً نشطاً للمشاهدة', 'Requires active subscription to view')}
+                                            {t('يفتح لمن اشترى المادة فقط', 'Opens only for students who bought the course')}
                                         </p>
                                     </div>
                                     <Switch
@@ -185,7 +185,7 @@ export default function PublishLessonDialog({
                                                 {t('معاينة مجانية', 'Free Preview')}
                                             </Label>
                                             <p className="text-xs text-muted-foreground">
-                                                {t('السماح بمشاهدة مقتطفات مجاناً', 'Allow viewing snippets for free')}
+                                                {t('يفتح الدرس كاملاً لمن لم يشترِ المادة', 'Opens the whole lesson to people who have not bought the course')}
                                             </p>
                                         </div>
                                         <Switch
@@ -338,11 +338,11 @@ function PreviewBlock({ block }: { block: LessonBlock }) {
             return (
                 <div className="bg-pink-50 dark:bg-pink-950/20 border border-pink-200 dark:border-pink-800 rounded-lg p-3 space-y-1.5">
                     <div className="flex items-start gap-2">
-                        <span className="text-pink-500 font-bold text-xs">Q:</span>
+                        <span className="text-pink-500 font-bold text-xs">{t('س:', 'Q:')}</span>
                         <p className="text-xs font-medium">{t(block.title_ar || '', block.title_en || '')}</p>
                     </div>
                     <div className="flex items-start gap-2">
-                        <span className="text-emerald-500 font-bold text-xs">A:</span>
+                        <span className="text-emerald-500 font-bold text-xs">{t('ج:', 'A:')}</span>
                         <p className="text-xs whitespace-pre-wrap">{t(block.content_ar || '', block.content_en || block.content_ar || '')}</p>
                     </div>
                 </div>
