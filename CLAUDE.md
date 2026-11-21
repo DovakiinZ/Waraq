@@ -541,7 +541,7 @@ const form = useForm<FormData>({
    ```
 5. **Publish a NEW release** tagged `vX.Y.Z-android`:
    ```bash
-   gh release create vX.Y.Z-android --repo DovakiinZ/Waraq --target main --latest      --title "Waraq Academy — Android vX.Y.Z"      --notes-file notes.md      "waraq-academy-vX.Y.Z.apk#Waraq Academy vX.Y.Z (Android APK)"
+   gh release create vX.Y.Z-android --repo DovakiinZ/waraq-releases --target main --latest      --title "Waraq Academy — Android vX.Y.Z"      --notes-file notes.md      "waraq-academy-vX.Y.Z.apk#Waraq Academy vX.Y.Z (Android APK)"
    ```
    - `notes.md` becomes "What's new" on `/download`, shown as plain text. Write it for students, in Arabic and English.
    - A test build gets `--prerelease` instead of `--latest`. It is listed under previous versions but never becomes the main download button.
@@ -550,7 +550,7 @@ const form = useForm<FormData>({
 
 ### How `/download` stays in sync
 
-`src/pages/Download.tsx` + `src/hooks/useAndroidRelease.ts` call the GitHub API for `DovakiinZ/Waraq` (renamed from `ayman-academy-portal`; GitHub redirects the old name). The **newest non-draft, non-prerelease release that has an `.apk` asset** is the main download; tag names and the `Latest` marker are ignored because they have been inconsistent (`v1.0.3-android` vs `design/arcade-green-v1`). If the API fails, the button falls back to `https://github.com/DovakiinZ/Waraq/releases/latest`. Linked from the Header (تحميل), the Footer ("Android app") and a band on the landing page. If the repo is renamed again, update `GITHUB_REPO` in the hook.
+`src/pages/Download.tsx` + `src/hooks/useAndroidRelease.ts` call the GitHub API for **`DovakiinZ/waraq-releases`** — a **public, code-free repo that exists only to host APKs** (moved 2026-11-21). The source repo `DovakiinZ/Waraq` is **private**, and a private repo's releases 404 for every visitor not signed in with access — API, `/releases/latest` and asset URLs alike — which silently broke `/download` for everyone. **Publish every APK to `waraq-releases`, never to the source repo**, and do not point `GITHUB_REPO` back at `Waraq` while it is private. The older APKs were copied across with their original tags, notes and prerelease flags. The **newest non-draft, non-prerelease release that has an `.apk` asset** is the main download; tag names and the `Latest` marker are ignored because they have been inconsistent (`v1.0.3-android` vs `design/arcade-green-v1`). If the API fails, the button falls back to `https://github.com/DovakiinZ/waraq-releases/releases/latest`. **`gh` on this machine** is at `C:\Program Files\GitHub CLI\gh.exe` (installed 2026-11-21); call it by full path from PowerShell. Linked from the Header (تحميل), the Footer ("Android app") and a band on the landing page. If the repo is renamed again, update `GITHUB_REPO` in the hook.
 
 The only rules a release must follow for the page to work: **the APK is attached as a `.apk` file** and **its file name contains `vX.Y.Z`**.
 

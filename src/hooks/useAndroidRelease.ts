@@ -17,7 +17,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 
-export const GITHUB_REPO = 'DovakiinZ/Waraq';
+// A PUBLIC, code-free repo that exists only to host APK releases. The source
+// repo (DovakiinZ/Waraq) is private, and a private repo's releases 404 for
+// every visitor who is not signed in to GitHub with access — API and asset
+// URLs alike. Never point this back at the source repo while it is private.
+export const GITHUB_REPO = 'DovakiinZ/waraq-releases';
 export const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases`;
 export const RELEASES_LATEST_URL = `${RELEASES_URL}/latest`;
 
