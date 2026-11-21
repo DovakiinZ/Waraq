@@ -170,6 +170,20 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      // Migration 118 starts every new teacher PENDING, because a public
+      // signup and this admin call look identical to the database. A teacher
+      // a super_admin creates here is vetted by definition, so approve it.
+      // The service client has no auth.uid(), which 115 permits.
+      if (role === "teacher" && data.user?.id) {
+        const { error: activateError } = await admin
+          .from("profiles")
+          .update({ is_active: true })
+          .eq("id", data.user.id);
+        if (activateError) {
+          console.error("admin-user-ops: could not activate new teacher", activateError);
+        }
+      }
+
       return json({ success: true, userId: data.user?.id, email: data.user?.email });
     }
 
