@@ -104,6 +104,8 @@ import LessonWizard from "./pages/teacher/LessonWizard";
 import TeacherQuizzes from "./pages/teacher/TeacherQuizzes";
 import LessonEditor from "./components/admin/lessons/LessonEditor";
 import TeacherProfile from "./pages/teacher/TeacherProfile";
+import TeacherStart from "./pages/teacher/TeacherStart";
+import StudentStart from "./pages/student/StudentStart";
 import TeacherAnnouncements from "./pages/teacher/TeacherAnnouncements";
 import TeacherCertificates from "./pages/teacher/TeacherCertificates";
 import TeacherReviews from "./pages/teacher/TeacherReviews";
@@ -232,6 +234,7 @@ const App = () => (
                     <Route path="reviews" element={<TeacherReviews />} />
                     <Route path="certificates" element={<TeacherCertificates />} />
                     <Route path="profile" element={<TeacherProfile />} />
+                    <Route path="start" element={<TeacherStart />} />
                   </Route>
 
                   {/* AI summary ("الملخص الذكي") — print and slide views.
@@ -275,6 +278,7 @@ const App = () => (
                     <Route path="certificates" element={<MyCertificates />} />
                     <Route path="messages" element={<Messages />} />
                     <Route path="profile" element={<StudentProfile />} />
+                    <Route path="start" element={<StudentStart />} />
                     <Route path="lesson/:id" element={<LessonPlayer />} />
                     <Route path="quiz/:quizId" element={<QuizPlayer />} />
                   </Route>

@@ -64,7 +64,7 @@ export default function StudentOnboarding() {
             }
 
             await refreshProfile();
-            navigate('/student/marketplace', { replace: true });
+            navigate('/student/start', { replace: true });
         } catch (err) {
             console.error('Onboarding save error:', err);
             // Inline and persistent, not a toast: the student cannot leave this

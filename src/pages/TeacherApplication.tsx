@@ -171,7 +171,7 @@ export default function TeacherApplication() {
             // Keep the session: the teacher lands in the sandbox and starts
             // building. Signing them out of an account they just created was
             // the single largest piece of friction in this flow.
-            navigate('/teacher', { replace: true });
+            navigate('/teacher/start', { replace: true });
         } catch (err: any) {
             console.error('Registration error:', err);
             if (err.message?.includes('already registered')) {

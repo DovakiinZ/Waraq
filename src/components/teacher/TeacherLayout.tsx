@@ -1,4 +1,4 @@
-import { Link, useLocation, Outlet, useNavigate, Navigate } from 'react-router-dom';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LogOut, Sun, Moon, Clock } from 'lucide-react';
@@ -8,11 +8,15 @@ import MobileLayout from '@/layouts/MobileLayout';
 import { Logo } from '@/components/brand/Logo';
 import { roleNavItems } from '@/config/nav';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { useTeacherGuideSteps } from '@/components/setup/useGuideSteps';
 
 const navItems = roleNavItems.teacher;
 
-/** Pages a pending (is_active=false) teacher can access */
-const PENDING_ALLOWED_PATHS = ['/teacher', '/teacher/profile'];
+// A pending (is_active=false) teacher can open every page. Approval gates
+// PUBLISHING only — migration 113's trigger refuses it in the database. This
+// layout used to redirect pending teachers away from everything but the
+// dashboard and profile, which since migration 118 (every new teacher starts
+// pending) meant a new teacher could not create a course at all.
 
 export default function TeacherLayout() {
     const { t, language } = useLanguage();
@@ -23,11 +27,9 @@ export default function TeacherLayout() {
     const { isDark, toggle: toggleDarkMode } = useDarkMode();
 
     const isPending = profile?.is_active === false;
-
-    // Block pending teachers from accessing restricted pages
-    if (isPending && !PENDING_ALLOWED_PATHS.includes(location.pathname)) {
-        return <Navigate to="/teacher" replace />;
-    }
+    const { steps: setupSteps } = useTeacherGuideSteps();
+    const setupDone = setupSteps.filter((s) => s.done).length;
+    const showSetup = setupSteps.length > 0 && setupDone < setupSteps.length;
 
     if (isMobile) {
         return <MobileLayout role="teacher" />;
@@ -65,9 +67,17 @@ export default function TeacherLayout() {
                                     </span>
                                 </div>
                             )}
+                            {showSetup && (
+                                <Link
+                                    to="/teacher/start"
+                                    className={`flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-md text-sm font-semibold border transition-colors ${isActive('/teacher/start') ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-foreground hover:bg-secondary'}`}
+                                >
+                                    <span>{t('ابدأ هنا', 'Start here')}</span>
+                                    <span className="text-xs tabular-nums" dir="ltr">{setupDone}/{setupSteps.length}</span>
+                                </Link>
+                            )}
                             {navItems.map((item) => {
-                                const allowed = !isPending || PENDING_ALLOWED_PATHS.includes(item.path);
-                                return allowed ? (
+                                return (
                                     <Link
                                         key={item.path}
                                         to={item.path}
@@ -82,14 +92,6 @@ export default function TeacherLayout() {
                                         <item.icon className="w-4 h-4" />
                                         {t(item.label.ar, item.label.en)}
                                     </Link>
-                                ) : (
-                                    <div
-                                        key={item.path}
-                                        className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground/40 cursor-not-allowed"
-                                    >
-                                        <item.icon className="w-4 h-4" />
-                                        {t(item.label.ar, item.label.en)}
-                                    </div>
                                 );
                             })}
                         </nav>

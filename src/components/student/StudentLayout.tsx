@@ -9,6 +9,7 @@ import { Logo } from '@/components/brand/Logo';
 import { CartButton } from '@/components/shared/CartButton';
 import { roleNavItems } from '@/config/nav';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { useStudentGuideSteps } from '@/components/setup/useGuideSteps';
 
 const navItems = roleNavItems.student;
 
@@ -19,6 +20,9 @@ export default function StudentLayout() {
     const navigate = useNavigate();
     const isMobile = useIsMobileLayout();
     const { isDark, toggle: toggleDarkMode } = useDarkMode();
+    const { steps: setupSteps } = useStudentGuideSteps();
+    const setupDone = setupSteps.filter((s) => s.done).length;
+    const showSetup = setupSteps.length > 0 && setupDone < setupSteps.length;
 
     if (isMobile) {
         return <MobileLayout role="student" />;
@@ -50,6 +54,15 @@ export default function StudentLayout() {
                         </div>
 
                         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                            {showSetup && (
+                                <Link
+                                    to="/student/start"
+                                    className={`flex items-center justify-between gap-3 px-3 py-2 mb-2 rounded-md text-sm font-semibold border transition-colors ${isActive('/student/start') ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-foreground hover:bg-secondary'}`}
+                                >
+                                    <span>{t('ابدأ هنا', 'Start here')}</span>
+                                    <span className="text-xs tabular-nums" dir="ltr">{setupDone}/{setupSteps.length}</span>
+                                </Link>
+                            )}
                             {navItems.map((item) => (
                                 <Link
                                     key={item.path}

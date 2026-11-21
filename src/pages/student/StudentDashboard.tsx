@@ -26,6 +26,8 @@ import {
     Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SetupProgressCard } from '@/components/setup/SetupGuide';
+import { useStudentGuideSteps } from '@/components/setup/useGuideSteps';
 
 // Helper
 const getYoutubeId = (url: string) => {
@@ -38,6 +40,7 @@ const getYoutubeId = (url: string) => {
 export default function StudentDashboard() {
     const { t, direction } = useLanguage();
     const { profile } = useAuth();
+    const guide = useStudentGuideSteps();
     const navigate = useNavigate();
 
     const { data: allProgress = [], isLoading: progressLoading } = useStudentProgress(profile?.id);
@@ -120,6 +123,9 @@ export default function StudentDashboard() {
 
     return (
         <div className="space-y-8 pb-12">
+            {/* Setup guide card — hidden once the three steps are done. */}
+            <SetupProgressCard steps={guide.steps} to="/student/start" nextTitle={guide.steps.find((s) => !s.done)?.title} />
+
             {/* ===== WELCOME + CONTINUE LEARNING ===== */}
             {continueItem ? (
                 <section className="bg-gradient-to-br from-primary/5 via-primary/3 to-background border border-primary/10 rounded-2xl overflow-hidden">
