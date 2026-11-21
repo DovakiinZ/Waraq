@@ -12,10 +12,44 @@ dist
 dist-ssr
 *.local
 
-# Environment variables
+# Environment variables — only the placeholder template is committed
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
+
+# Credentials and signing keys — never commit these
+*.keystore
+*.jks
+key.properties
+*.pem
+*.p12
+*token*.txt
+service-account*.json
+
+# One-off scripts against the live database. Several hard-coded the
+# service_role key; any new ones belong in .smoke/ (ignored below).
+/test*.mjs
+/test*.ts
+/test*.js
+/verify_*.js
+/check_*.js
+/apply_*.js
+/fetch_*.ts
+
+# Data dumps from the live database (personal data, stale schema snapshots)
+/debug.json
+/teachers_output.json
+/schema.json
+/schema_dump.sql
+
+# Stale March-2026 notes superseded by CLAUDE.md, and AI session logs
+/structure.md
+/BROWSER_DIAGNOSTIC.md
+/APPLY_MIGRATIONS.md
+.cc-sessions/
+
+# Per-release scratch notes (CI reads ayman_academy_flutter/release_notes/X.Y.Z.md)
+ayman_academy_flutter/notes.md
 
 # Temp/debug files
 lint_output*
