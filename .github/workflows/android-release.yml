@@ -24,6 +24,11 @@ on:
     tags:
       - 'v*-android'
       - 'v*-android-test'
+  # Manual run = DRY RUN: builds the APK and keeps it as a workflow artifact,
+  # but never publishes and does not need RELEASES_TOKEN or the keystore
+  # (without the keystore the build is signed with a throwaway key, so a
+  # dry-run APK will NOT install over the app students have).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -51,11 +56,20 @@ jobs:
       - name: Check tag matches pubspec version
         id: meta
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          TAG_VERSION=$(echo "$TAG" | sed -nE 's/^v([0-9]+\.[0-9]+\.[0-9]+)-android(-test)?$/\1/p')
           PUB_FULL=$(grep -E '^version:' pubspec.yaml | awk '{print $2}')
           PUB_VERSION="${PUB_FULL%%+*}"
           BUILD_NUMBER="${PUB_FULL##*+}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Dry run of $PUB_FULL — nothing will be published."
+            echo "version=$PUB_VERSION"       >> "$GITHUB_OUTPUT"
+            echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true"            >> "$GITHUB_OUTPUT"
+            echo "dry_run=true"               >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "dry_run=false" >> "$GITHUB_OUTPUT"
+          TAG="${GITHUB_REF_NAME}"
+          TAG_VERSION=$(echo "$TAG" | sed -nE 's/^v([0-9]+\.[0-9]+\.[0-9]+)-android(-test)?$/\1/p')
           if [ -z "$TAG_VERSION" ]; then echo "::error::Tag $TAG is not vX.Y.Z-android[-test]"; exit 1; fi
           if [ "$TAG_VERSION" != "$PUB_VERSION" ]; then
             echo "::error::Tag says $TAG_VERSION but pubspec.yaml says $PUB_VERSION. Bump pubspec first."; exit 1
@@ -71,15 +85,19 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
+          DRY: ${{ steps.meta.outputs.dry_run }}
         run: |
           missing=""
-          [ -n "$RELEASES_TOKEN" ]    || missing="$missing RELEASES_TOKEN"
           [ -n "$SUPABASE_URL" ]      || missing="$missing SUPABASE_URL"
           [ -n "$SUPABASE_ANON_KEY" ] || missing="$missing SUPABASE_ANON_KEY"
-          [ -n "$KEYSTORE" ]          || missing="$missing ANDROID_DEBUG_KEYSTORE_B64"
+          if [ "$DRY" != "true" ]; then
+            [ -n "$RELEASES_TOKEN" ]  || missing="$missing RELEASES_TOKEN"
+            [ -n "$KEYSTORE" ]        || missing="$missing ANDROID_DEBUG_KEYSTORE_B64"
+          fi
           if [ -n "$missing" ]; then echo "::error::Missing repo secrets:$missing"; exit 1; fi
 
       - name: Refuse to overwrite an existing release
+        if: steps.meta.outputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
@@ -103,6 +121,7 @@ jobs:
         env:
           KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
         run: |
+          if [ -z "$KEYSTORE" ]; then echo "::warning::No keystore secret — dry-run APK is signed with a throwaway key."; exit 0; fi
           echo "$KEYSTORE" | base64 -d > android/app/ci-signing.keystore
           # Standard Android debug-keystore credentials; the keystore itself is the secret.
           cat > android/key.properties <<'EOF'
@@ -131,15 +150,18 @@ jobs:
 
       - name: Verify signer and versionCode
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN || github.token }}
+          DRY: ${{ steps.meta.outputs.dry_run }}
         run: |
+          # In a dry run every check reports but none fails the build.
+          fail() { if [ "$DRY" = "true" ]; then echo "::warning::$1"; else echo "::error::$1"; exit 1; fi; }
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           APK="waraq-academy-v${{ steps.meta.outputs.version }}.apk"
 
           SIGNER=$("$BT/apksigner" verify --print-certs "$APK" | sed -nE 's/.*SHA-256 digest: ([0-9a-f]+).*/\1/p' | head -1)
           echo "Signer: $SIGNER"
           if [ "$SIGNER" != "$EXPECTED_SIGNER_SHA256" ]; then
-            echo "::error::APK is signed with the wrong key ($SIGNER). It would not install over existing versions."; exit 1
+            fail "APK is signed with the wrong key ($SIGNER). It would not install over existing versions."
           fi
 
           NEW_CODE=$("$BT/aapt2" dump badging "$APK" | sed -nE "s/.*versionCode='([0-9]+)'.*/\1/p")
@@ -152,7 +174,7 @@ jobs:
             PREV_CODE=$("$BT/aapt2" dump badging /tmp/prev.apk | sed -nE "s/.*versionCode='([0-9]+)'.*/\1/p")
             echo "Previous versionCode: $PREV_CODE"
             if [ "$NEW_CODE" -le "$PREV_CODE" ]; then
-              echo "::error::versionCode $NEW_CODE is not higher than the published $PREV_CODE. Bump the +N in pubspec.yaml."; exit 1
+              fail "versionCode $NEW_CODE is not higher than the published $PREV_CODE. Bump the +N in pubspec.yaml."
             fi
           fi
 
@@ -167,6 +189,7 @@ jobs:
           fi
 
       - name: Publish to waraq-releases
+        if: steps.meta.outputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
