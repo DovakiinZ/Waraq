@@ -30,30 +30,20 @@ import {
     FileText,
     Eye,
 } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
-
-const CART_KEY = 'ayman-academy-cart';
-
-function loadCart(): string[] {
-    try {
-        return JSON.parse(localStorage.getItem(CART_KEY) || '[]');
-    } catch {
-        return [];
-    }
-}
-
-function saveCart(items: string[]) {
-    localStorage.setItem(CART_KEY, JSON.stringify(items));
-}
+import { useCallback } from 'react';
+import { useCart } from '@/hooks/useCart';
+import { formatAmount, isFreeSubject } from '@/lib/price';
 
 export default function CoursePreview() {
     const { subjectId } = useParams<{ subjectId: string }>();
     const { t, language, direction } = useLanguage();
     const { profile } = useAuth();
     const navigate = useNavigate();
-    const [cart, setCart] = useState<string[]>(loadCart);
-
-    useEffect(() => { saveCart(cart); }, [cart]);
+    // The app-wide cart. This page used to keep its OWN copy in localStorage,
+    // which the shared CartContext never saw — so a course added here was
+    // missing from the header count, and the next cart change anywhere else
+    // wrote the stale list back over it.
+    const cart = useCart();
 
     const BackIcon = direction === 'rtl' ? ArrowRight : ArrowLeft;
 
@@ -138,28 +128,31 @@ export default function CoursePreview() {
     const { data: enrollmentStatus } = useQuery({
         queryKey: ['enrollment-status', profile?.id, subjectId],
         queryFn: async () => {
-            // Check student_subjects
-            const { data: access } = await supabase
-                .from('student_subjects')
-                .select('id')
-                .eq('student_id', profile!.id)
-                .eq('subject_id', subjectId!)
-                .eq('status', 'active')
-                .maybeSingle();
+            // Ask the server's own access rule. Checking student_subjects alone
+            // missed every other way in (free course, subscription, org,
+            // invite), so a student who could already open the course was
+            // offered "Add to cart".
+            // check_subject_access RETURNS TABLE, so this is an array of rows.
+            const { data: access } = await supabase.rpc('check_subject_access' as never, {
+                p_student_id: profile!.id,
+                p_subject_id: subjectId!,
+            } as never);
+            const rows = access as unknown as { has_access?: boolean }[] | { has_access?: boolean } | null;
+            const row = Array.isArray(rows) ? rows[0] : rows;
+            if (row?.has_access) return 'enrolled' as const;
 
-            if (access) return 'enrolled' as const;
-
-            // Check pending order
-            const { data: order } = await supabase
+            // .limit(1), not .maybeSingle(): a student with two pending orders
+            // for the same course made maybeSingle error, which read as "not
+            // enrolled" and offered a third purchase.
+            const { data: orders } = await supabase
                 .from('orders')
                 .select('id, status')
                 .eq('student_id', profile!.id)
                 .eq('subject_id', subjectId!)
-                .in('status', ['pending_payment', 'paid'])
-                .maybeSingle();
+                .eq('status', 'pending_payment')
+                .limit(1);
 
-            if (order?.status === 'paid') return 'enrolled' as const;
-            if (order?.status === 'pending_payment') return 'pending' as const;
+            if (orders && orders.length > 0) return 'pending' as const;
 
             return 'not_enrolled' as const;
         },
@@ -168,29 +161,31 @@ export default function CoursePreview() {
     });
 
     // ── Cart actions ──────────────────────────────
-    const inCart = cart.includes(subjectId || '');
+    const inCart = cart.has(subjectId || '');
 
     const addToCart = useCallback(() => {
         if (!subjectId) return;
-        setCart(prev => {
-            if (prev.includes(subjectId)) return prev;
-            return [...prev, subjectId];
-        });
+        cart.add(subjectId);
         toast.success(t('تمت الإضافة للسلة', 'Added to cart'));
-    }, [subjectId, t]);
+    }, [subjectId, t, cart]);
 
     const removeFromCart = useCallback(() => {
         if (!subjectId) return;
-        setCart(prev => prev.filter(id => id !== subjectId));
-    }, [subjectId]);
+        cart.remove(subjectId);
+    }, [subjectId, cart]);
 
     // ── Helpers ───────────────────────────────────
+    const isFree = isFreeSubject(course);
+
     const formatPrice = (amount?: number | null, currency?: string | null) => {
-        if (!amount || amount === 0) return t('مجاني', 'Free');
-        return `${amount.toLocaleString()} ${currency || 'SYP'}`;
+        if (isFree) return t('مجاني', 'Free');
+        return formatAmount(amount, currency, language);
     };
 
-    const isFree = !course?.price_amount || course.price_amount === 0;
+    // A free course never goes through the cart: it opens for anyone who can
+    // see it (migration 109), so "Enrol for free" used to send the student
+    // through a Sham Cash checkout for 0 and wait on a teacher to confirm.
+    const canOpen = enrollmentStatus === 'enrolled' || isFree;
     const freePreviewLessons = useMemo(
         () => (course?.lessons || []).filter((l: any) => l.is_free_preview || !l.is_paid),
         [course?.lessons],
@@ -302,11 +297,13 @@ export default function CoursePreview() {
                             {formatPrice(course.price_amount, course.price_currency)}
                         </p>
 
-                        {enrollmentStatus === 'enrolled' ? (
+                        {canOpen ? (
                             <Button asChild className="w-full gap-2" size="lg">
                                 <Link to={`/student/subjects/${subjectId}`}>
                                     <Play className="w-4 h-4 fill-current" />
-                                    {t('الذهاب للمادة', 'Go to Course')}
+                                    {enrollmentStatus === 'enrolled'
+                                        ? t('الذهاب للمادة', 'Go to Course')
+                                        : t('ابدأ التعلم مجاناً', 'Start learning for free')}
                                 </Link>
                             </Button>
                         ) : enrollmentStatus === 'pending' ? (
@@ -329,7 +326,7 @@ export default function CoursePreview() {
                         ) : (
                             <Button className="w-full gap-2" size="lg" onClick={addToCart}>
                                 <ShoppingCart className="w-4 h-4" />
-                                {isFree ? t('التسجيل مجاناً', 'Enroll for Free') : t('إضافة للسلة', 'Add to Cart')}
+                                {t('إضافة للسلة', 'Add to Cart')}
                             </Button>
                         )}
                     </div>
@@ -475,7 +472,7 @@ export default function CoursePreview() {
             )}
 
             {/* ── Sticky bottom CTA (mobile) ──────── */}
-            {enrollmentStatus !== 'enrolled' && (
+            {!canOpen && (
                 <div className="fixed bottom-0 inset-x-0 bg-background border-t border-border p-4 shadow-lg z-50 lg:hidden">
                     <div className="flex items-center justify-between gap-4 max-w-3xl mx-auto">
                         <p className={`text-xl font-bold ${isFree ? 'text-green-600' : ''}`}>
@@ -495,7 +492,7 @@ export default function CoursePreview() {
                         ) : (
                             <Button size="sm" onClick={addToCart}>
                                 <ShoppingCart className="w-4 h-4 me-1.5" />
-                                {isFree ? t('سجل مجاناً', 'Enroll Free') : t('أضف للسلة', 'Add to Cart')}
+                                {t('أضف للسلة', 'Add to Cart')}
                             </Button>
                         )}
                     </div>

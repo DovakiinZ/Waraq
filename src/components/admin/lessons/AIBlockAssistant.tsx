@@ -22,7 +22,8 @@ import {
 interface AIBlockAssistantProps {
     block: LessonBlock;
     lang: 'ar' | 'en';
-    onApply: (content: string) => void;
+    /** `action` lets the caller route a translation into the other language. */
+    onApply: (content: string, action: AIAction) => void;
 }
 
 export default function AIBlockAssistant({ block, lang, onApply }: AIBlockAssistantProps) {
@@ -71,8 +72,8 @@ export default function AIBlockAssistant({ block, lang, onApply }: AIBlockAssist
     };
 
     const handleApply = () => {
-        if (result) {
-            onApply(result);
+        if (result && activeAction) {
+            onApply(result, activeAction);
             setResult(null);
             setActiveAction(null);
         }

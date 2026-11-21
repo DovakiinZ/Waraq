@@ -5,13 +5,14 @@
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/hooks/useCart';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import { STALE_TIMES } from '@/lib/queryConfig';
+import { formatAmount, isFreeSubject } from '@/lib/price';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { STAGES } from '@/lib/studentStages';
@@ -55,7 +56,9 @@ export default function StudentMarketplace() {
     const navigate = useNavigate();
     // 'browse' is also where the floating cart bar lives, which is where the
     // header cart button sends people.
-    const [activeTab, setActiveTab] = useState<Tab>('browse');
+    // ?tab=orders opens the Orders tab directly (checkout's "View My Orders").
+    const [searchParams] = useSearchParams();
+    const [activeTab, setActiveTab] = useState<Tab>(searchParams.get('tab') === 'orders' ? 'orders' : 'browse');
     const [searchQuery, setSearchQuery] = useState('');
     const [stageFilter, setStageFilter] = useState<string>('all');
 
@@ -86,8 +89,8 @@ export default function StudentMarketplace() {
     // ── Helpers ──────────────────────────────────
     const formatPrice = useCallback((amount?: number | null, currency?: string | null) => {
         if (!amount || amount === 0) return t('مجاني', 'Free');
-        return `${amount.toLocaleString()} ${currency || 'SYP'}`;
-    }, [t]);
+        return formatAmount(amount, currency, language);
+    }, [t, language]);
 
     const getStatusConfig = useCallback((status: string) => {
         switch (status) {
@@ -339,7 +342,7 @@ export default function StudentMarketplace() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                             {filteredSubjects.map((subject: any, idx: number) => {
                                 const inCart = isInCart(subject.id);
-                                const isFree = !subject.price_amount || subject.price_amount === 0;
+                                const isFree = isFreeSubject(subject);
                                 const gradient = GRADIENTS[idx % GRADIENTS.length];
                                 const hasCover = !!subject.cover_image_url;
 
@@ -417,11 +420,21 @@ export default function StudentMarketplace() {
                                             <div className="border-t border-border pt-3 flex items-center justify-between">
                                                 {/* Price */}
                                                 <span className={`text-lg font-bold ${isFree ? 'text-green-500' : 'text-foreground'}`}>
-                                                    {formatPrice(subject.price_amount, subject.price_currency)}
+                                                    {isFree ? t('مجاني', 'Free') : formatPrice(subject.price_amount, subject.price_currency)}
                                                 </span>
 
-                                                {/* Action */}
-                                                {inCart ? (
+                                                {/* Action. A free course opens straight away —
+                                                    it used to go into the cart and through a
+                                                    Sham Cash checkout for 0. */}
+                                                {isFree ? (
+                                                    <Button
+                                                        size="sm"
+                                                        className="text-xs h-8"
+                                                        onClick={() => navigate(`/student/subjects/${subject.id}`)}
+                                                    >
+                                                        {t('ابدأ مجاناً', 'Start free')}
+                                                    </Button>
+                                                ) : inCart ? (
                                                     <Button
                                                         variant="secondary"
                                                         size="sm"
@@ -514,7 +527,7 @@ export default function StudentMarketplace() {
                                 </span>
                             </div>
                             <div className="text-sm">
-                                <span className="font-semibold">{cartTotal.toLocaleString()} {cartCurrency}</span>
+                                <span className="font-semibold">{formatAmount(cartTotal, cartCurrency, language)}</span>
                                 <span className="text-muted-foreground ms-1.5">({cart.length} {t('مادة', 'items')})</span>
                             </div>
                             <button onClick={clearCart} className="text-muted-foreground hover:text-destructive transition-colors p-1" title={t('إفراغ السلة', 'Clear cart')}>

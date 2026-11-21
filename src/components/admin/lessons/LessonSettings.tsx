@@ -16,10 +16,17 @@ import QuizManagement from './QuizManagement';
 
 interface LessonSettingsProps {
     lesson: Lesson;
-    onUpdate: (data: Partial<Lesson>) => void;
+    /** Rejects on failure. */
+    onUpdate: (data: Partial<Lesson>) => Promise<void>;
+    /**
+     * Opens the Review & Publish dialog. Publishing goes through it so the
+     * readiness checks always run — this switch used to publish directly,
+     * letting an empty or broken lesson go live.
+     */
+    onRequestPublish: () => void;
 }
 
-export default function LessonSettings({ lesson, onUpdate }: LessonSettingsProps) {
+export default function LessonSettings({ lesson, onUpdate, onRequestPublish }: LessonSettingsProps) {
     const { t } = useLanguage();
     const [localLesson, setLocalLesson] = useState(lesson);
 
@@ -33,7 +40,10 @@ export default function LessonSettings({ lesson, onUpdate }: LessonSettingsProps
 
     const handleSaveLesson = async () => {
         try {
-            await onUpdate(localLesson);
+            // Publication is never changed from here: it goes through the
+            // publish dialog (see onRequestPublish).
+            const { is_published, ...rest } = localLesson;
+            await onUpdate(rest);
             toast.success(t('تم حفظ الإعدادات', 'Settings saved'));
         } catch (error) {
             toast.error(t('فشل الحفظ', 'Save failed'));
@@ -136,9 +146,18 @@ export default function LessonSettings({ lesson, onUpdate }: LessonSettingsProps
                     </div>
                     <Switch
                         checked={localLesson.is_published}
-                        onCheckedChange={c => {
-                            handleLessonChange('is_published', c);
-                            onUpdate({ is_published: c });
+                        onCheckedChange={async c => {
+                            if (c) {
+                                onRequestPublish();
+                                return;
+                            }
+                            // Unpublishing needs no checks.
+                            try {
+                                await onUpdate({ is_published: false });
+                                handleLessonChange('is_published', false);
+                            } catch {
+                                toast.error(t('فشل الحفظ', 'Save failed'));
+                            }
                         }}
                     />
                 </div>
@@ -147,21 +166,25 @@ export default function LessonSettings({ lesson, onUpdate }: LessonSettingsProps
                     <div className="space-y-0.5">
                         <Label>{t('درس مدفوع', 'Paid Lesson')}</Label>
                         <p className="text-xs text-muted-foreground">
-                            {t('تطلب اشتراكاً لمشاهدة هذا الدرس', 'Requires subscription to view this lesson')}
+                            {t('يفتح لمن اشترى المادة فقط', 'Opens only for students who bought the course')}
                         </p>
                     </div>
                     <Switch
                         checked={localLesson.is_paid}
-                        onCheckedChange={c => {
-                            handleLessonChange('is_paid', c);
-                            onUpdate({ is_paid: c });
+                        onCheckedChange={async c => {
+                            try {
+                                await onUpdate({ is_paid: c });
+                                handleLessonChange('is_paid', c);
+                            } catch {
+                                toast.error(t('فشل الحفظ', 'Save failed'));
+                            }
                         }}
                     />
                 </div>
                 <div className="flex items-center justify-between py-2">
                     <div>
                         <Label className="text-sm">{t('معاينة مجانية', 'Free Preview')}</Label>
-                        <p className="text-xs text-muted-foreground">{t('متاح للجميع', 'Available to all')}</p>
+                        <p className="text-xs text-muted-foreground">{t('يفتح الدرس كاملاً لمن لم يشترِ المادة', 'Opens the whole lesson to people who have not bought the course')}</p>
                     </div>
                     <Switch
                         checked={localLesson.is_free_preview || false}

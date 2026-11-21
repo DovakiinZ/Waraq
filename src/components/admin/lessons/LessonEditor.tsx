@@ -55,6 +55,7 @@ export default function LessonEditor() {
     const [pendingDraft, setPendingDraft] = useState<LessonDraft | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+    const [publishIntent, setPublishIntent] = useState(false);
     const [isOutlineOpen, setIsOutlineOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSummaryOpen, setIsSummaryOpen] = useState(false);
@@ -540,6 +541,20 @@ export default function LessonEditor() {
         return <div className="p-8 text-center">{t('الدرس غير موجود', 'Lesson not found')}</div>;
     }
 
+    /**
+     * Save lesson fields from the settings panel. THROWS on failure so the
+     * panel can report it — the old inline handlers swallowed the error, so a
+     * failed save showed "Update failed" and then "Settings saved" together.
+     */
+    const updateLessonFields = async (updates: Partial<Lesson>) => {
+        const { error } = await supabase.from('lessons').update(updates as any).eq('id', lesson.id);
+        if (error) {
+            console.error(error);
+            throw error;
+        }
+        setLesson({ ...lesson, ...updates });
+    };
+
     return (
         <>
             <DraftRecoveryDialog
@@ -556,6 +571,7 @@ export default function LessonEditor() {
                 sections={sections}
                 blocks={blocks}
                 onPublish={handlePublishLesson}
+                intendPublish={publishIntent}
             />
 
             <ImportLessonDialog
@@ -676,7 +692,7 @@ export default function LessonEditor() {
 
                         <Button
                             size="sm"
-                            onClick={() => setIsPublishDialogOpen(true)}
+                            onClick={() => { setPublishIntent(false); setIsPublishDialogOpen(true); }}
                             className="gap-1.5 h-9 md:h-8"
                         >
                             <CheckCircle className="w-4 h-4 md:w-3.5 md:h-3.5" />
@@ -698,15 +714,8 @@ export default function LessonEditor() {
                                     <div className="p-4 overflow-y-auto h-full">
                                         <LessonSettings
                                             lesson={lesson}
-                                            onUpdate={async (updates) => {
-                                                const { error } = await supabase.from('lessons').update(updates as any).eq('id', lesson.id);
-                                                if (error) {
-                                                    console.error(error);
-                                                    toast.error(t('فشل التحديث', 'Update failed'));
-                                                } else {
-                                                    setLesson({ ...lesson, ...updates });
-                                                }
-                                            }}
+                                            onUpdate={updateLessonFields}
+                                            onRequestPublish={() => { setPublishIntent(true); setIsPublishDialogOpen(true); }}
                                         />
                                     </div>
                                 </SheetContent>
@@ -765,15 +774,8 @@ export default function LessonEditor() {
                 <div className="flex-1 overflow-y-auto p-4">
                     <LessonSettings
                         lesson={lesson}
-                        onUpdate={async (updates) => {
-                            const { error } = await supabase.from('lessons').update(updates as any).eq('id', lesson.id);
-                            if (error) {
-                                console.error(error);
-                                toast.error(t('فشل التحديث', 'Update failed'));
-                            } else {
-                                setLesson({ ...lesson, ...updates });
-                            }
-                        }}
+                        onUpdate={updateLessonFields}
+                        onRequestPublish={() => { setPublishIntent(true); setIsPublishDialogOpen(true); }}
                     />
                 </div>
             </div>

@@ -289,7 +289,22 @@ function SortableBlock({
                     <AIBlockAssistant
                         block={block}
                         lang={lang}
-                        onApply={(content) => {
+                        onApply={(content, action) => {
+                            // A translation fills the OTHER language and leaves
+                            // the source alone. It used to write into the tab
+                            // you were on, so "Translate AR→EN" replaced the
+                            // teacher's Arabic with English. Switch to the
+                            // target tab so the teacher sees where it went.
+                            if (action === 'translate_ar_en') {
+                                onUpdate(block.id, { content_en: content });
+                                setLang('en');
+                                return;
+                            }
+                            if (action === 'translate_en_ar') {
+                                onUpdate(block.id, { content_ar: content });
+                                setLang('ar');
+                                return;
+                            }
                             const field = lang === 'ar' ? 'content_ar' : 'content_en';
                             onUpdate(block.id, { [field]: content });
                         }}

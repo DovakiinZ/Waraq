@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lesson, LessonSection, LessonBlock } from '@/types/database';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -23,6 +23,8 @@ interface PublishLessonDialogProps {
     sections: LessonSection[];
     blocks: LessonBlock[];
     onPublish: (settings: { is_published: boolean; is_paid: boolean; is_free_preview: boolean }) => Promise<void>;
+    /** Open with "publish" already switched on (the teacher asked to publish). */
+    intendPublish?: boolean;
 }
 
 export default function PublishLessonDialog({
@@ -31,7 +33,8 @@ export default function PublishLessonDialog({
     lesson,
     sections,
     blocks,
-    onPublish
+    onPublish,
+    intendPublish = false,
 }: PublishLessonDialogProps) {
     const { t } = useLanguage();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,6 +43,19 @@ export default function PublishLessonDialog({
         is_paid: lesson.is_paid,
         is_free_preview: lesson.is_free_preview || false,
     });
+
+    // Re-read the lesson every time the dialog opens. The state above is only
+    // initialised once, so a change made in the settings panel since the
+    // editor loaded (unpublish, paid) used to reopen here with stale values.
+    useEffect(() => {
+        if (!open) return;
+        setSettings({
+            is_published: intendPublish || lesson.is_published,
+            is_paid: lesson.is_paid,
+            is_free_preview: lesson.is_free_preview || false,
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
 
     const issues = checkLessonReadiness(lesson, blocks);
     // Blockers only matter when the teacher is actually making it visible.
