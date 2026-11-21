@@ -23,6 +23,9 @@ abstract class Routes {
   static const studentProfile = '/student/profile';
   static const marketplace = '/student/marketplace';
 
+  /// Setup guide («ابدأ هنا»). Standalone, outside the shell.
+  static const studentStart = '/student/start';
+
   // Teacher
   static const teacherHome = '/teacher';
   static const teacherSubjects = '/teacher/subjects';
@@ -31,6 +34,9 @@ abstract class Routes {
   static const teacherProfile = '/teacher/profile';
   static const teacherCertificates = '/teacher/certificates';
   static const teacherOrders = '/teacher/orders';
+
+  /// Setup guide («ابدأ هنا»). Standalone, outside the shell.
+  static const teacherStart = '/teacher/start';
 
   /// Shared by both roles — the screen picks its tab from the signed-in role.
   static const guide = '/guide';

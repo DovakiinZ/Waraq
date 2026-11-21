@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ayman_academy_app/core/router/routes.dart';
 import 'package:ayman_academy_app/core/theme/app_colors.dart';
 import 'package:ayman_academy_app/features/auth/providers/auth_provider.dart';
+import 'package:ayman_academy_app/features/setup/widgets/setup_widgets.dart';
 import 'package:ayman_academy_app/shared/models/subject.dart';
 import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/avatar_widget.dart';
@@ -60,6 +61,12 @@ class StudentDashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Setup guide card — hidden once complete or on failure ──
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
+                    child: SetupDashboardCard(role: SetupRole.student),
+                  ),
+
                   // ── Welcome Section ──
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),

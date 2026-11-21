@@ -20,6 +20,8 @@ import 'package:ayman_academy_app/features/student/subjects/screens/discover_scr
 import 'package:ayman_academy_app/features/student/lessons/screens/lesson_player_screen.dart';
 import 'package:ayman_academy_app/features/student/lessons/screens/lesson_slides_screen.dart';
 import 'package:ayman_academy_app/features/guide/screens/guide_screen.dart';
+import 'package:ayman_academy_app/features/setup/screens/setup_guide_screen.dart';
+import 'package:ayman_academy_app/features/setup/widgets/setup_widgets.dart';
 import 'package:ayman_academy_app/features/student/quiz/screens/quiz_screen.dart';
 import 'package:ayman_academy_app/features/student/certificates/screens/my_certificates_screen.dart';
 import 'package:ayman_academy_app/features/student/certificates/screens/certificate_detail_screen.dart';
@@ -93,8 +95,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         return path == Routes.onboarding ? null : Routes.onboarding;
       }
 
+      // First arrival after signup goes to the setup guide — the one forced
+      // redirect the guide is allowed (spec rule 8). A student lands here
+      // straight after picking a stage. A teacher lands here from the
+      // application form, or from /onboarding when the auth stream read the
+      // trigger-created profile (role 'student', no stage) before the
+      // application's upsert made it a teacher.
+      if (path == Routes.onboarding) {
+        return auth.isTeacher ? Routes.teacherStart : Routes.studentStart;
+      }
+      if (path == Routes.teacherApply && auth.isTeacher) return Routes.teacherStart;
+
       // Signed in and settled: get off the splash/auth screens.
-      if (isSplash || isAuthRoute || path == Routes.onboarding) {
+      if (isSplash || isAuthRoute) {
         return auth.isTeacher ? Routes.teacherHome : Routes.studentHome;
       }
 
@@ -109,6 +122,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const GuideScreen(),
       ),
       GoRoute(path: Routes.splash, builder: (_, _) => const _SplashScreen()),
+
+      // Setup guides («ابدأ هنا»). Outside the shells; the role guard in the
+      // redirect still applies through the '/teacher' and '/student' prefixes.
+      GoRoute(
+        path: Routes.teacherStart,
+        builder: (_, _) => const SetupGuideScreen(role: SetupRole.teacher),
+      ),
+      GoRoute(
+        path: Routes.studentStart,
+        builder: (_, _) => const SetupGuideScreen(role: SetupRole.student),
+      ),
       GoRoute(path: Routes.intro, builder: (_, _) => const IntroScreen()),
 
       // Auth routes

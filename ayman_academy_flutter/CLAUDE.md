@@ -414,9 +414,20 @@ A new install used to open straight on the raw login screen. It now shows four i
   Its footer uses `Wrap`, not `Row`: the English "Already have an account?" overflowed a narrow phone by 79px as a Row, which Flutter renders as a striped overflow box. Caught by the dark/English test, not by eye.
 - **Gender is NOT asked during sign-up**, matching the 13 Oct spec rather than the later request to add it; that decision is still open with the user. Adding it is one screen between account and stage.
 
+### Setup guide — «ابدأ هنا» (added 2026-11-21)
+
+Spec: `docs/superpowers/specs/2026-11-21-setup-guide.md` (shared with the web, built separately). A checklist, not a wizard: 4 teacher steps, 3 student steps, each with one button to the normal screen for that task. **Nothing about progress is stored** — done-ness is recomputed from real rows every time.
+
+- **`shared/services/setup_progress.dart`** — the rules, pure Dart (no Flutter, no Supabase): `teacherSetup()` / `studentSetup()` take plain facts and return `SetupProgress` (`completedCount`, `allComplete`, `nextStep`, `counter` = min(done+1, M)), plus each step's summary line and the AR/EN copy. Change a rule here and in its test, nowhere else.
+- **`features/setup/providers/setup_providers.dart`** — `teacherSetupProvider` / `studentSetupProvider` (autoDispose) fetch only the needed columns (`lesson_progress.user_id`, `orders.student_id`, `student_subjects.student_id`, `subjects.teacher_id`, `lessons` by explicit columns, `lesson_blocks.lesson_id`). They **throw** on failure so the dashboard card hides and the guide shows retry — never a wrong "not done".
+- **`features/setup/screens/setup_guide_screen.dart`** — `/teacher/start`, `/student/start` (top-level, outside the shells). One step open at a time; the current one opens once on first data; no disabled buttons (pending teacher's publish step shows text). Buttons push the existing screens and re-fetch on return: profile → `/teacher/profile`; course/publish → `/teacher/subjects`; lesson → `LessonEditorScreen(subjectId: newest subject)` via `Navigator.push` (it has no go_router route), or `/teacher/subjects` when there is no subject; student → `/student/marketplace`, `/student/subjects`, and the most recent lesson's `/student/subjects/subject/:sid/lesson/:lid`.
+- **`features/setup/widgets/setup_widgets.dart`** — `SetupRouteBar` and `SetupDashboardCard` (top of both dashboards; hidden when complete, loading or failed).
+- **First arrival** is in the router redirect: a settled user on `/onboarding` goes to their guide (student after the stage pick; a teacher only reaches `/onboarding` through the signup race), and a teacher on `/auth/apply-teacher` goes to `/teacher/start`.
+- Tests: `test/models/setup_progress_test.dart` (every done-rule) and `test/screens/setup_guide_screen_test.dart` (the view and the dashboard card with overridden providers).
+
 ### Tests
 
-`flutter test` runs 233 tests; `flutter analyze` reports no issues. Keep both clean.
+`flutter test` runs 233 tests plus the setup-guide suites; `flutter analyze` reports no issues. Keep both clean.
 `test/screens/intro_screen_test.dart` (16) covers the slides, the first-run flag, direction flipping and the fixed board; `test/screens/role_choice_screen_test.dart` (6) covers the fork.
 
 | Path | Covers |
