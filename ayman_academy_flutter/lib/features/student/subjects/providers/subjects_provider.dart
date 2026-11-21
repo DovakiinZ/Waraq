@@ -140,8 +140,17 @@ final checkSubjectAccessProvider = FutureProvider.family<Map<String, dynamic>, S
       'p_student_id': userId,
       'p_subject_id': subjectId,
     });
+    // The live function RETURNS TABLE(has_access, reason, access_type), so
+    // PostgREST hands back a LIST of rows, not a map. The old code accepted a
+    // Map only, so every student — paying or not — read as "no access".
+    if (result is List) {
+      if (result.isEmpty || result.first is! Map) {
+        return {'has_access': false, 'reason': 'none'};
+      }
+      return Map<String, dynamic>.from(result.first as Map);
+    }
     if (result is Map) return Map<String, dynamic>.from(result);
-    // Fail closed: an unexpected (non-Map) result must not grant access.
+    // Fail closed: an unexpected result must not grant access.
     return {'has_access': false, 'reason': 'unknown'};
   } catch (_) {
     // Fail closed: on any RPC/network error, deny access rather than

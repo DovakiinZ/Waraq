@@ -8,6 +8,7 @@ import 'package:ayman_academy_app/shared/providers/language_provider.dart';
 import 'package:ayman_academy_app/shared/widgets/loading_shimmer.dart';
 import 'package:ayman_academy_app/shared/widgets/star_rating.dart';
 import 'package:ayman_academy_app/features/student/subjects/providers/subjects_provider.dart';
+import 'package:ayman_academy_app/features/student/marketplace/providers/marketplace_provider.dart';
 
 class SubjectDetailScreen extends ConsumerStatefulWidget {
   final String subjectId;
@@ -43,6 +44,16 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             }
 
             final teacherData = subject.teacherName;
+
+            // Unknown while loading → treated as "no access", which can only
+            // ever show Buy for a moment, never open paid content.
+            final hasAccess =
+                ref.watch(checkSubjectAccessProvider(widget.subjectId)).valueOrNull?['has_access'] == true;
+            final pending = !hasAccess &&
+                (ref.watch(studentOrdersProvider).valueOrNull ?? const [])
+                    .any((o) => o.subjectId == widget.subjectId && o.status == 'pending_payment');
+            final anyProgress =
+                (progressAsync.valueOrNull ?? const {}).values.any((p) => p > 0);
 
             return Stack(
               children: [
@@ -101,20 +112,21 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                               ),
                             const SizedBox(height: 10),
 
-                            // Star rating row
-                            const StarRating(rating: 4.5, reviewCount: 0),
-                            const SizedBox(height: 10),
+                            // Star rating row — same rule as SubjectCard: real
+                            // stars only from 3 ratings up. It used to show a
+                            // hard-coded 4.5 on every course.
+                            if ((subject.ratingCount ?? 0) >= 3) ...[
+                              StarRating(
+                                rating: subject.averageRating ?? 0,
+                                reviewCount: subject.ratingCount ?? 0,
+                              ),
+                              const SizedBox(height: 10),
+                            ],
 
-                            // Enrollment / lesson count row
+                            // Lesson count row. The "0 students" that sat here
+                            // was a hard-coded string, not a count.
                             Row(
                               children: [
-                                Icon(Icons.people_outline, size: 15, color: AppColors.inkMuted),
-                                const SizedBox(width: 4),
-                                Text(
-                                  t('0 طالب', '0 students'),
-                                  style: const TextStyle(fontSize: 13, color: AppColors.inkMuted),
-                                ),
-                                const SizedBox(width: 16),
                                 Icon(Icons.play_circle_outline, size: 15, color: AppColors.inkMuted),
                                 const SizedBox(width: 4),
                                 lessonsAsync.when(
@@ -247,6 +259,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                               lang: lang,
                               t: t,
                               isDark: isDark,
+                              hasAccess: hasAccess,
                             ),
                           ),
                         );
@@ -305,17 +318,34 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                               ),
                             ),
                           const SizedBox(width: 16),
-                          // CTA button on right
+                          // CTA button on right. Three states, decided by what
+                          // the database says rather than by is_paid alone:
+                          //   has access      → continue learning
+                          //   order pending   → waiting for the teacher
+                          //   paid, no access → buy
+                          // It used to show "Buy now" to students who had
+                          // already bought, and "Start Learning" on a free
+                          // course pushed this same page again.
                           SizedBox(
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: () {
-                                if (subject.isPaid == true) {
-                                  context.push('/student/marketplace/checkout/${widget.subjectId}');
-                                } else {
-                                  context.push('/student/subjects/subject/${widget.subjectId}');
-                                }
-                              },
+                              onPressed: pending
+                                  ? null
+                                  : () {
+                                      if (subject.isPaid == true && !hasAccess) {
+                                        context.push('/student/marketplace/checkout/${widget.subjectId}');
+                                        return;
+                                      }
+                                      final lessons = lessonsAsync.valueOrNull ?? const [];
+                                      if (lessons.isEmpty) return;
+                                      final progress = progressAsync.valueOrNull ?? const {};
+                                      final target = lessons.firstWhere(
+                                        (l) => (progress[l.id] ?? 0) < 100,
+                                        orElse: () => lessons.first,
+                                      );
+                                      context.push(
+                                          '/student/subjects/subject/${widget.subjectId}/lesson/${target.id}');
+                                    },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.accent,
                                 foregroundColor: Colors.white,
@@ -326,9 +356,13 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 32),
                               ),
                               child: Text(
-                                subject.isPaid == true
-                                    ? t('اشترِ الآن', 'Buy now')
-                                    : t('ابدأ التعلم', 'Start Learning'),
+                                pending
+                                    ? t('بانتظار تأكيد الدفع', 'Payment pending')
+                                    : (subject.isPaid == true && !hasAccess)
+                                        ? t('اشترِ الآن', 'Buy now')
+                                        : anyProgress
+                                            ? t('متابعة التعلم', 'Continue learning')
+                                            : t('ابدأ التعلم', 'Start learning'),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -358,6 +392,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     required String lang,
     required String Function(String, String) t,
     required bool isDark,
+    required bool hasAccess,
   }) {
     final isExpanded = _expandedSections.contains(sectionIndex);
 
@@ -416,6 +451,9 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             final lesson = lessons[index];
             final progress = progressMap[lesson.id] ?? 0;
             final isCompleted = progress >= 100;
+            // Locked only while the student cannot open it: a bought course
+            // and a free-preview lesson both open, so neither gets the padlock.
+            final locked = lesson.isPaid && !lesson.isFreePreview && !hasAccess;
 
             return Column(
               children: [
@@ -495,9 +533,9 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           )
                         else
                           Icon(
-                            lesson.isPaid ? Icons.lock_outline : Icons.play_circle_outline,
+                            locked ? Icons.lock_outline : Icons.play_circle_outline,
                             size: 20,
-                            color: lesson.isPaid ? AppColors.inkMuted : AppColors.accent,
+                            color: locked ? AppColors.inkMuted : AppColors.accent,
                           ),
                       ],
                     ),

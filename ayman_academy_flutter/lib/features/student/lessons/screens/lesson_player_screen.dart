@@ -9,6 +9,8 @@ import 'package:ayman_academy_app/shared/services/progress_model.dart';
 import 'package:ayman_academy_app/shared/widgets/loading_shimmer.dart';
 import 'package:ayman_academy_app/features/student/lessons/providers/lesson_provider.dart';
 import 'package:ayman_academy_app/features/student/lessons/widgets/lesson_summary_card.dart';
+import 'package:ayman_academy_app/features/student/quiz/providers/quiz_provider.dart';
+import 'package:ayman_academy_app/features/student/subjects/providers/subjects_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ayman_academy_app/brand/widgets/arcade.dart';
 
@@ -645,15 +647,45 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                   // rather than storing it in the provider — it is view state.
                   _blocksForProgress = blocks;
 
+                  // The teacher's "YouTube URL" field on the lesson itself
+                  // (lessons.video_url) used to be saved and never shown to
+                  // anyone. Render it as a lead video block — unless the same
+                  // link is already a block, which would show it twice.
+                  // Only reached when blocks came back, i.e. the student is
+                  // entitled; a locked lesson never surfaces the link.
+                  final lesson = lessonAsync.valueOrNull;
+                  final leadUrl = lesson?.videoUrl?.trim() ?? '';
+                  final leadVideo = leadUrl.isNotEmpty &&
+                          !blocks.any((b) => (b.url ?? '').trim() == leadUrl)
+                      ? LessonBlock(
+                          id: 'lesson-video-${widget.lessonId}',
+                          lessonId: widget.lessonId,
+                          type: 'video',
+                          url: leadUrl,
+                        )
+                      : null;
+                  final lead = leadVideo == null ? 0 : 1;
+
                   return ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
-                    itemCount: blocks.length + 1,
+                    // summary + optional lead video + blocks + end-of-lesson
+                    itemCount: 1 + lead + blocks.length + 1,
                     itemBuilder: (context, index) {
                       if (index == 0) {
                         return LessonSummaryCard(lessonId: widget.lessonId);
                       }
-                      final block = blocks[index - 1];
+                      if (leadVideo != null && index == 1) {
+                        return LessonBlockRenderer(block: leadVideo);
+                      }
+                      if (index == 1 + lead + blocks.length) {
+                        return _LessonEnd(
+                          lessonId: widget.lessonId,
+                          subjectId: lesson?.subjectId,
+                          completedNow: _completed || _scrollProgress >= 90,
+                        );
+                      }
+                      final block = blocks[index - 1 - lead];
                       // ListView.builder only builds what is near the viewport,
                       // so "was built" is a good proxy for "was scrolled to" —
                       // and unlike scroll pixels it is tied to actual content.
@@ -759,6 +791,113 @@ class _BottomAction extends StatelessWidget {
   }
 }
 
+
+/// The end of the lesson: the quiz (if the teacher made one) and the way on to
+/// the next lesson. Both used to be missing — the quiz route existed in the
+/// router but nothing in the student app opened it, and the only way forward
+/// was back out to the course page.
+///
+/// The quiz unlocks once the lesson is complete, matching the web player.
+class _LessonEnd extends ConsumerWidget {
+  final String lessonId;
+  final String? subjectId;
+
+  /// True once the player itself has reached completion this session — the
+  /// stored progress row lags behind by up to one save tick.
+  final bool completedNow;
+
+  const _LessonEnd({
+    required this.lessonId,
+    required this.subjectId,
+    required this.completedNow,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.read(languageProvider.notifier).t;
+    final lang = ref.watch(languageProvider).languageCode;
+    final arc = context.arc;
+    final sid = subjectId;
+    if (sid == null || sid.isEmpty) return const SizedBox.shrink();
+
+    final quiz = ref.watch(lessonQuizProvider(lessonId)).valueOrNull;
+    final stored = ref.watch(lessonProgressProvider(lessonId)).valueOrNull;
+    final unlocked = completedNow || (stored?.isCompleted ?? false);
+
+    final lessons = ref.watch(subjectLessonsProvider(sid)).valueOrNull ?? const [];
+    final here = lessons.indexWhere((l) => l.id == lessonId);
+    final next = (here >= 0 && here + 1 < lessons.length) ? lessons[here + 1] : null;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const PixelDivider(),
+          const SizedBox(height: 20),
+          if (quiz != null) ...[
+            ArcadeCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(unlocked ? Icons.quiz_outlined : Icons.lock_outline,
+                          color: arc.mid, size: 22),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          t('اختبار الدرس', 'Lesson quiz'),
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700, color: arc.ink),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    unlocked
+                        ? t('يمكنك الآن إجراء الاختبار.', 'You can take the quiz now.')
+                        : t('أكمل الدرس لفتح الاختبار.', 'Finish the lesson to unlock the quiz.'),
+                    style: TextStyle(fontSize: 14, color: arc.inkSoft),
+                  ),
+                  const SizedBox(height: 14),
+                  ArcadeButton(
+                    label: t('بدء الاختبار', 'Start quiz'),
+                    icon: Icons.play_arrow_rounded,
+                    expand: true,
+                    onPressed: unlocked
+                        ? () => context.push('/student/subjects/subject/$sid/quiz/${quiz.id}')
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (next != null)
+            ArcadeButton.nav(
+              icon: Icons.skip_next_rounded,
+              expand: true,
+              label: '${t('الدرس التالي', 'Next lesson')}: ${next.title(lang)}',
+              // Replace rather than push, so Back returns to the course page
+              // instead of walking back through every lesson read.
+              onPressed: () => context
+                  .pushReplacement('/student/subjects/subject/$sid/lesson/${next.id}'),
+            )
+          else if (here >= 0)
+            ArcadeButton.nav(
+              icon: Icons.check_circle_outline,
+              expand: true,
+              label: t('آخر درس في المادة — العودة للمادة', 'Last lesson — back to the course'),
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
 /// Shown when RLS withheld a lesson's content — i.e. the student has not
 /// bought the course. The web counterpart is

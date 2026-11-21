@@ -94,12 +94,22 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
         'summary_ar': _summaryController.text.trim().isNotEmpty ? _summaryController.text.trim() : null,
         'video_url': _videoUrlController.text.trim().isNotEmpty ? _videoUrlController.text.trim() : null,
         'duration_minutes': int.tryParse(_durationController.text),
+        // Both fields were loaded and editable but missing from this map, so
+        // every edit to them was silently thrown away on save.
+        'objectives_ar': _objectivesController.text.trim().isNotEmpty
+            ? _objectivesController.text.trim()
+            : null,
         'is_published': _isPublished,
         'is_paid': _isPaid,
         'created_by': userId,
       };
+      final typedOrder = int.tryParse(_sortOrderController.text.trim());
       if (widget.lessonId != null) {
+        if (typedOrder != null) payload['sort_order'] = typedOrder;
         await supabase.from('lessons').update(payload).eq('id', widget.lessonId!);
+      } else if (typedOrder != null) {
+        payload['sort_order'] = typedOrder;
+        await supabase.from('lessons').insert(payload);
       } else {
         final existing = await supabase.from('lessons').select('sort_order')
             .eq('subject_id', widget.subjectId).order('sort_order', ascending: false).limit(1);
@@ -881,23 +891,46 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
       backgroundColor: AppColors.accent,
     ));
 
+    // Read from and write to the right language. Translation used to write
+    // its result over content_ar whichever way it went, so "Translate AR→EN"
+    // replaced the teacher's Arabic with English and the English field stayed
+    // empty. Now a translation fills the OTHER language and leaves the source
+    // alone; the enhance/simplify actions still work on the Arabic in place.
+    final fromEnglish = action == 'translate_en_ar';
+    final source = (fromEnglish ? block.contentEn : block.contentAr) ?? '';
+    final targetColumn = action == 'translate_ar_en' ? 'content_en' : 'content_ar';
+
+    if (source.trim().isEmpty) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(fromEnglish
+            ? t('لا يوجد نص إنجليزي في هذا العنصر لترجمته.', 'This block has no English text to translate.')
+            : t('لا يوجد نص في هذا العنصر بعد.', 'This block has no text yet.')),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+
     try {
       final response = await supabase.functions.invoke('ai-assist', body: {
         'action': action,
-        'content': block.contentAr ?? '',
-        'language': 'ar',
+        'content': source,
+        'language': fromEnglish ? 'en' : 'ar',
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
       if (response.data != null && response.data['success'] == true) {
         final result = response.data['result'] as String;
-        // Update the block content
-        await supabase.from('lesson_blocks').update({'content_ar': result}).eq('id', block.id);
+        await supabase.from('lesson_blocks').update({targetColumn: result}).eq('id', block.id);
         _loadLesson();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(t('تم التحديث بنجاح', 'Updated successfully')),
+            content: Text(action == 'translate_ar_en'
+                ? t('تمت الترجمة — النص الإنجليزي يظهر للطلاب الذين يستخدمون الإنجليزية، والعربي لم يتغيّر.',
+                    'Translated — the English text shows to students using English; your Arabic is unchanged.')
+                : t('تم التحديث بنجاح', 'Updated successfully')),
             backgroundColor: AppColors.success,
           ));
         }
@@ -914,7 +947,9 @@ class _LessonEditorScreenState extends ConsumerState<LessonEditorScreen> with Si
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(t('خطأ في خدمة AI: تأكد من إعداد GROQ_API_KEY', 'AI service error: Check GROQ_API_KEY setup')),
+          // Was a developer message naming an API-key variable, shown to teachers.
+          content: Text(t('تعذّر الوصول إلى المساعد الذكي الآن. حاول مرة أخرى بعد قليل.',
+              'The AI assistant could not be reached. Please try again in a moment.')),
           backgroundColor: AppColors.error,
         ));
       }

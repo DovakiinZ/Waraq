@@ -88,7 +88,12 @@ class LessonSummaryCard extends ConsumerWidget {
                 ArcadeButton.nav(
                   label: t('عرض كشرائح', 'View as slides'),
                   icon: Icons.slideshow_outlined,
-                  onPressed: () => context.push('/student/subjects/lesson/$lessonId/slides'),
+                  // The slides route is nested under the lesson route
+                  // (/student/subjects/subject/:sid/lesson/:lid/slides), so
+                  // append to wherever this lesson is mounted. A hard-coded
+                  // path drifted from the router once and 404'd for everyone.
+                  onPressed: () =>
+                      context.push('${GoRouterState.of(context).uri.path}/slides'),
                 ),
               ],
             ],
