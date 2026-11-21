@@ -527,7 +527,12 @@ const form = useForm<FormData>({
 
 **Every update ships an APK, and old versions are never removed.** Publishing the GitHub release is also what updates the website: the `/download` page (تحميل) reads GitHub Releases live, so no website deploy is needed.
 
-### How to release a new Android version
+### Automated release (preferred, added 2026-11-21)
+
+`.github/workflows/android-release.yml` builds and publishes on a tag push. Bump `version:` in `pubspec.yaml`, optionally write `ayman_academy_flutter/release_notes/X.Y.Z.md` (Arabic + English, for students), commit, then `git tag vX.Y.Z-android && git push origin vX.Y.Z-android` (`-android-test` → prerelease). The workflow refuses to run if the tag and pubspec disagree, if the release already exists on `waraq-releases`, if the APK's signer SHA-256 is not the one below, or if `versionCode` is not above the newest published APK — so it enforces steps 3, 7 and the signing check automatically. Flutter is pinned to **3.41.6** (the `.metadata` revision; Dart 3.11.4).
+Secrets on `DovakiinZ/Waraq`: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (the public `sb_publishable_` key — the same one the web bundle and the shipped APKs use), `RELEASES_TOKEN` (fine-grained PAT, Contents read/write on `waraq-releases` only), `ANDROID_DEBUG_KEYSTORE_B64` (base64 of the debug keystore described under "Signing"; CI writes it to `android/app/ci-signing.keystore` plus a `key.properties` with the standard `android`/`androiddebugkey` credentials), and optional `ONESIGNAL_APP_ID`.
+
+### How to release a new Android version (manual fallback)
 
 1. **Bump the version** in `ayman_academy_flutter/pubspec.yaml`, e.g. `1.1.0+110` → `1.2.0+120`. The `+N` build number (Android `versionCode`) must increase, or the new APK will not install over the old one.
 2. **Build** from `ayman_academy_flutter/`:
