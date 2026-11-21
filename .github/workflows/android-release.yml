@@ -95,6 +95,12 @@ jobs:
             [ -n "$KEYSTORE" ]        || missing="$missing ANDROID_DEBUG_KEYSTORE_B64"
           fi
           if [ -n "$missing" ]; then echo "::error::Missing repo secrets:$missing"; exit 1; fi
+          # Present is not the same as valid: test the token before a
+          # 7-minute build, not after it.
+          if [ "$DRY" != "true" ] && ! GH_TOKEN="$RELEASES_TOKEN" gh api "repos/$RELEASES_REPO" >/dev/null 2>&1; then
+            echo "::error::RELEASES_TOKEN cannot read $RELEASES_REPO — it is expired, revoked or mistyped. Create a new fine-grained token and update the secret."
+            exit 1
+          fi
 
       - name: Refuse to overwrite an existing release
         if: steps.meta.outputs.dry_run != 'true'
@@ -167,8 +173,11 @@ jobs:
           NEW_CODE=$("$BT/aapt2" dump badging "$APK" | sed -nE "s/.*versionCode='([0-9]+)'.*/\1/p")
           echo "New versionCode: $NEW_CODE"
           # Compare with the newest APK already published (any release, prerelease included).
-          PREV_URL=$(gh api "repos/$RELEASES_REPO/releases?per_page=30" \
-            --jq '[.[] | select(.draft|not) | {t: .published_at, a: [.assets[] | select(.name|endswith(".apk")) | .browser_download_url][0]} | select(.a)] | sort_by(.t) | last | .a // empty')
+          if ! PREV_URL=$(gh api "repos/$RELEASES_REPO/releases?per_page=30" \
+            --jq '[.[] | select(.draft|not) | {t: .published_at, a: [.assets[] | select(.name|endswith(".apk")) | .browser_download_url][0]} | select(.a)] | sort_by(.t) | last | .a // empty'); then
+            fail "Could not read $RELEASES_REPO releases — RELEASES_TOKEN is missing, expired or mistyped."
+            PREV_URL=""
+          fi
           if [ -n "$PREV_URL" ]; then
             curl -sSL -o /tmp/prev.apk "$PREV_URL"
             PREV_CODE=$("$BT/aapt2" dump badging /tmp/prev.apk | sed -nE "s/.*versionCode='([0-9]+)'.*/\1/p")
