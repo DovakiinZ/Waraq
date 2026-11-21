@@ -428,13 +428,9 @@ void main() {
   });
 
   group('SandboxBanner', () {
-    // `stages` stands in for teacherStagesProvider, which cannot resolve
-    // against a fake Supabase. Overriding it keeps the checklist deterministic
-    // instead of dependent on a network call that will never complete.
     Future<void> pumpBanner(
       WidgetTester tester,
       Profile seeded, {
-      String? stages,
       bool dark = false,
     }) async {
       repo.user = testUser();
@@ -447,7 +443,6 @@ void main() {
         overrides: [
           ...onlineOverrides,
           authRepositoryProvider.overrideWithValue(repo),
-          teacherStagesProvider.overrideWith((ref) async => stages),
         ],
       );
       await container.read(authProvider.notifier).refreshProfile();
@@ -461,28 +456,11 @@ void main() {
       expect(find.textContaining('النشر والبيع يُفتحان'), findsOneWidget);
     });
 
-    testWidgets('no review message once approved', (tester) async {
-      await pumpBanner(tester, fakeProfile(isActive: true));
-
-      expect(find.text('قيد المراجعة'), findsNothing);
-      // This profile is approved but incomplete (no stages/bio/Sham Cash),
-      // so the checklist card is the branch this case exercises — assert it
-      // actually renders, not just that the pending banner is absent.
-      expect(find.text('أكمل ملفك'), findsOneWidget);
-    });
-
-    testWidgets('renders nothing at all for an approved, fully set-up teacher',
+    testWidgets('renders nothing once approved, even with an incomplete profile',
         (tester) async {
-      await pumpBanner(
-        tester,
-        fakeProfile(
-          isActive: true,
-          bioAr: 'نبذة',
-          shamcashName: 'بسام',
-          shamcashNumber: '0912345678',
-        ),
-        stages: 'primary,middle',
-      );
+      // The profile step now lives in the setup guide card, so the banner
+      // must not repeat it.
+      await pumpBanner(tester, fakeProfile(isActive: true));
 
       expect(find.text('قيد المراجعة'), findsNothing);
       expect(find.text('أكمل ملفك'), findsNothing);
