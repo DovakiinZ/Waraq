@@ -1,0 +1,40 @@
+# Static analysis + the widget/unit test suite for the Android app, on every
+# push or pull request that touches it. ayman_academy_flutter/CLAUDE.md asks
+# for both to stay clean ("flutter analyze reports no issues").
+
+name: Flutter check
+
+on:
+  push:
+    paths:
+      - 'ayman_academy_flutter/**'
+      - '.github/workflows/flutter-check.yml'
+  pull_request:
+    paths:
+      - 'ayman_academy_flutter/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: ayman_academy_flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.41.6   # keep in step with android-release.yml
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test

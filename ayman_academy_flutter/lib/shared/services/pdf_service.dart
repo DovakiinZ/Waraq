@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -7,7 +8,17 @@ import 'package:ayman_academy_app/shared/models/certificate.dart';
 
 class PdfService {
   static Future<void> generateAndShareCertificate(Certificate cert) async {
-    final doc = pw.Document();
+    // The pdf package's built-in fonts (Helvetica) carry no Arabic glyphs, so
+    // every Arabic name and title on the certificate rendered as boxes or
+    // disconnected letters. Embed the brand face the app already bundles and
+    // lay the page out right-to-left; pdf >= 3.10 shapes Arabic itself once it
+    // has a font that contains it. Latin text (an English course name) still
+    // renders, since IBM Plex Sans Arabic includes Latin glyphs.
+    final regular = pw.Font.ttf(
+        await rootBundle.load('assets/fonts/IBMPlexSansArabic-Regular.ttf'));
+    final bold = pw.Font.ttf(
+        await rootBundle.load('assets/fonts/IBMPlexSansArabic-Bold.ttf'));
+    final doc = pw.Document(theme: pw.ThemeData.withFont(base: regular, bold: bold));
     final snapshot = cert.snapshotJson;
     final studentName = snapshot?.studentName ?? cert.studentName;
     final courseName = snapshot?.courseName ?? cert.courseName;
@@ -32,6 +43,7 @@ class PdfService {
       pw.Page(
         pageFormat: PdfPageFormat.a4.landscape,
         margin: const pw.EdgeInsets.all(0),
+        textDirection: pw.TextDirection.rtl,
         build: (pw.Context context) {
           return pw.Container(
             decoration: pw.BoxDecoration(

@@ -583,6 +583,20 @@ What the app **did** have wrong, now fixed:
 Note `'reviewed_by': ?userId` — Dart's null-aware element. `if (x != null) 'k': x` trips
 the `use_null_aware_elements` lint on this SDK.
 
+### Student-flow bug pass (2026-11-21, branch `fix/android-student-flow`)
+
+Found by tracing every student and teacher flow for the user guide. Verified by CI (`.github/workflows/flutter-check.yml`: analyze clean, 233 tests) — **not yet on a device.**
+
+- **Quizzes were unreachable.** The `subject/:id/quiz/:quizId` route existed but nothing pushed it. `_LessonEnd` (bottom of `lesson_player_screen.dart`) now shows the lesson quiz via the previously unused `lessonQuizProvider`, unlocked once the lesson is complete (same rule as the web), plus **Next lesson** (`pushReplacement`, so Back returns to the course).
+- **`check_subject_access` returns a ROW SET.** `checkSubjectAccessProvider` accepted a `Map` only, so it reported `has_access: false` for everyone, paying students included. It now reads the first row of the list and still fails closed.
+- **Course page CTA follows real access** (`subject_detail_screen.dart`): access → Start/Continue learning opens the first unfinished lesson; a `pending_payment` order → disabled «بانتظار تأكيد الدفع»; otherwise Buy now. Padlocks use the same access flag. The hard-coded `StarRating(4.5)` and «0 طالب» were removed (stars follow `SubjectCard`'s ≥3-ratings rule).
+- **«عرض كشرائح» 404'd** — it pushed `/student/subjects/lesson/:id/slides`; it now appends `/slides` to `GoRouterState.of(context).uri.path`.
+- **`lessons.video_url` was never shown to students.** The player renders it as a lead video block when no block already carries the same URL, and only when blocks came back (entitled).
+- **Marketplace card** opens the course page, not checkout.
+- **Lesson editor** now saves `sort_order` and `objectives_ar` (both were loaded and silently dropped). **AI translate** writes the *other* language column instead of overwriting `content_ar`.
+- **Certificate PDF** embeds `IBMPlexSansArabic-{Regular,Bold}.ttf` via `rootBundle` and sets `textDirection: rtl` — the Arabic-font gap noted under the AI summary section is closed for certificates.
+- **Built-in guide** (`guide_screen.dart`) matches the real buttons.
+
 ### Recently fixed (release-readiness pass)
 - Access control now **fails closed** — `checkSubjectAccessProvider` returns `has_access: false` on RPC error/non-Map (previously granted access on failure).
 - **OneSignal** `login(userId)`/`logout()` now wired into `AuthNotifier` (session restore, sign-in, sign-out) so push targets the right user.

@@ -129,7 +129,10 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                   return SubjectCard(
                     subject: s,
                     lang: lang,
-                    onTap: () => context.push('/student/marketplace/checkout/${s.id}'),
+                    // Course page first (lessons, free previews, price), so a
+                    // student sees what they are buying before checkout. It
+                    // used to jump straight to payment.
+                    onTap: () => context.push('/student/subjects/subject/${s.id}'),
                   );
                 },
               ),
